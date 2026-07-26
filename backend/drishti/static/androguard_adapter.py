@@ -4,6 +4,15 @@ import re
 
 from pydantic import BaseModel, Field
 
+# Androguard emits very verbose DEBUG logs via loguru; silence them so DRISHTI
+# output (and API logs) stay clean.
+try:
+    from loguru import logger as _loguru_logger
+
+    _loguru_logger.disable("androguard")
+except Exception:  # noqa: BLE001
+    pass
+
 
 class CertInfo(BaseModel):
     subject: str = ""
