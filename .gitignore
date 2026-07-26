@@ -17,7 +17,10 @@ build/
 # ML artifacts (large / regenerable)
 backend/drishti/data/models/*.bin
 backend/drishti/data/models/*.pkl
+backend/drishti/data/models/*.joblib
 backend/drishti/data/androzoo_cache/
+backend/samples/
+*.csv
 
 # Uploaded / analyzed samples (never commit APKs)
 backend/uploads/
