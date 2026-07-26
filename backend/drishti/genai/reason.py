@@ -60,7 +60,7 @@ class GenAiVerdict(BaseModel):
     verified: bool = False
 
 
-def build_evidence(static_result, ml_result, bundle, led) -> dict:
+def build_evidence(static_result, ml_result, bundle, led, dynamic_result=None) -> dict:
     return {
         "package": static_result.package,
         "sha256": getattr(bundle, "sha256", None),
@@ -73,6 +73,9 @@ def build_evidence(static_result, ml_result, bundle, led) -> dict:
         "iocs": static_result.iocs,
         "certificate": static_result.cert,
         "yara_hits": static_result.yara_hits,
+        "dynamic_observations_simulated": (
+            getattr(dynamic_result, "observations", []) if dynamic_result else []
+        ),
         "evidence_node_ids": [n.id for n in led.nodes],
     }
 
@@ -87,8 +90,8 @@ def _wrap_user_data(evidence: dict) -> str:
 
 
 def reason(static_result, ml_result, bundle, led, provider: LLMProvider,
-           timestamp: str) -> GenAiVerdict:
-    evidence = build_evidence(static_result, ml_result, bundle, led)
+           timestamp: str, dynamic_result=None) -> GenAiVerdict:
+    evidence = build_evidence(static_result, ml_result, bundle, led, dynamic_result)
     user_data = _wrap_user_data(evidence)
 
     raw = provider.generate_json(SYSTEM_PROMPT, user_data, VERDICT_SCHEMA)
