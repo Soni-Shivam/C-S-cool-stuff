@@ -1,0 +1,6 @@
+# DRISHTI threat-intel fast-pass feed.
+# Format: <sha256>,<family>   (one per line; lines starting with # are ignored)
+# Seed this with confirmed-malicious APK hashes (e.g., from your AndroZoo-labelled set
+# or public feeds). A match here triggers the confirmed-hash scoring override (S=100).
+# Example (replace with real intelligence):
+# 9f2c...realhash...,Cerberus

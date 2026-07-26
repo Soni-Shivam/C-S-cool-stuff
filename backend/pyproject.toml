@@ -7,6 +7,9 @@ dependencies = [
     "pydantic>=2.6",
     "pydantic-settings>=2.2",
     "cryptography>=42.0",
+    "androguard>=4.1",
+    "yara-python>=4.5",
+    "google-genai>=0.3",
 ]
 
 [project.optional-dependencies]
