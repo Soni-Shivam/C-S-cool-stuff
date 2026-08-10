@@ -33,7 +33,7 @@ def download_apk(sha256: str, api_key: str, dest: str) -> None:
     urllib.request.urlretrieve(url, dest)  # noqa: S310 - trusted AndroZoo endpoint
 
 
-def extract_one(sha256: str, label: int, api_key: str) -> dict | None:
+def extract_one(sha256: str, label: int, api_key: str, split: str = "train") -> dict | None:
     with tempfile.TemporaryDirectory() as tmp:
         apk_path = os.path.join(tmp, f"{sha256}.apk")
         try:
@@ -49,6 +49,7 @@ def extract_one(sha256: str, label: int, api_key: str) -> dict | None:
                 os.remove(apk_path)
     feats["sha256"] = sha256
     feats["label"] = int(label)
+    feats["split"] = split
     return feats
 
 
@@ -64,14 +65,33 @@ def main() -> int:
         return 2
 
     samples = pd.read_csv(args.input_csv)
+    has_split = "split" in samples.columns
     rows = []
+    # Resume support: a long batch on a Spot VM can be preempted.
+    done: set[str] = set()
+    if os.path.exists(args.output_csv):
+        try:
+            prev = pd.read_csv(args.output_csv)
+            rows = prev.to_dict("records")
+            done = set(prev["sha256"].astype(str))
+            print(f"resuming: {len(done)} rows already extracted")
+        except Exception:  # noqa: BLE001
+            pass
+
     for i, r in samples.iterrows():
-        print(f"[{i + 1}/{len(samples)}] {str(r['sha256'])[:12]}...")
-        row = extract_one(str(r["sha256"]), int(r["label"]), api_key)
+        sha = str(r["sha256"])
+        if sha in done:
+            continue
+        print(f"[{i + 1}/{len(samples)}] {sha[:12]}...")
+        row = extract_one(sha, int(r["label"]), api_key,
+                          split=str(r["split"]) if has_split else "train")
         if row:
             rows.append(row)
+        # checkpoint every 25 samples so preemption costs at most 25 downloads
+        if len(rows) % 25 == 0 and rows:
+            pd.DataFrame(rows).to_csv(args.output_csv, index=False)
 
-    cols = FEATURE_NAMES + ["sha256", "label"]
+    cols = FEATURE_NAMES + ["sha256", "label", "split"]
     pd.DataFrame(rows, columns=cols).to_csv(args.output_csv, index=False)
     print(f"wrote {len(rows)} feature rows -> {args.output_csv} (no APKs retained)")
     return 0
