@@ -29,6 +29,7 @@ class DynamicResult(BaseModel):
     observations: list[str] = Field(default_factory=list)
     b_dynamic: float = 0.0
     simulated: bool = True
+    mitre_observed: list[str] = Field(default_factory=list)
 
 
 def interrogate(static_result, ml_result, led, timestamp: str) -> DynamicResult:
