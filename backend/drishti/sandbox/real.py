@@ -9,6 +9,7 @@ Nothing here executes anything — it only reads a JSON artefact.
 import json
 from pathlib import Path
 
+from drishti.sandbox.observation import ObservationArtifact
 from drishti.sandbox.simulate import DynamicResult
 
 # Observed-behaviour severity by MITRE technique. A *real* observation is stronger
@@ -30,25 +31,26 @@ _TECHNIQUE_SEVERITY = {
 
 
 def result_from_payload(payload: dict, *, expected_sha256: str | None = None) -> DynamicResult:
-    artifact_sha256 = str(payload.get("sha256", "")).lower()
-    if expected_sha256 is not None and artifact_sha256 != expected_sha256.lower():
+    artifact = ObservationArtifact.model_validate_json(json.dumps(payload))
+    if expected_sha256 is not None and artifact.sha256 != expected_sha256.lower():
         raise ValueError("observations artifact SHA-256 does not match the analyzed APK")
-    raw = payload.get("observations", []) or []
+    if not artifact.safe_for_ingestion:
+        raise ValueError("observations artifact failed containment, snapshot, or execution acceptance gates")
+    raw = artifact.observations
     observations: list[str] = []
     severities: list[float] = []
 
     for obs in raw:
-        technique = str(obs.get("technique", "observed behaviour"))
-        mitre = str(obs.get("mitre", "") or "")
-        detail = str(obs.get("detail", "") or "")[:300]
+        technique = obs.technique
+        mitre = obs.mitre
+        detail = obs.detail[:300]
         observations.append(
             f"[OBSERVED] {technique}" + (f" ({mitre})" if mitre else "")
             + (f": {detail}" if detail else "")
         )
         severities.append(_TECHNIQUE_SEVERITY.get(mitre, 0.5))
 
-    mitre_observed = payload.get("mitre_observed") or sorted(
-        {str(o.get("mitre")) for o in raw if o.get("mitre")})
+    mitre_observed = artifact.mitre_observed
 
     # Highest-severity observed behaviour drives B; a second corroborating behaviour
     # nudges it up slightly, but B is capped at 1.0.
@@ -75,19 +77,20 @@ def ingest_real(payload_or_path, led, timestamp: str, *, expected_sha256: str | 
         payload = json.loads(Path(payload_or_path).read_text())
     else:
         payload = payload_or_path
-    result = result_from_payload(payload, expected_sha256=expected_sha256)
+    artifact = ObservationArtifact.model_validate_json(json.dumps(payload))
+    result = result_from_payload(artifact.model_dump(mode="json"), expected_sha256=expected_sha256)
 
     if not result.observations:
         led.append("dynamic_obs", "sandbox_real",
-                   "[OBSERVED] Sample executed; no high-risk runtime behaviour captured.",
-                   location=f"detonation:{payload.get('package', 'unknown')}",
+                   "[OBSERVED] Bounded detonation completed with no captured behavioural events; result is inconclusive, not benign.",
+                   location=f"detonation:{artifact.package}",
                    confidence=0.3, timestamp=timestamp)
         return result
 
     for obs, sev in zip(result.observations,
-                        [_TECHNIQUE_SEVERITY.get(o.get("mitre", ""), 0.5)
-                         for o in payload.get("observations", [])]):
+                        [_TECHNIQUE_SEVERITY.get(o.mitre, 0.5)
+                         for o in artifact.observations]):
         led.append("dynamic_obs", "sandbox_real", obs,
-                   location=f"detonation:{payload.get('package', 'unknown')}",
+                   location=f"detonation:{artifact.package}",
                    confidence=sev, timestamp=timestamp)
     return result

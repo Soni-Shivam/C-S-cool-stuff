@@ -1,0 +1,15 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- INTERNET is used only for the emulator-host fake C2 endpoint. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application
+        android:theme="@style/AppTheme"
+        android:label="DRISHTI M3 Inert Fixture"
+        android:usesCleartextTraffic="true">
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

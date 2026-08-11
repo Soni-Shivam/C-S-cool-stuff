@@ -54,7 +54,16 @@ def test_observed_artifact_is_sha_bound_and_can_add_runtime_score(pipeline_input
     payload = {
         "sha256": sha,
         "package": "in.drishti.fixture",
-        "observations": [{"technique": "SMS receiver activity", "mitre": "T1582", "detail": "captured by sealed fixture harness"}],
+        "simulated": False, "outcome": "completed",
+        "started_at": TS, "finished_at": "2026-08-11T00:01:00Z", "duration_s": 60.0,
+        "metadata": {"harness_version": "test", "hook_version": "test", "emulator_image": "test-image",
+                     "emulator_serial": "emulator-5554", "avd_name": "drishti", "containment_manifest_sha256": "b" * 64,
+                     "containment_verified": True, "containment_verified_at": TS},
+        "snapshot": {"name": "clean", "before_restore": "passed", "after_restore": "passed", "package_absent_after": True},
+        "observations": [{"type": "observation", "technique": "SMS receiver activity", "mitre": "T1582",
+                          "detail": "captured by sealed fixture harness", "source_hook": "SmsMessage.getMessageBody",
+                          "redacted": True, "occurred_at": "2026-08-11T00:00:30Z"}],
+        "failures": [], "diagnostics": [], "mitre_observed": ["T1582"],
     }
     absent = _run(pipeline_input, "absent")
     observed = _run(pipeline_input, "observed", payload)

@@ -1,165 +1,158 @@
-/*
- * DRISHTI dynamic-analysis instrumentation.
- *
- * Passive OBSERVER only: every hook logs the call and then invokes the original method.
- * Nothing is blocked, faked, or injected — the goal is to record what a sample does
- * inside a sealed sandbox so its behaviour can be mapped to MITRE ATT&CK Mobile.
- *
- * Each emitted event carries a `mitre` tag so observations land in the evidence ledger
- * already attributed (paper Table 6).
- */
+/* DRISHTI M3 allowlisted passive hook catalogue — version m3-hooks-1.0.0. */
 'use strict';
 
-function emit(technique, mitre, detail) {
-    send({ type: 'observation', technique: technique, mitre: mitre, detail: String(detail) });
+var enabledHooks = null;
+rpc.exports = {
+    configure: function (hookIds) {
+        enabledHooks = {};
+        hookIds.forEach(function (id) { enabledHooks[id] = true; });
+        return true;
+    }
+};
+
+function redact(value, kind) {
+    if (kind === 'message') return '[REDACTED:MESSAGE_BODY]';
+    var text = String(value === null || value === undefined ? '' : value);
+    text = text.replace(/\b(otp|one[ -]?time(?: password| code)?|verification code)\D{0,20}\d{4,8}\b/ig, '[REDACTED:OTP]');
+    text = text.replace(/\b(password|passwd|passcode|pin|username|login)\s*[:=]\s*[^\s,;]{2,}/ig, '[REDACTED:CREDENTIAL]');
+    text = text.replace(/\b(bearer\s+[a-z0-9._~+/=-]{8,}|(access|refresh|api|auth)[_-]?token\s*[:=]\s*[^\s,;]{8,})/ig, '[REDACTED:TOKEN]');
+    return text.substring(0, 512);
 }
 
-function safe(name, fn) {
-    try { fn(); } catch (e) { send({ type: 'hook_error', hook: name, error: String(e) }); }
+function emit(hook, technique, mitre, detail, kind) {
+    if (enabledHooks !== null && !enabledHooks[hook]) return;
+    send({
+        type: 'observation', source_hook: hook, technique: technique, mitre: mitre,
+        detail: redact(detail, kind), redacted: true, occurred_at: new Date().toISOString()
+    });
+}
+
+function emitSensitive(hook, technique, mitre, detail) {
+    if (enabledHooks !== null && !enabledHooks[hook]) return;
+    send({
+        type: 'sensitive_observation', source_hook: hook, technique: technique, mitre: mitre,
+        sensitive_detail: String(detail), redacted: true, occurred_at: new Date().toISOString()
+    });
+}
+
+function safe(name, installer) {
+    try { installer(); } catch (error) {
+        send({type: 'hook_error', hook: name, error: redact(error)});
+    }
 }
 
 Java.perform(function () {
-
-    // ---- T1582 SMS Control: outbound SMS (premium fraud / spreading) ----
     safe('SmsManager.sendTextMessage', function () {
         var SmsManager = Java.use('android.telephony.SmsManager');
-        SmsManager.sendTextMessage.overload(
+        var original = SmsManager.sendTextMessage.overload(
             'java.lang.String', 'java.lang.String', 'java.lang.String',
-            'android.app.PendingIntent', 'android.app.PendingIntent'
-        ).implementation = function (dest, sc, text, a, b) {
-            emit('SMS sent', 'T1582', 'to=' + dest + ' body=' + text);
-            return this.sendTextMessage(dest, sc, text, a, b);
+            'android.app.PendingIntent', 'android.app.PendingIntent');
+        original.implementation = function (dest, sc, body, sent, delivered) {
+            emit('SmsManager.sendTextMessage', 'SMS send API invoked', 'T1582',
+                 'destination=[REDACTED:PHONE] body=' + redact(body, 'message'));
+            return original.call(this, dest, sc, body, sent, delivered);
         };
     });
 
-    // ---- T1582 SMS Control: reading incoming SMS bodies (OTP interception) ----
     safe('SmsMessage.getMessageBody', function () {
         var SmsMessage = Java.use('android.telephony.SmsMessage');
-        SmsMessage.getMessageBody.implementation = function () {
-            var body = this.getMessageBody();
-            emit('SMS body read (OTP interception surface)', 'T1582', body);
+        var original = SmsMessage.getMessageBody.overload();
+        original.implementation = function () {
+            var body = original.call(this);
+            emit('SmsMessage.getMessageBody', 'SMS body read', 'T1582', body, 'message');
             return body;
         };
     });
 
-    // ---- T1517 / T1582: aborting the SMS broadcast hides the message from the user ----
     safe('BroadcastReceiver.abortBroadcast', function () {
-        var BR = Java.use('android.content.BroadcastReceiver');
-        BR.abortBroadcast.implementation = function () {
-            emit('SMS broadcast aborted (hiding message from user)', 'T1582', 'abortBroadcast()');
-            return this.abortBroadcast();
+        var Receiver = Java.use('android.content.BroadcastReceiver');
+        var original = Receiver.abortBroadcast.overload();
+        original.implementation = function () {
+            emit('BroadcastReceiver.abortBroadcast', 'SMS broadcast aborted', 'T1582', 'abortBroadcast()');
+            return original.call(this);
         };
     });
 
-    // ---- T1426 / T1422: device fingerprinting ----
-    safe('TelephonyManager', function () {
-        var TM = Java.use('android.telephony.TelephonyManager');
-        ['getDeviceId', 'getSubscriberId', 'getLine1Number', 'getSimOperatorName'].forEach(function (m) {
-            if (TM[m]) {
-                TM[m].overloads.forEach(function (ov) {
-                    ov.implementation = function () {
-                        var r = ov.apply(this, arguments);
-                        emit('Device identifier read: ' + m, 'T1426', r);
-                        return r;
-                    };
-                });
-            }
+    safe('TelephonyManager.identifiers', function () {
+        var Manager = Java.use('android.telephony.TelephonyManager');
+        ['getDeviceId', 'getSubscriberId', 'getLine1Number', 'getSimOperatorName'].forEach(function (name) {
+            if (!Manager[name]) return;
+            Manager[name].overloads.forEach(function (original) {
+                original.implementation = function () {
+                    var result = original.apply(this, arguments);
+                    emit('TelephonyManager.' + name, 'Device property read: ' + name, 'T1426', '[REDACTED:DEVICE_VALUE]');
+                    return result;
+                };
+            });
         });
     });
 
-    // ---- T1407 Download New Code: dynamic class loading (dropper / staged payload) ----
-    safe('DexClassLoader', function () {
-        var DCL = Java.use('dalvik.system.DexClassLoader');
-        DCL.$init.implementation = function (dexPath, odex, libs, parent) {
-            emit('Dynamic code loaded via DexClassLoader', 'T1407', dexPath);
-            return this.$init(dexPath, odex, libs, parent);
-        };
-    });
-    safe('PathClassLoader', function () {
-        var PCL = Java.use('dalvik.system.PathClassLoader');
-        PCL.$init.overload('java.lang.String', 'java.lang.ClassLoader')
-          .implementation = function (p, parent) {
-            emit('Dynamic code loaded via PathClassLoader', 'T1407', p);
-            return this.$init(p, parent);
+    safe('DexClassLoader.$init', function () {
+        var Loader = Java.use('dalvik.system.DexClassLoader');
+        var original = Loader.$init.overload('java.lang.String', 'java.lang.String', 'java.lang.String', 'java.lang.ClassLoader');
+        original.implementation = function (dexPath, optimized, libraries, parent) {
+            emit('DexClassLoader.$init', 'Local dynamic code loaded', 'T1407', 'path=' + redact(dexPath));
+            return original.call(this, dexPath, optimized, libraries, parent);
         };
     });
 
-    // ---- T1521 Encrypted Channel: capture plaintext before custom encryption ----
+    safe('PathClassLoader.$init', function () {
+        var Loader = Java.use('dalvik.system.PathClassLoader');
+        var original = Loader.$init.overload('java.lang.String', 'java.lang.ClassLoader');
+        original.implementation = function (path, parent) {
+            emit('PathClassLoader.$init', 'Local class path loaded', 'T1407', 'path=' + redact(path));
+            return original.call(this, path, parent);
+        };
+    });
+
     safe('Cipher.doFinal', function () {
         var Cipher = Java.use('javax.crypto.Cipher');
-        Cipher.doFinal.overload('[B').implementation = function (buf) {
-            try {
-                var s = Java.use('java.lang.String').$new(buf);
-                if (s.length > 0) {
-                    emit('Cipher.doFinal plaintext buffer (pre-encryption capture)',
-                         'T1521', s.substring(0, 300));
-                }
-            } catch (e) { /* binary payload — not printable */ }
-            return this.doFinal(buf);
+        var original = Cipher.doFinal.overload('[B');
+        original.implementation = function (buffer) {
+            var preview = '[BINARY_OR_EMPTY]';
+            try { preview = Java.use('java.lang.String').$new(buffer).toString(); } catch (_ignored) {}
+            emitSensitive('Cipher.doFinal([B)', 'Plaintext passed to Cipher.doFinal', 'T1521', preview);
+            return original.call(this, buffer);
         };
     });
 
-    // ---- T1437 App Layer Protocol: C2 beaconing ----
     safe('URL.openConnection', function () {
         var URL = Java.use('java.net.URL');
-        URL.openConnection.overload().implementation = function () {
-            emit('Network connection opened', 'T1437', this.toString());
-            return this.openConnection();
+        var original = URL.openConnection.overload();
+        original.implementation = function () {
+            var endpoint = this.getProtocol() + '://' + this.getHost() + ':' + this.getPort();
+            emit('URL.openConnection', 'Network connection opened', 'T1437', endpoint);
+            return original.call(this);
         };
     });
 
-    // ---- T1417 Input Capture / T1516 Input Injection: accessibility abuse ----
-    safe('AccessibilityService', function () {
-        var AS = Java.use('android.accessibilityservice.AccessibilityService');
-        AS.onAccessibilityEvent.implementation = function (ev) {
-            emit('Accessibility event consumed (screen read)', 'T1417', ev.toString());
-            return this.onAccessibilityEvent(ev);
-        };
-        if (AS.performGlobalAction) {
-            AS.performGlobalAction.implementation = function (a) {
-                emit('Accessibility global action (automated input)', 'T1516', 'action=' + a);
-                return this.performGlobalAction(a);
-            };
-        }
-    });
-
-    // ---- T1414 Clipboard Data (crypto-address swapping) ----
-    safe('ClipboardManager', function () {
-        var CM = Java.use('android.content.ClipboardManager');
-        if (CM.getPrimaryClip) {
-            CM.getPrimaryClip.implementation = function () {
-                var c = this.getPrimaryClip();
-                emit('Clipboard read', 'T1414', String(c));
-                return c;
-            };
-        }
-        if (CM.setPrimaryClip) {
-            CM.setPrimaryClip.implementation = function (c) {
-                emit('Clipboard written (address-swap risk)', 'T1641.001', String(c));
-                return this.setPrimaryClip(c);
-            };
-        }
-    });
-
-    // ---- T1626 Abuse Elevation: device-admin / persistence ----
-    safe('DevicePolicyManager', function () {
-        var DPM = Java.use('android.app.admin.DevicePolicyManager');
-        if (DPM.isAdminActive) {
-            DPM.isAdminActive.implementation = function (c) {
-                emit('Device-admin status queried (persistence attempt)', 'T1626', String(c));
-                return this.isAdminActive(c);
-            };
-        }
-    });
-
-    // ---- T1409 Access App Data: file reads of other apps' data ----
-    safe('Runtime.exec', function () {
-        var R = Java.use('java.lang.Runtime');
-        R.exec.overload('java.lang.String').implementation = function (cmd) {
-            emit('Shell command executed', 'T1409', cmd);
-            return this.exec(cmd);
+    safe('ClipboardManager.getPrimaryClip', function () {
+        var Clipboard = Java.use('android.content.ClipboardManager');
+        var original = Clipboard.getPrimaryClip.overload();
+        original.implementation = function () {
+            var result = original.call(this);
+            emit('ClipboardManager.getPrimaryClip', 'Clipboard read', 'T1414', '[REDACTED:CLIPBOARD]');
+            return result;
         };
     });
 
-    send({ type: 'ready', detail: 'DRISHTI hooks installed' });
+    safe('ClipboardManager.setPrimaryClip', function () {
+        var Clipboard = Java.use('android.content.ClipboardManager');
+        var original = Clipboard.setPrimaryClip.overload('android.content.ClipData');
+        original.implementation = function (clip) {
+            emit('ClipboardManager.setPrimaryClip', 'Clipboard written', 'T1641.001', '[REDACTED:CLIPBOARD]');
+            return original.call(this, clip);
+        };
+    });
+
+    safe('DevicePolicyManager.isAdminActive', function () {
+        var Manager = Java.use('android.app.admin.DevicePolicyManager');
+        var original = Manager.isAdminActive.overload('android.content.ComponentName');
+        original.implementation = function (component) {
+            emit('DevicePolicyManager.isAdminActive', 'Device-admin status queried', 'T1626', redact(component));
+            return original.call(this, component);
+        };
+    });
+
+    send({type: 'ready', hook_version: 'm3-hooks-1.0.0'});
 });

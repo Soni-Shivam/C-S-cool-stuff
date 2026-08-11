@@ -105,6 +105,13 @@ The public API cannot detonate an APK and never invokes `dynamic_analyze.py`. It
 
 Absent evidence stays `absent`. Requested simulation stays `simulated` and cannot raise the observed-runtime score factor. A SHA-matched real artifact stays `observed`. Simulation is never substituted for an unavailable observation.
 
+The hardened asynchronous M3 harness, immutable-image/runtime definitions, inert dynamic
+fixture, signed containment admission, and bounded allowlisted interrogation controller are
+documented in [M3_RUNBOOK.md](M3_RUNBOOK.md). They are implemented and locally tested but
+are not labelled operationally accepted until the GCE containment and inert-fixture gates
+have actually been run and reviewed. No cloud resource or malware was launched while
+implementing this stage.
+
 ## Stock Android limitation
 
 DRISHTI is a companion and decision-support app, not a device-owner security controller. On stock Android it cannot silently intercept or block every installation. It sees only APKs the user selects or shares, and “Continue” hands the cached APK to Android's user-controlled package installer after an explicit acknowledgement.

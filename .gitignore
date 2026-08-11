@@ -37,6 +37,9 @@ observations/
 observations*.json
 backend/quarantine/
 quarantine/
+containment-manifest*.json
+control-plane-attestation*.json
+pilot-authorization*.json
 
 # Node / Next
 node_modules/
@@ -54,6 +57,13 @@ frontend/.env*.local
 mlruns/
 backend/mlruns/
 backend/mlflow.db
+
+# Infrastructure local state / build manifests
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+packer-manifest.json
 
 # LaTeX build
 paper/*.aux

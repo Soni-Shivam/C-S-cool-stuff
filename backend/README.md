@@ -9,6 +9,11 @@ absent/simulated/observed dynamic provenance, Android report assembler, authenti
 FastAPI job service, and MLflow GenAI evaluation tooling are implemented. The API is
 parse-only: it never executes an APK and never invokes the detonator script.
 
+The M3 runtime harness is intentionally kept under `scripts/` and cannot be imported or
+launched by the API. Its strict observation ingestion models live under
+`drishti.sandbox`; deployment and acceptance instructions are in the root
+`M3_RUNBOOK.md`.
+
 ## Setup
 
 ```bash
