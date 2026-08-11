@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from drishti.ledger.verifier import verify_claim
 from drishti.llm.provider import LLMProvider
+from drishti.observability import safe_span, sanitize_evidence, set_safe_outputs
 
 SYSTEM_PROMPT = (
     "You are DRISHTI's malware reasoning core, a financial-fraud Android threat analyst. "
@@ -73,9 +74,10 @@ def build_evidence(static_result, ml_result, bundle, led, dynamic_result=None) -
         "iocs": static_result.iocs,
         "certificate": static_result.cert,
         "yara_hits": static_result.yara_hits,
-        "dynamic_observations_simulated": (
-            getattr(dynamic_result, "observations", []) if dynamic_result else []
-        ),
+        "dynamic_evidence": {
+            "status": getattr(dynamic_result, "status", "absent") if dynamic_result else "absent",
+            "observations": getattr(dynamic_result, "observations", []) if dynamic_result else [],
+        },
         "evidence_node_ids": [n.id for n in led.nodes],
     }
 
@@ -94,7 +96,17 @@ def reason(static_result, ml_result, bundle, led, provider: LLMProvider,
     evidence = build_evidence(static_result, ml_result, bundle, led, dynamic_result)
     user_data = _wrap_user_data(evidence)
 
-    raw = provider.generate_json(SYSTEM_PROMPT, user_data, VERDICT_SCHEMA)
+    with safe_span(
+        "drishti.m4.reason",
+        span_type="CHAIN",
+        inputs={"evidence": sanitize_evidence(evidence), "provider": provider.name},
+    ) as span:
+        raw = provider.generate_json(SYSTEM_PROMPT, user_data, VERDICT_SCHEMA)
+        set_safe_outputs(span, {
+            "behavioral_risk": raw.get("behavioral_risk"),
+            "evidence_refs": list(raw.get("evidence_refs", []))[:500],
+            "techniques": list(raw.get("attack_techniques", []))[:100],
+        })
 
     b = max(0.0, min(1.0, float(raw.get("behavioral_risk", 0.0))))
     claimed_refs = list(raw.get("evidence_refs", []))

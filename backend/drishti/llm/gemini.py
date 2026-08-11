@@ -4,6 +4,7 @@ they are never concatenated, which is the primary prompt-injection defense (pape
 import json
 
 from drishti.llm.provider import LLMProvider
+from drishti.observability import safe_span, set_safe_outputs
 
 
 class GeminiProvider(LLMProvider):
@@ -30,13 +31,27 @@ class GeminiProvider(LLMProvider):
     def generate_json(self, system: str, user_data: str, schema: dict) -> dict:
         from google.genai import types
 
-        resp = self._client.models.generate_content(
-            model=self.model,
-            contents=user_data,
-            config=types.GenerateContentConfig(
-                system_instruction=system,
-                response_mime_type="application/json",
-                response_schema=schema,
-            ),
-        )
-        return json.loads(resp.text)
+        with safe_span(
+            "gemini.generate_json",
+            span_type="CHAT_MODEL",
+            inputs={
+                "model": self.model,
+                "schema_fields": sorted(schema.get("properties", {}).keys()),
+                "untrusted_evidence_chars": len(user_data),
+            },
+        ) as span:
+            resp = self._client.models.generate_content(
+                model=self.model,
+                contents=user_data,
+                config=types.GenerateContentConfig(
+                    system_instruction=system,
+                    response_mime_type="application/json",
+                    response_schema=schema,
+                ),
+            )
+            result = json.loads(resp.text)
+            set_safe_outputs(span, {
+                "response_fields": sorted(result.keys()),
+                "evidence_ref_count": len(result.get("evidence_refs", [])),
+            })
+            return result

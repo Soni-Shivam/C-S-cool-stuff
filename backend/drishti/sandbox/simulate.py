@@ -7,6 +7,8 @@ unsafe and out of scope for the prototype, so this module implements the real
 observations from the static hypotheses and labels every one as SIMULATED. It
 NEVER executes the APK. The paper and UI both present these as designed-and-
 simulated, not live results."""
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 # Map a static permission-combo to the runtime behaviour it would plausibly cause.
@@ -29,6 +31,7 @@ class DynamicResult(BaseModel):
     observations: list[str] = Field(default_factory=list)
     b_dynamic: float = 0.0
     simulated: bool = True
+    status: Literal["absent", "simulated", "observed"] = "simulated"
     mitre_observed: list[str] = Field(default_factory=list)
 
 
@@ -55,3 +58,8 @@ def interrogate(static_result, ml_result, led, timestamp: str) -> DynamicResult:
             location="simulated-run", confidence=0.2, timestamp=timestamp,
         )
     return DynamicResult(observations=observations, b_dynamic=round(b_dynamic, 3), simulated=True)
+
+
+def absent_result() -> DynamicResult:
+    """Represent a deliberate lack of independently produced dynamic evidence."""
+    return DynamicResult(observations=[], b_dynamic=0.0, simulated=False, status="absent")

@@ -29,7 +29,10 @@ _TECHNIQUE_SEVERITY = {
 }
 
 
-def result_from_payload(payload: dict) -> DynamicResult:
+def result_from_payload(payload: dict, *, expected_sha256: str | None = None) -> DynamicResult:
+    artifact_sha256 = str(payload.get("sha256", "")).lower()
+    if expected_sha256 is not None and artifact_sha256 != expected_sha256.lower():
+        raise ValueError("observations artifact SHA-256 does not match the analyzed APK")
     raw = payload.get("observations", []) or []
     observations: list[str] = []
     severities: list[float] = []
@@ -55,21 +58,24 @@ def result_from_payload(payload: dict) -> DynamicResult:
         observations=observations,
         b_dynamic=round(min(1.0, top + corroboration), 3),
         simulated=False,
+        status="observed",
         mitre_observed=list(mitre_observed),
     )
 
 
-def load_real_observations(path: str | Path) -> DynamicResult:
-    return result_from_payload(json.loads(Path(path).read_text()))
+def load_real_observations(path: str | Path, *, expected_sha256: str | None = None) -> DynamicResult:
+    return result_from_payload(
+        json.loads(Path(path).read_text()), expected_sha256=expected_sha256
+    )
 
 
-def ingest_real(payload_or_path, led, timestamp: str) -> DynamicResult:
+def ingest_real(payload_or_path, led, timestamp: str, *, expected_sha256: str | None = None) -> DynamicResult:
     """Build a DynamicResult from real detonation output and append its evidence nodes."""
     if isinstance(payload_or_path, (str, Path)):
         payload = json.loads(Path(payload_or_path).read_text())
     else:
         payload = payload_or_path
-    result = result_from_payload(payload)
+    result = result_from_payload(payload, expected_sha256=expected_sha256)
 
     if not result.observations:
         led.append("dynamic_obs", "sandbox_real",

@@ -1,4 +1,5 @@
 import json
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -19,7 +20,10 @@ class DrishtiVerdict(BaseModel):
     summary: str = ""
     provider: str = "mock"
     verified: bool = False
-    dynamic_simulated: bool = True
+    dynamic_status: Literal["absent", "simulated", "observed"] = "absent"
+    # Backwards-compatible projection for older clients. New clients must use
+    # dynamic_status because False is ambiguous between observed and absent.
+    dynamic_simulated: bool = False
 
 
 class EvidenceNode(BaseModel):

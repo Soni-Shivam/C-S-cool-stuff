@@ -1,6 +1,7 @@
 # Secrets
 .env
 .env.local
+!.env.example
 *.pem
 *.key
 
@@ -18,19 +19,41 @@ build/
 backend/drishti/data/models/*.bin
 backend/drishti/data/models/*.pkl
 backend/drishti/data/models/*.joblib
+models/
 backend/drishti/data/androzoo_cache/
 backend/samples/
 *.csv
+*.csv.gz
+latest.csv.gz
+features.csv
+*.onnx
+*.tflite
+*.safetensors
 
 # Uploaded / analyzed samples (never commit APKs)
 backend/uploads/
 *.apk
+observations/
+observations*.json
+backend/quarantine/
+quarantine/
 
 # Node / Next
 node_modules/
 .next/
 out/
 frontend/.env*.local
+
+# Android / Gradle
+**/.gradle/
+**/local.properties
+**/build/
+*.aab
+
+# MLflow local stores
+mlruns/
+backend/mlruns/
+backend/mlflow.db
 
 # LaTeX build
 paper/*.aux
