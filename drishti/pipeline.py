@@ -29,12 +29,19 @@ from drishti.contracts.dynamic_trace import (
     TraceSourceKind,
 )
 from drishti.contracts.evidence import EvidenceType
+from drishti.contracts.frontier import Morph, MorphKind, MorphPlan, SandboxPlan
 from drishti.contracts.genai_verdict import GenAIVerdict
 from drishti.contracts.job import Job, JobStage, StageEvent
 from drishti.contracts.score import CompositeScore, MLPrediction, SeverityBand
 from drishti.contracts.static_report import CertificateInfo, FileMeta, StaticReport
 from drishti.ledger.store import LedgerStore
 from drishti.logging import get_logger
+from drishti.m3_dynamic.trace_source import (
+    ReplayTraceSource,
+    TraceSource,
+    TraceSourceUnavailableError,
+    resolve_trace_source,
+)
 from drishti.util import new_id, now
 
 log = get_logger(__name__)
@@ -69,6 +76,9 @@ class Context:
     settings: Settings
     ledger: LedgerStore
     on_event: Callable[[StageEvent], None] | None = None
+    #: Where dynamic traces come from. Resolved from `settings.sandbox_mode` when not
+    #: supplied, so the Replay-Mode switch is config, not a code change (T0.7).
+    trace_source: TraceSource | None = None
     #: Stage outputs, keyed by the name the API serves them under. Written as each
     #: stage completes rather than at the end, so GET /api/jobs/{id}/score can return
     #: the preliminary verdict while the sandbox is still running — which is the whole
@@ -259,19 +269,61 @@ def _stub_score(ctx: Context, which: JobStage, gamma: float) -> CompositeScore:
     )
 
 
-def _stub_sandbox(ctx: Context, which: JobStage, *, with_evasion: bool) -> DynamicTrace:
-    """Stub trace. `with_evasion` drives the conditional frontier branch.
+def _sandbox(
+    ctx: Context,
+    which: JobStage,
+    *,
+    apk_path: Path,
+    sha256: str,
+    plan: SandboxPlan,
+) -> DynamicTrace:
+    """Get a trace from the configured source, or fall back to a declared stub.
 
-    Pass 1 reports an evasion observation so the FRONTIER branch is actually
-    exercised in P0. A skeleton that never takes its conditional path has not been
-    tested — and this is the branch the whole demo narrative hangs on.
+    This is where the `TraceSource` abstraction earns its keep: swapping live for
+    replay is a config change, and P4 replaces `LiveSandboxSource` without touching
+    this function.
+
+    The fallback is NOT silent. An unavailable source yields a stub carrying
+    `partial=True` and an `errors` entry, because an empty trace would assert that the
+    sample did nothing — and "we could not observe it" is a different statement.
     """
+    trace: DynamicTrace | None = None
+    source = ctx.trace_source
+    if source is not None:
+        try:
+            if isinstance(source, ReplayTraceSource):
+                trace = source.run(apk_path, plan, sha256=sha256)
+            else:
+                trace = source.run(apk_path, plan)
+        except TraceSourceUnavailableError as exc:
+            log.info("sandbox_source_unavailable", stage=which.value, reason=str(exc))
+
+    if trace is None:
+        trace = _stub_trace(which, with_evasion=not plan.morphs)
+
     node = ctx.ledger.append(
         type=EvidenceType.API_TRACE,
-        source_tool="m3_dynamic:stub",
-        content={"stage": which.value, "note": "stub"},
-        confidence=0.0,
+        source_tool=f"m3_dynamic:{trace.source.value}",
+        content={
+            "stage": which.value,
+            "detonated": trace.detonated,
+            "outcome": trace.outcome,
+            "synthetic": trace.synthetic,
+            "api_events": len(trace.api_events),
+            "evasion_observations": len(trace.evasion_observations),
+        },
+        confidence=0.0 if trace.synthetic else 1.0,
     )
+    return trace.model_copy(update={"ledger_refs": (*trace.ledger_refs, node.id)})
+
+
+def _stub_trace(which: JobStage, *, with_evasion: bool) -> DynamicTrace:
+    """Declared stub for when no trace source can produce anything.
+
+    Pass 1 reports an evasion observation so the FRONTIER branch is exercised even
+    with no fixture present. A skeleton that never takes its conditional path has not
+    been tested — and this is the branch the whole demo narrative hangs on.
+    """
     observations: tuple[EvasionObservation, ...] = ()
     if with_evasion:
         observations = (
@@ -290,23 +342,57 @@ def _stub_sandbox(ctx: Context, which: JobStage, *, with_evasion: bool) -> Dynam
         detonated=False,
         outcome="inconclusive",
         evasion_observations=observations,
+        synthetic=True,
         partial=True,
-        errors=(f"stub: M3 {which.value} lands in P4",),
-        ledger_refs=(node.id,),
+        errors=(
+            f"stub: no trace source available for {which.value}; "
+            "M3 lands in P4 and no sample was executed",
+        ),
     )
 
 
-def _stub_frontier(ctx: Context, trace: DynamicTrace) -> str:
-    node = ctx.ledger.append(
+def _stub_frontier(ctx: Context, trace: DynamicTrace) -> MorphPlan:
+    """Derive a morph plan from what pass 1 actually observed.
+
+    Even as a stub this reads the evasion observations rather than inventing a plan:
+    a morph with no derivation is a guess, and the frontier's whole claim is that it
+    responds to observed behaviour. P5 replaces the LLM-generated plan; the derivation
+    requirement does not change.
+    """
+    wanted = tuple(
+        obs.queried
+        for obs in trace.evasion_observations
+        if obs.probe_kind == "installed_package" and obs.result == "MISS"
+    )
+    plan = MorphPlan(
+        id=new_id("morph"),
+        morphs=(
+            Morph(
+                kind=MorphKind.INSTALL_PACKAGES,
+                params={"packages": list(wanted)},
+                rationale=(
+                    f"pass 1 probed {len(wanted)} package(s) and stalled on MISS"
+                    if wanted
+                    else "stub: no package probe observed"
+                ),
+                derived_from=trace.ledger_refs,
+            ),
+        ),
+        generated_by="m5_frontier:stub",
+        expected_effect="target packages appear installed, so the payload proceeds",
+    )
+    ctx.ledger.append(
         type=EvidenceType.MORPH_ACTION,
         source_tool="m5_frontier:stub",
         content={
-            "note": "stub",
+            "plan_id": plan.id,
+            "morph_kinds": [m.kind.value for m in plan.morphs],
             "derived_from_observations": len(trace.evasion_observations),
+            "human_reviewed": False,
         },
         confidence=0.0,
     )
-    return node.id
+    return plan
 
 
 def _stub_report(ctx: Context, sha256: str) -> str:
@@ -334,6 +420,11 @@ def run_pipeline(
     "<5 min initial verdict" claim honest rather than an average.
     """
     ctx.ledger.open(job.id)
+    if ctx.trace_source is None:
+        ctx.trace_source = resolve_trace_source(
+            ctx.settings.sandbox_mode,
+            detonator_instance=ctx.settings.gcp_detonator_instance,
+        )
     run = _Run(job=job)
 
     try:
@@ -358,7 +449,13 @@ def run_pipeline(
         run.with_stage(JobStage.SCORE_PRELIM, preliminary=preliminary)
 
         with stage(run, ctx, JobStage.SANDBOX_1):
-            trace = _stub_sandbox(ctx, JobStage.SANDBOX_1, with_evasion=True)
+            trace = _sandbox(
+                ctx,
+                JobStage.SANDBOX_1,
+                apk_path=apk_path,
+                sha256=job.sha256,
+                plan=SandboxPlan(duration_s=ctx.settings.sandbox_duration_s, pass_num=1),
+            )
             ctx.record("dynamic", trace)
 
         # §7.1: the frontier runs only when pass 1 did not detonate AND there is an
@@ -366,10 +463,20 @@ def run_pipeline(
         # be a guess, which is precisely the claim the frontier is not making.
         if not trace.detonated and trace.evasion_observations:
             with stage(run, ctx, JobStage.FRONTIER):
-                _stub_frontier(ctx, trace)
+                morph_plan = _stub_frontier(ctx, trace)
 
             with stage(run, ctx, JobStage.SANDBOX_2):
-                trace = _stub_sandbox(ctx, JobStage.SANDBOX_2, with_evasion=False)
+                trace = _sandbox(
+                    ctx,
+                    JobStage.SANDBOX_2,
+                    apk_path=apk_path,
+                    sha256=job.sha256,
+                    plan=SandboxPlan(
+                        duration_s=ctx.settings.sandbox_duration_s,
+                        morphs=morph_plan.morphs,
+                        pass_num=2,
+                    ),
+                )
                 ctx.record("dynamic", trace)
 
         with stage(run, ctx, JobStage.GENAI_FULL):

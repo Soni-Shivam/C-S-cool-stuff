@@ -24,6 +24,7 @@ import pytest
 
 from drishti import contracts as C
 from drishti.contracts.base import DrishtiModel
+from drishti.m3_dynamic.trace_source import FixtureProvenance, TraceFixture
 
 SHA = "a" * 64
 
@@ -241,6 +242,20 @@ FACTORIES: dict[str, Any] = {
         id="morph_01932ab90e2f", generated_by="gemini:adversarial_elicitor"
     ),
     "SandboxPlan": lambda: C.SandboxPlan(hooks=("sms_read", "dex_load"), duration_s=120),
+    # ── replay fixture format (drishti/m3_dynamic/trace_source.py) ──
+    # On-disk format, so it must round-trip like any other serialised contract: a
+    # fixture that cannot be re-read is a fixture that fails at the H40 tripwire.
+    "FixtureProvenance": lambda: FixtureProvenance(
+        kind="hand_authored",
+        note="P0 placeholder; nothing here was measured.",
+        authored_at="2026-08-14T00:00:00.000Z",
+    ),
+    "TraceFixture": lambda: TraceFixture(
+        sha256="deadbeef" * 8,
+        provenance=FixtureProvenance(kind="captured", source_sha256="a" * 64),
+        pre_morph={"detonated": False},
+        post_morph={"detonated": True},
+    ),
     # ── job ──
     "StageEvent": lambda: C.StageEvent(
         stage=C.JobStage.STATIC, status="completed", at="2026-08-13T00:00:00.000Z", duration_ms=8200

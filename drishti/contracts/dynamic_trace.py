@@ -164,6 +164,15 @@ class DynamicTrace(AnalyserResult):
     containment_verified: bool = False
     captured_at: str | None = None
 
+    #: True when this trace was **hand-authored**, not captured from a real execution.
+    #:
+    #: `source == REPLAY` only says the trace came from a fixture — and replaying a
+    #: real captured trace is legitimate and disclosed. This field separates that from
+    #: the P0 case, where the fixture contains plausible values somebody typed. The
+    #: report's Limitations section is generated from flags like this one, so a
+    #: hand-authored trace cannot silently present itself as a measurement.
+    synthetic: bool = False
+
 
 # ─── Detonator wire contract ────────────────────────────────────────────────────
 # Stricter than DrishtiModel on purpose: `strict=True` refuses type coercion, so a

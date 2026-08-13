@@ -32,7 +32,7 @@ Established by inspection on 2026-08-13, not assumed.
 - [x] T0.4  Evidence Ledger                        DONE  H02  tests: 178/178 · CLI verified
 - [x] T0.5  Job runner + pipeline skeleton          DONE  H03  11 stages · chain verified
 - [x] T0.6  API surface                            DONE  H04  19 routes frozen · tests: 235/235
-- [ ] T0.7  TraceSource abstraction + fixture      TODO
+- [x] T0.7  TraceSource abstraction + fixture      DONE  H05  pre/post-morph arc · tests: 261/261
 - [ ] T0.8  UI shell                               TODO
 - [ ] T0.9  Sandbox VM groundwork                  TODO  ← now GCP, see CLAUDE.md
 - [ ] T0.10 Ingest module M1, for real             TODO
@@ -173,6 +173,10 @@ Established by inspection on 2026-08-13, not assumed.
   `{"stage": ...}` for not-yet-produced artefacts. Frozen-but-unbuilt features (report
   T6.3, YARA T6.1, STIX T6.2) return **501** with the owning task instead, because polling
   a 404 is reasonable and polling something that will never exist is not.
+- **`DynamicTrace.synthetic` added (T0.7).** `source == REPLAY` cannot distinguish
+  replaying a real captured trace from replaying a hand-authored one, and the report's
+  Limitations section is generated from flags like this. The loader derives it from the
+  fixture's `provenance.kind` and overwrites whatever the JSON claims. Addendum A7.
 - **`EvidenceType.REPORT_GENERATED` added.** The REPORT stage was mis-typed as
   `ANALYST_ACTION`, which means "a human confirmed something" — it made a rendering step
   indistinguishable from a human decision in the ledger, and the confirmation gate's audit

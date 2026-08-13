@@ -1,0 +1,243 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+  "provenance": {
+    "kind": "hand_authored",
+    "note": "P0 placeholder written by hand to exercise the pre/post-morph arc. Values are plausible, modelled on the Anatsa-cluster behaviour recorded in docs/CARRIED_FINDINGS.md, but NOTHING here was measured. Phase 4 replaces this file with a real captured trace under the real sample's sha256.",
+    "authored_at": "2026-08-14T00:00:00.000Z"
+  },
+  "pre_morph": {
+    "run_id": "run_placeholder_pre",
+    "source": "replay",
+    "detonated": false,
+    "detonation_reason": null,
+    "outcome": "inconclusive",
+    "duration_ms": 120000,
+    "api_events": [
+      {
+        "t_ms": 180,
+        "api": "android.app.ApplicationPackageManager.getPackageInfo",
+        "args": [
+          "com.sbi.yono",
+          "0"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [
+          "c.a.d.h",
+          "c.a.d.check",
+          "c.a.d.onCreate"
+        ],
+        "count": 1
+      },
+      {
+        "t_ms": 195,
+        "api": "android.app.ApplicationPackageManager.getPackageInfo",
+        "args": [
+          "com.icicibank.pockets",
+          "0"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [
+          "c.a.d.h",
+          "c.a.d.check"
+        ],
+        "count": 1
+      },
+      {
+        "t_ms": 210,
+        "api": "android.telephony.TelephonyManager.getSimOperatorName",
+        "args": [],
+        "retval": "",
+        "thread": "main",
+        "stack": [
+          "c.a.d.profile"
+        ],
+        "count": 2
+      }
+    ],
+    "network_flows": [],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [
+      {
+        "probe_kind": "installed_package",
+        "queried": "com.sbi.yono",
+        "result": "MISS",
+        "t_ms": 180,
+        "followed_by_stall": true,
+        "stall_duration_ms": 3200,
+        "inferred_requirement": "a target banking application must be installed",
+        "stack": [
+          "c.a.d.h",
+          "c.a.d.check"
+        ]
+      },
+      {
+        "probe_kind": "sim_country",
+        "queried": "getSimOperatorName",
+        "result": "MISS",
+        "t_ms": 210,
+        "followed_by_stall": true,
+        "stall_duration_ms": 3200,
+        "inferred_requirement": "the handset must report an Indian mobile operator",
+        "stack": [
+          "c.a.d.profile"
+        ]
+      }
+    ],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": null,
+    "vm_instance_id": null,
+    "harness_version": null,
+    "containment_verified": false,
+    "captured_at": null,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {
+    "run_id": "run_placeholder_post",
+    "source": "replay",
+    "detonated": true,
+    "detonation_reason": "exfil_observed",
+    "outcome": "completed",
+    "duration_ms": 180000,
+    "api_events": [
+      {
+        "t_ms": 150,
+        "api": "android.app.ApplicationPackageManager.getPackageInfo",
+        "args": [
+          "com.sbi.yono",
+          "0"
+        ],
+        "retval": "PackageInfo{com.sbi.yono}",
+        "thread": "main",
+        "stack": [
+          "c.a.d.h",
+          "c.a.d.check"
+        ],
+        "count": 1
+      },
+      {
+        "t_ms": 2400,
+        "api": "dalvik.system.DexClassLoader.<init>",
+        "args": [
+          "/data/data/c.a.d/cache/of87oaufaldjawdjkw.dex"
+        ],
+        "retval": "DexClassLoader@1f2e",
+        "thread": "main",
+        "stack": [
+          "c.a.d.stage2"
+        ],
+        "count": 1
+      },
+      {
+        "t_ms": 4100,
+        "api": "javax.crypto.Cipher.doFinal",
+        "args": [
+          "<48 bytes>"
+        ],
+        "retval": "<48 bytes>",
+        "thread": "main",
+        "stack": [
+          "c.a.d.enc"
+        ],
+        "count": 37
+      },
+      {
+        "t_ms": 5200,
+        "api": "android.telephony.SmsManager.sendTextMessage",
+        "args": [
+          "+910000000000",
+          "null",
+          "[REDACTED:MESSAGE_BODY]"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [
+          "c.a.d.sms"
+        ],
+        "count": 1
+      }
+    ],
+    "network_flows": [
+      {
+        "t_ms": 4600,
+        "method": "POST",
+        "url": "http://c2.invalid/api/v1/reg",
+        "host": "c2.invalid",
+        "req_headers": {
+          "content-type": "application/octet-stream"
+        },
+        "req_body_preview": "<encrypted, 48 bytes>",
+        "req_body_sha256": null,
+        "status": 200,
+        "resp_body_preview": "{\"cmd\":\"idle\"}",
+        "synthesised": true,
+        "tls_intercepted": false
+      }
+    ],
+    "decrypted_blobs": [
+      {
+        "t_ms": 4100,
+        "algorithm": "AES/CBC/PKCS5Padding",
+        "plaintext_preview": "{\"imei\":\"[REDACTED]\",\"sms_count\":42,\"target\":\"com.sbi.yono\"}",
+        "plaintext_sha256": null,
+        "length_bytes": 58,
+        "contains_url": false,
+        "contains_dex_magic": false,
+        "occurrences": 1
+      }
+    ],
+    "dex_loads": [
+      {
+        "t_ms": 2400,
+        "loader": "DexClassLoader",
+        "path": "/data/data/c.a.d/cache/of87oaufaldjawdjkw.dex",
+        "sha256": null,
+        "size_bytes": 184320,
+        "in_original_apk": false,
+        "dumped_to": null
+      }
+    ],
+    "file_writes": [
+      {
+        "t_ms": 2350,
+        "path": "/data/data/c.a.d/cache/of87oaufaldjawdjkw.dex",
+        "size_bytes": 184320,
+        "sha256": null,
+        "is_executable_content": true,
+        "deleted_after": false
+      }
+    ],
+    "evasion_observations": [
+      {
+        "probe_kind": "installed_package",
+        "queried": "com.sbi.yono",
+        "result": "HIT",
+        "t_ms": 150,
+        "followed_by_stall": false,
+        "stall_duration_ms": null,
+        "inferred_requirement": "a target banking application must be installed",
+        "stack": [
+          "c.a.d.h",
+          "c.a.d.check"
+        ]
+      }
+    ],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": null,
+    "vm_instance_id": null,
+    "harness_version": null,
+    "containment_verified": false,
+    "captured_at": null,
+    "errors": [],
+    "partial": false
+  }
+}

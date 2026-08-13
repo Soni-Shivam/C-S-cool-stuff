@@ -219,3 +219,93 @@ def test_unknown_job_stream_is_empty_not_hanging(settings) -> None:
         assert list(runner.stream("job_nonexistent", timeout_s=1)) == []
     finally:
         runner.shutdown()
+
+
+# ── replay mode through the whole pipeline (T0.7) ────────────────────────────
+DEMO_SHA = "deadbeef" * 8
+
+
+def test_replay_fixture_drives_the_full_frontier_arc(settings, apk) -> None:
+    """The demo's central beat, end to end, in replay mode.
+
+    Pass 1 does not detonate and reports an evasion observation; the frontier derives a
+    morph plan from that observation; pass 2 detonates. This is the arc that has to work
+    identically whether the sandbox is live or replayed — which is the entire reason
+    `TraceSource` exists at hour zero (00_GUIDING_MAP.md §3).
+    """
+    store = LedgerStore(settings.db_path, settings.ledger_key_path)
+    events: list = []
+    # The fixture is keyed by sha256, so the job must claim the fixture's hash. In P4
+    # the fixture is rewritten under a real sample's hash and this indirection vanishes.
+    job = _job(sha256=DEMO_SHA)
+    ctx = Context(settings=settings, ledger=store, on_event=events.append)
+
+    finished = run_pipeline(job, ctx, apk_path=apk)
+    assert finished.stage == JobStage.DONE, finished.error
+
+    trace = ctx.artefacts["dynamic"]
+    assert trace.detonated is True, "pass 2 should detonate after morphs are applied"
+    assert trace.detonation_reason == "exfil_observed"
+    assert trace.morphs_applied == ("install_packages",)
+    assert trace.source.value == "replay"
+
+    stages = [e.stage for e in events if e.status == "completed"]
+    assert JobStage.FRONTIER in stages and JobStage.SANDBOX_2 in stages
+    assert store.verify_chain(job.id).ok is True
+    store.close()
+
+
+def test_replayed_trace_is_disclosed_as_synthetic(settings, apk) -> None:
+    """A hand-authored fixture must reach the pipeline still declaring what it is.
+
+    If this ever passes with synthetic=False, the report's Limitations section would
+    silently start presenting typed-up values as measurements.
+    """
+    store = LedgerStore(settings.db_path, settings.ledger_key_path)
+    ctx = Context(settings=settings, ledger=store)
+    run_pipeline(_job(sha256=DEMO_SHA), ctx, apk_path=apk)
+
+    trace = ctx.artefacts["dynamic"]
+    assert trace.synthetic is True
+    assert trace.partial is True
+    assert any("hand-authored" in e for e in trace.errors)
+    store.close()
+
+
+def test_frontier_morphs_are_derived_from_observed_probes(settings, apk) -> None:
+    """A morph with no derivation is a guess.
+
+    The stub frontier reads pass 1's evasion observations rather than inventing a
+    package list, because the frontier's claim is that it responds to observed
+    behaviour — and that claim has to be checkable.
+    """
+    from drishti.contracts.evidence import EvidenceType
+
+    store = LedgerStore(settings.db_path, settings.ledger_key_path)
+    job = _job(sha256=DEMO_SHA)
+    run_pipeline(job, Context(settings=settings, ledger=store), apk_path=apk)
+
+    morphs = store.query(job_id=job.id, type=EvidenceType.MORPH_ACTION)
+    assert len(morphs) == 1
+    assert morphs[0].content["derived_from_observations"] >= 1
+    assert morphs[0].content["human_reviewed"] is False
+    store.close()
+
+
+def test_no_fixture_falls_back_to_a_declared_stub(settings, apk) -> None:
+    """An unknown sample must not silently look like a clean one.
+
+    The fallback trace carries partial=True and an error naming why, because an empty
+    trace asserts the sample did nothing — a different statement from "we could not
+    observe it".
+    """
+    store = LedgerStore(settings.db_path, settings.ledger_key_path)
+    ctx = Context(settings=settings, ledger=store)
+    run_pipeline(_job(sha256="c" * 64), ctx, apk_path=apk)
+
+    trace = ctx.artefacts["dynamic"]
+    assert trace.detonated is False
+    assert trace.outcome == "inconclusive"
+    assert trace.partial is True
+    assert any("no trace source available" in e for e in trace.errors)
+    store.close()

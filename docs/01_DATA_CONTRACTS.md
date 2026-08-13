@@ -729,3 +729,28 @@ confirming one action produces exactly one `analyst_action` node.
 
 `REPORT_GENERATED` attests that a report was produced from a given chain at a given
 time, which is provenance worth keeping in its own right.
+
+### A7. `DynamicTrace.synthetic` (added T0.7)
+
+§3 gives `DynamicTrace.source` three values, and `REPLAY` covers two materially
+different situations that must not be conflated:
+
+* replaying a **real captured trace** from a real detonation — legitimate, and
+  disclosed on screen as a replay per `00_GUIDING_MAP.md` §3;
+* replaying a **hand-authored fixture** whose values somebody typed — which is the P0
+  state, and which is not a measurement at all.
+
+`source` alone cannot tell those apart, and `CLAUDE.md`'s honesty requirements list
+"synthetic" as one of the flags the report's Limitations section is generated from. So
+`synthetic: bool = False` was added, meaning *this trace was hand-authored, not
+captured from an execution*.
+
+`ReplayTraceSource` derives it from the fixture's own `provenance.kind` and **overwrites
+whatever the JSON says**, alongside forcing `source = REPLAY`. Neither disclosure
+depends on whoever edits the fixture remembering to set a field. A hand-authored trace
+additionally gets `partial = True` and a disclosure appended to `errors`.
+
+The fixture file format (`TraceFixture`, `FixtureProvenance`) lives in
+`drishti/m3_dynamic/trace_source.py` rather than `contracts/`, because it is an on-disk
+format rather than a module boundary — but it is a `DrishtiModel` and is covered by the
+round-trip test like any other serialised contract.
