@@ -8,6 +8,11 @@ Source: `v1-reference/docs/ONBOARDING_STATUS.md` §5–§8, written 2026-08-13 a
 state. **Everything here is a v1 claim.** v2 has independently verified only what is marked
 ✅ VERIFIED-BY-V2.
 
+The 14 real `ObservationArtifact` files were rescued off the detonator disk on 2026-08-14 and
+are archived at `gs://drishti-v2-260814-artifacts/v1-provenance/observations/`, so the claims
+below can be re-checked against the data rather than taken on trust. Two are committed as CI
+fixtures.
+
 ---
 
 ## Part 1 — Bugs that were silently wrong. Do not reintroduce these.
@@ -52,10 +57,16 @@ unsupported.
 *"no benign controls detonated, so discriminative power cannot be measured"* — keep that line
 until it is false.
 
-### H2 — Nine executed samples is a pilot, not an evaluation
+### H2 — Nine executed samples is a pilot, not an evaluation · ✅ VERIFIED-BY-V2
 Honest disposition of 14 submitted: **7 executed with behaviour captured**, 2 executed and
 emitted nothing (stalling), 1 installed but never started (receiver-only, no launcher), 4 never
 installed (API 30 refused).
+
+**v2 re-derived this from the 14 rescued artifacts themselves** (2026-08-14): outcomes are
+7 `completed` / 2 `inconclusive` / 5 `failed`; exactly 7 carry observations and 2 executed
+with zero. Failure codes: 4 × `install_failed`, 1 × `internal_error`. So **9 executed, 7 with
+data** is confirmed, and v1's "1 receiver-only + 4 never installed" is the `internal_error`
+plus the four `install_failed`.
 
 A batch log line reading `detonated=12` only meant "an artifact file was written" — it counted
 install failures. **Never quote 12. It is 9 executed, 7 with data.** No percentage — least of
@@ -101,6 +112,14 @@ measurement in `STATUS.md`.
   across runs. → T0.4 `load_or_create_key()`.
 - API keys were shared in plaintext. **Rotate.** ✅ VERIFIED-BY-V2 (both still present in v1's
   `.env`, still unrotated).
+- **Additional finding by v2 — the v2 wire contract could not read v1's real output.** All 14
+  rescued artifacts failed `ObservationArtifact` validation, because the port dropped three
+  fields the harness actually emits: `duration_s`, `diagnostics` (which carries the containment
+  manifest reference) and `mitre_observed`. Nothing would have caught this until the first P4
+  ingestion. Fixed, and two real artifacts are now committed as CI fixtures
+  (`tests/contract/test_real_observation_artifacts.py`) so it cannot regress. Addendum A8.
+  Notably, **every nested model matched exactly** — the port was faithful below the top level.
+  ✅ VERIFIED-BY-V2
 - **Additional finding by v2:** five of v1's most valuable files were **never committed** —
   they existed only in the working tree (`builder_setup.sh` 76→195 lines,
   `verify_containment.py` 91→191, `androzoo_extract.py` 101→220, `ingest.py` 65→107,
@@ -116,14 +135,14 @@ from real samples on real hardware.
 
 | Finding | Detail | Why it matters | v2 task |
 |---|---|---|---|
-| **Custom-crypto defeat** | `com.eg.android.AlipayGphone` (VT 32) called `Cipher.doFinal` **1,925 times in 60s** with length-1 buffers — byte-at-a-time string deobfuscation — and exhibited `T1521` as its **only** technique | It defeats *all* network TLS inspection while the memory hook still yields plaintext. This is the anti-evasion claim, demonstrated | T4.2 |
+| **Custom-crypto defeat** ✅ VERIFIED-BY-V2 | `com.eg.android.AlipayGphone` called `Cipher.doFinal` **1,925 times**, and `T1521` is its **only** technique (`mitre_observed == ('T1521',)`, and all 1,925 events carry that id). **Correction: the run lasted 103.2s, not 60s** — so the rate is **18.6 ops/s, not the "32 crypto ops/second" v1 claimed.** The count is right; the window was wrong. Use 1,925 events / 103.2s. | It defeats *all* network TLS inspection while the memory hook still yields plaintext. This is the anti-evasion claim, demonstrated | T4.2 |
 | **Runtime unpacking + victim profiling** | `us.mobileandroidangryfix.mbankingfixflash` (VT 39) dropped a runtime-unpacked DEX (`cache/of87oaufaldjawdjkw.dex`, `T1407`) and read `getSimOperatorName` twice (`T1426`) | Regional victim profiling is the *empirical justification* for JIT environment synthesis — the frontier is a response to observed behaviour, not a guess | T5.1 |
 | **Environment-aware stalling** | A sibling Alipay sample produced **zero** observations → `outcome=inconclusive` | Correctly treated as inconclusive, **never benign**. Stalling is indistinguishable from a clean app if you let it be | T4.6 |
 | **Anatsa cluster signature** | 4/4 droppers → exactly `T1407 + T1426` | A reproducible behavioural fingerprint across a family | T6.1 |
 | **YARA campaign rule quality** | Compiles under real `yara-python`; **4/5 sibling recall, 0/6 false positives** — including `com.bankofamerica.mobile` and `com.icicibank.pockets` | A bank-trojan rule must never match a bank's own app. Keys on package-name token sets, not one hash | T6.1 |
 | **Zero-day escalator** | A novel dropper scoring Low/31 escalates to **High/65** with a review flag and a "unverified rather than safe" warning, while explicitly **not** claiming a known-family match | Zero-days cannot land quietly in LOW | T2.5 |
 | **Signals-disagree case** | F-Droid: ML said malicious (`p_cal=0.836`); the GenAI layer identified the legitimate app store and explained the false positive → 56/100 Medium, **confidence 0.25 Low** | Disagreement lowers *confidence*, never the score. The design principle, executable | T2.7 |
-| **Lab proven** | Image `drishti-m3-tools-v1`; sealed runtime independently confirmed contained (curl to internet fails from inside); **snapshot restore semantics proven**, not assumed — a dirty marker vanishes after restore | T0.9's go/no-go is already answered once | T0.9 |
+| **Lab proven** ✅ VERIFIED-BY-V2 | Image `drishti-m3-tools-v1`; sealed runtime independently confirmed contained; **snapshot restore semantics proven**, not assumed. v2 confirmed from the artifacts: every `completed` run carries `containment_verified=true`, `sample_kind=vetted_malware`, `snapshot.before_restore=passed`, `snapshot.after_restore=passed`, `package_absent_after=true` — which is what rules out cross-sample contamination | T0.9's go/no-go is already answered once | T0.9 |
 
 ---
 

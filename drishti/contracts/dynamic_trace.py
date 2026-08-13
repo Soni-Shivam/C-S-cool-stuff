@@ -300,3 +300,16 @@ class ObservationArtifact(StrictWireModel):
     metadata: HarnessMetadata
     started_at: str
     finished_at: str
+    # ── fields the real harness emits (reconciled from 14 rescued artifacts, A8) ──
+    # `extra="forbid"` rejected every real artifact until these existed. A contract
+    # that cannot read the data it was designed for is the wrong contract.
+    #
+    #: Wall-clock seconds spent on this sample. Redundant with started_at/finished_at,
+    #: but the harness reports it and a reader should not have to recompute it.
+    duration_s: float | None = Field(default=None, strict=False)
+    #: Free-text harness notes, e.g. "containment:<manifest-id>; hooks completed".
+    #: Kept because it carries the containment reference for the run.
+    diagnostics: tuple[str, ...] = Field(default=(), strict=False)
+    #: Distinct MITRE technique ids seen in this run — a summary of `observations`,
+    #: emitted by the harness so a batch report does not have to re-derive it.
+    mitre_observed: tuple[str, ...] = Field(default=(), strict=False)

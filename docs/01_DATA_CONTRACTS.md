@@ -754,3 +754,26 @@ The fixture file format (`TraceFixture`, `FixtureProvenance`) lives in
 `drishti/m3_dynamic/trace_source.py` rather than `contracts/`, because it is an on-disk
 format rather than a module boundary — but it is a `DrishtiModel` and is covered by the
 round-trip test like any other serialised contract.
+
+### A8. `ObservationArtifact` reconciled against real harness output (T0.7 / rescue)
+
+The wire contract was ported from v1 by reading its source. When the **14 real artifacts**
+were finally rescued off the detonator disk (2026-08-14) and run through it, **all 14
+failed validation** — `extra="forbid"` rejecting three fields the harness genuinely
+emits and the port had dropped:
+
+| Field | What it is | Why keep it |
+|---|---|---|
+| `duration_s` | wall-clock seconds for the sample | Redundant with `started_at`/`finished_at`, but the harness reports it and a reader should not have to recompute it. It is also what corrected v1's "1,925 events in 60s" claim to 103.2s. |
+| `diagnostics` | free-text harness notes | Carries the containment-manifest reference for the run (`"containment:<id>; hooks completed"`). |
+| `mitre_observed` | distinct technique ids for the run | The harness's own summary of `observations`; a batch report keys on it. |
+
+All three are `Field(strict=False)` on the collections for the reason in A2.
+
+**Every nested model — `ObservationEvent`, `FailureRecord`, `SnapshotLifecycle`,
+`HarnessMetadata` — matched the real data field-for-field.** The drift was entirely at the
+top level.
+
+Two real artifacts are now committed at `data/fixtures/observations/` and validated in CI
+(`tests/contract/test_real_observation_artifacts.py`). A contract that cannot read the data
+it was designed for is the wrong contract, and only real data catches that.

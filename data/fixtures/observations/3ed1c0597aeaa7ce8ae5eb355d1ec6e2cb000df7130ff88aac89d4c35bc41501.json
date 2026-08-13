@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "sha256": "3ed1c0597aeaa7ce8ae5eb355d1ec6e2cb000df7130ff88aac89d4c35bc41501",
+  "package": "com.allen.mp",
+  "simulated": false,
+  "outcome": "failed",
+  "started_at": "2026-08-13T10:30:16.365319Z",
+  "finished_at": "2026-08-13T10:30:42.713131Z",
+  "duration_s": 26.347812,
+  "metadata": {
+    "harness_version": "m3-harness-1.0.0",
+    "hook_version": "m3-hooks-1.0.0",
+    "emulator_image": "drishti-m3-tools-v1",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "4399466e54e5f45bf7b76dfa1a0ce3e48ea17518a3e1ba129908215a720d5c76",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-13T10:30:16.399876Z"
+  },
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "observations": [],
+  "failures": [
+    {
+      "code": "install_failed",
+      "stage": "install",
+      "message": "APK installation failed",
+      "occurred_at": "2026-08-13T10:30:39.744445Z"
+    }
+  ],
+  "diagnostics": [],
+  "mitre_observed": []
+}

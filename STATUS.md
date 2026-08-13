@@ -6,7 +6,8 @@ Protocol: `docs/00_GUIDING_MAP.md` §13.
 
 - **Started:** 2026-08-13 · **Clock:** H00
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
-- **Phase:** P0 FOUNDATIONS (not started)
+- **Phase:** P0 FOUNDATIONS — T0.1–T0.7 done; T0.8/T0.9/T0.10 remaining
+- **Narrative log:** see `PROGRESS.md`
 
 ---
 
@@ -17,7 +18,7 @@ Established by inspection on 2026-08-13, not assumed.
 | Item | State |
 |---|---|
 | GCP (v1, legacy) | `drishti-m3-08130038` / `asia-south1-a`; image `drishti-m3-tools-v1`; VMs `drishti-detonator`, `m3-control-builder`, `m3-extractor` were **running**; **0 buckets, 0 snapshots** → all lab output was on `auto_delete=true` disks |
-| GCP (v2) | Not yet created. Target: fresh project, VPCs `drishti-build` (NAT) + `drishti-runtime` (no NAT, default-deny egress) |
+| GCP (v2) | **`drishti-v2-260814`** created, billing linked, compute/IAP/storage/oslogin enabled. Buckets `-corpus`/`-artifacts`/`-models` in `asia-south1` (private, versioned). VPCs, firewall, Packer image and detonator **not built yet** |
 | Secrets | `ANDROZOO_API_KEY`, `GEMINI_API_KEY` present in v1's `.env` but **were shared in plaintext → must be rotated**; `LEDGER_SIGNING_KEY` was empty |
 | v1 corpus list | `v1-reference/backend/samples.csv`, 6,000 rows, 3000/3000 balanced — **but split contaminated**: 1,235 rows (20.6%) dated 1980/81 all in train, 23 rows dated 2039–2107 all in test; only 62 rows from 2024, 55 from 2025 |
 | Test baseline | v1 claimed 124 tests passing. **Not independently verified by v2.** Do not quote it. |
@@ -117,9 +118,10 @@ Established by inspection on 2026-08-13, not assumed.
       - [x] Snapshot all 4 boot disks                      DONE  H00  4/4 READY
             `v1-rescue-{drishti-detonator,m3-extractor,m3-control-builder,m3-detonator-debug}-20260813`
             auto_delete cliff removed; disks recoverable even if instances are deleted
-      - [ ] Copy 9 detonation artifacts + manifests → GCS   TODO  blocked: v2 project not created
-      - [ ] Copy v1 feature CSV + samples.csv → GCS         TODO  blocked: v2 project not created
-      - [ ] Stop the 3 running VMs (~$1/hr)                 TODO  after copy-off
+      - [x] Copy 14 detonation artifacts + 3 attestations   DONE  H06  gs://drishti-v2-260814-artifacts/v1-provenance/
+      - [x] Copy samples.csv → GCS                          DONE  H05  gs://drishti-v2-260814-corpus/v1-provenance/
+      - [x] Stop all legacy VMs                             DONE  H05  4/4 TERMINATED, disks+snapshots READY
+      - [ ] Copy v1 feature CSV off m3-extractor             TODO  provenance only; corpus is being re-extracted
 
 ---
 

@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "sha256": "002a5b4f6b2a86eb739a6035e524dc26877a3cc89902691f741d979733d4c30e",
+  "package": "com.daihaoer.SMSjoke",
+  "simulated": false,
+  "outcome": "completed",
+  "started_at": "2026-08-13T10:25:37.146315Z",
+  "finished_at": "2026-08-13T10:27:17.165268Z",
+  "duration_s": 100.018953,
+  "metadata": {
+    "harness_version": "m3-harness-1.0.0",
+    "hook_version": "m3-hooks-1.0.0",
+    "emulator_image": "drishti-m3-tools-v1",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "4399466e54e5f45bf7b76dfa1a0ce3e48ea17518a3e1ba129908215a720d5c76",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-13T10:25:37.165937Z"
+  },
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Device property read: getDeviceId",
+      "mitre": "T1426",
+      "detail": "[REDACTED:DEVICE_VALUE]",
+      "source_hook": "TelephonyManager.getDeviceId",
+      "redacted": true,
+      "occurred_at": "2026-08-13T08:20:02.138000Z"
+    }
+  ],
+  "failures": [],
+  "diagnostics": [
+    "containment:7618811088902044349; hooks completed"
+  ],
+  "mitre_observed": [
+    "T1426"
+  ]
+}

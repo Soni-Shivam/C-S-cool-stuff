@@ -11,7 +11,13 @@
 # which is why the artifact lives in canary/dist/ and not canary/app/build/.
 !canary/dist/*.apk
 data/samples/
-observations/
+# Root-anchored: bare `observations/` also matched data/fixtures/observations/, which
+# holds REAL rescued ObservationArtifacts committed on purpose as regression fixtures
+# (tests/contract/test_real_observation_artifacts.py). Detonation output lands on the
+# sealed VM, never here, so the blanket rule bought nothing and silently excluded the
+# one place observation JSON belongs.
+/observations/
+v1-reference/**/observations/
 
 # ─── Secrets ──────────────────────────────────────────────────────────────────
 .env
