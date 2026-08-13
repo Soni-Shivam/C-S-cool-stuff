@@ -82,9 +82,17 @@ asyncio_mode = "auto"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-# v1-reference/ is a frozen historical copy. Linting it produces 140 findings for
-# code nobody will fix — v1-reference/README.md rule 3 says do not fix bugs there.
-extend-exclude = ["v1-reference", ".venv"]
+extend-exclude = [
+    # Frozen historical copy. Linting it produces 140 findings for code nobody will
+    # fix — v1-reference/README.md rule 3 says do not fix bugs there.
+    "v1-reference",
+    ".venv",
+    # ruff formats Python code blocks inside markdown. docs/*.md is the project
+    # SPEC: 01_DATA_CONTRACTS.md alone takes a ~445-line diff, and reflowing a
+    # signature in a contract document is a change to the contract's presentation
+    # that no formatter should be making. The docs are prose, not a build artifact.
+    "*.md",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]

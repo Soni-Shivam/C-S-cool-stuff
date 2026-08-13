@@ -28,11 +28,8 @@ lint: ## ruff check + format check
 
 .PHONY: fmt
 fmt: ## Apply ruff formatting
-	# Scoped deliberately. A repo-wide `ruff format .` reformats the Python code
-	# blocks inside docs/*.md, producing a 400-line diff in the spec that nobody
-	# asked for. The docs are the contract; formatters do not get a vote.
-	uv run ruff format drishti tests scripts
-	uv run ruff check --fix drishti tests scripts
+	uv run ruff format .
+	uv run ruff check --fix .
 
 .PHONY: types
 types: ## mypy

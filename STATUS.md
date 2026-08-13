@@ -175,6 +175,8 @@ Established by inspection on 2026-08-13, not assumed.
   (T0.9 / T4.1 depend on it). Either install a JDK or build the canary on a GCE VM. The
   prebuilt artifact is committed at `canary/dist/` precisely so the demo does not depend
   on a local toolchain.
-- **A formatter in the dev environment reformats Python code blocks inside `docs/*.md`**
-  when ruff is run repo-wide, producing a ~400-line diff in the spec. `make fmt` is scoped
-  to `drishti tests scripts` to prevent it. Do not run `ruff format .` at the repo root.
+- ~~A formatter in the dev environment reformats `docs/*.md`~~ — **resolved.** It was
+  `ruff` itself: it formats Python code blocks inside markdown, so a repo-wide
+  `ruff format` rewrote the spec (~445 lines in `01_DATA_CONTRACTS.md` alone) and CI's
+  `ruff format --check .` failed on it. Fixed properly by adding `*.md` to
+  `[tool.ruff] extend-exclude`, so `make fmt` and CI can both run repo-wide safely.
