@@ -31,7 +31,7 @@ Established by inspection on 2026-08-13, not assumed.
 - [x] T0.3  All contracts, verbatim                DONE  H01  37 models · tests: 140/140
 - [x] T0.4  Evidence Ledger                        DONE  H02  tests: 178/178 · CLI verified
 - [x] T0.5  Job runner + pipeline skeleton          DONE  H03  11 stages · chain verified
-- [~] T0.6  API surface                            WIP   4 of ~18 routes (health, submit, get, SSE, verify)
+- [x] T0.6  API surface                            DONE  H04  19 routes frozen · tests: 235/235
 - [ ] T0.7  TraceSource abstraction + fixture      TODO
 - [ ] T0.8  UI shell                               TODO
 - [ ] T0.9  Sandbox VM groundwork                  TODO  ← now GCP, see CLAUDE.md
@@ -166,8 +166,17 @@ Established by inspection on 2026-08-13, not assumed.
   canonical order in `01_DATA_CONTRACTS.md` §7.1 has 11 stages and the stub walk appends
   exactly one node each. `PHASE_0`'s own exit criterion is ">=5 ledger nodes", which holds.
   Counted honestly rather than padded.
-- **T0.5 landed 4 routes, not the full frozen surface.** T0.6 owns the remaining ~14. The
-  four here are what T0.5's acceptance criterion needs (submit, poll, stream, verify).
+- **T0.6 froze 19 routes and added 3 beyond the doc's list** (`/ingest`, `/ledger/export`,
+  `/logs/stream` was listed; `/ingest` and `/ledger/export` are additive). A contract test
+  asserts no *undeclared* `/api` route exists, so the surface cannot drift silently.
+- **T0.6 uses two distinct "unavailable" statuses.** `PHASE_0` specifies 404 +
+  `{"stage": ...}` for not-yet-produced artefacts. Frozen-but-unbuilt features (report
+  T6.3, YARA T6.1, STIX T6.2) return **501** with the owning task instead, because polling
+  a 404 is reasonable and polling something that will never exist is not.
+- **`EvidenceType.REPORT_GENERATED` added.** The REPORT stage was mis-typed as
+  `ANALYST_ACTION`, which means "a human confirmed something" — it made a rendering step
+  indistinguishable from a human decision in the ledger, and the confirmation gate's audit
+  trail has to be unambiguous. Caught by the API surface test. Addendum A6.
 - **`DynamicTrace.outcome` added** because `detonated: bool` cannot express
   *inconclusive*, and a sample that emitted nothing must never read as benign.
 - **Canary artifact path is `canary/dist/`,** not Gradle's `canary/app/build/outputs/…`.

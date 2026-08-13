@@ -12,6 +12,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
+from drishti.api import deps
 from drishti.api import main as api_main
 from drishti.api.jobs import JobRunner
 from drishti.config import Settings
@@ -27,14 +28,14 @@ def client(tmp_path):
         llm_provider="mock",
     )
     runner = JobRunner(settings)
-    api_main.set_runner(runner)
-    api_main.app.dependency_overrides[api_main.get_settings] = lambda: settings
+    deps.set_runner(runner)
+    api_main.app.dependency_overrides[deps.get_settings] = lambda: settings
     try:
         yield TestClient(api_main.app)
     finally:
         runner.shutdown()
         api_main.app.dependency_overrides.clear()
-        api_main.set_runner(None)
+        deps.set_runner(None)
 
 
 APK_BYTES = b"PK\x03\x04" + b"stub" * 64
@@ -108,8 +109,8 @@ def test_oversized_upload_is_rejected_on_bytes_received(tmp_path) -> None:
         max_upload_bytes=1024,
     )
     runner = JobRunner(settings)
-    api_main.set_runner(runner)
-    api_main.app.dependency_overrides[api_main.get_settings] = lambda: settings
+    deps.set_runner(runner)
+    api_main.app.dependency_overrides[deps.get_settings] = lambda: settings
     try:
         client = TestClient(api_main.app)
         response = client.post("/api/jobs", files={"apk": ("big.apk", b"x" * 4096)})
@@ -118,7 +119,7 @@ def test_oversized_upload_is_rejected_on_bytes_received(tmp_path) -> None:
     finally:
         runner.shutdown()
         api_main.app.dependency_overrides.clear()
-        api_main.set_runner(None)
+        deps.set_runner(None)
 
 
 def test_missing_file_field_is_422_not_500(client) -> None:

@@ -15,6 +15,7 @@ import threading
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 from drishti.config import Settings
 from drishti.contracts.job import Job, JobStage, StageEvent
@@ -38,6 +39,9 @@ class JobRunner:
         self._pool = ThreadPoolExecutor(max_workers=settings.job_workers)
         self._jobs: dict[str, Job] = {}
         self._queues: dict[str, queue.Queue[StageEvent | object]] = {}
+        # Stage outputs per job, populated by the pipeline as it runs so the API can
+        # serve a partial result mid-run instead of only at the end.
+        self._artefacts: dict[str, dict[str, Any]] = {}
         # One lock for both dicts. Contention is irrelevant at two workers, and a
         # single lock is one fewer ordering rule to get wrong.
         self._lock = threading.Lock()
@@ -55,6 +59,7 @@ class JobRunner:
         with self._lock:
             self._jobs[job.id] = job
             self._queues[job.id] = queue.Queue()
+            self._artefacts[job.id] = {}
 
         log.info("job_submitted", job_id=job.id, sha256=sha256, filename=filename)
         self._pool.submit(self._run, job, apk_path)
@@ -67,6 +72,11 @@ class JobRunner:
     def list_jobs(self) -> list[Job]:
         with self._lock:
             return list(self._jobs.values())
+
+    def artefact(self, job_id: str, kind: str) -> Any | None:
+        """A stage output, or None if that stage has not produced one yet."""
+        with self._lock:
+            return self._artefacts.get(job_id, {}).get(kind)
 
     def stream(self, job_id: str, *, timeout_s: float = 300.0) -> Iterator[StageEvent]:
         """Yield stage events until the run ends.
@@ -99,10 +109,15 @@ class JobRunner:
         # threads, and WAL means the concurrent reader is unaffected.
         ledger = LedgerStore(self._settings.db_path, self._settings.ledger_key_path)
         try:
+            with self._lock:
+                artefacts = self._artefacts.setdefault(job.id, {})
+            # The same dict object the API reads, so a stage's output is visible the
+            # instant it is recorded rather than after the run.
             ctx = Context(
                 settings=self._settings,
                 ledger=ledger,
                 on_event=lambda event: self._publish(job.id, event),
+                artefacts=artefacts,
             )
             finished = run_pipeline(job, ctx, apk_path=apk_path)
             self._store(finished)

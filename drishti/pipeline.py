@@ -69,11 +69,18 @@ class Context:
     settings: Settings
     ledger: LedgerStore
     on_event: Callable[[StageEvent], None] | None = None
+    #: Stage outputs, keyed by the name the API serves them under. Written as each
+    #: stage completes rather than at the end, so GET /api/jobs/{id}/score can return
+    #: the preliminary verdict while the sandbox is still running — which is the whole
+    #: point of the two-verdict design (§7).
     artefacts: dict[str, Any] = field(default_factory=dict)
 
     def emit(self, event: StageEvent) -> None:
         if self.on_event is not None:
             self.on_event(event)
+
+    def record(self, kind: str, value: Any) -> None:
+        self.artefacts[kind] = value
 
 
 class StageFailedError(Exception):
@@ -304,7 +311,7 @@ def _stub_frontier(ctx: Context, trace: DynamicTrace) -> str:
 
 def _stub_report(ctx: Context, sha256: str) -> str:
     node = ctx.ledger.append(
-        type=EvidenceType.ANALYST_ACTION,
+        type=EvidenceType.REPORT_GENERATED,
         source_tool="m7_report:stub",
         content={"sha256": sha256, "note": "stub"},
         confidence=1.0,
@@ -332,23 +339,27 @@ def run_pipeline(
     try:
         with stage(run, ctx, JobStage.INGEST):
             meta = _stub_ingest(ctx, apk_path, job.sha256, job.filename)
+            ctx.record("ingest", meta)
 
         with stage(run, ctx, JobStage.STATIC):
             static = _stub_static(ctx, meta)
+            ctx.record("static", static)
 
         with stage(run, ctx, JobStage.ML):
-            _stub_ml(ctx, static)
+            ctx.record("ml", _stub_ml(ctx, static))
 
         with stage(run, ctx, JobStage.GENAI_STATIC):
-            _stub_genai(ctx, job.sha256, JobStage.GENAI_STATIC)
+            ctx.record("genai", _stub_genai(ctx, job.sha256, JobStage.GENAI_STATIC))
 
         with stage(run, ctx, JobStage.SCORE_PRELIM):
             preliminary = _stub_score(ctx, JobStage.SCORE_PRELIM, gamma=0.7)
+            ctx.record("score", preliminary)
         # Emitted the moment it exists, not at the end of the run.
         run.with_stage(JobStage.SCORE_PRELIM, preliminary=preliminary)
 
         with stage(run, ctx, JobStage.SANDBOX_1):
             trace = _stub_sandbox(ctx, JobStage.SANDBOX_1, with_evasion=True)
+            ctx.record("dynamic", trace)
 
         # §7.1: the frontier runs only when pass 1 did not detonate AND there is an
         # observed evasion check to respond to. Morphing without an observation would
@@ -359,12 +370,14 @@ def run_pipeline(
 
             with stage(run, ctx, JobStage.SANDBOX_2):
                 trace = _stub_sandbox(ctx, JobStage.SANDBOX_2, with_evasion=False)
+                ctx.record("dynamic", trace)
 
         with stage(run, ctx, JobStage.GENAI_FULL):
-            _stub_genai(ctx, job.sha256, JobStage.GENAI_FULL)
+            ctx.record("genai", _stub_genai(ctx, job.sha256, JobStage.GENAI_FULL))
 
         with stage(run, ctx, JobStage.SCORE_FINAL):
             final = _stub_score(ctx, JobStage.SCORE_FINAL, gamma=1.0)
+            ctx.record("score", final)
         run.with_stage(JobStage.SCORE_FINAL, final=final)
 
         with stage(run, ctx, JobStage.REPORT):

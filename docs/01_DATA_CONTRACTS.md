@@ -716,3 +716,16 @@ Related: `uuid7_hex()` is still available and is a conformant RFC 9562 v7, but i
 time-ordered only down to the **millisecond** — within one millisecond the random
 bits decide ordering, since the optional sub-millisecond counter is not implemented.
 That is the second reason `new_id` uses an explicit counter instead.
+
+### A6. `EvidenceType.REPORT_GENERATED` (added T0.6)
+
+§1.1 has no node type for "a report was rendered from this chain", so the REPORT stage
+initially reused `ANALYST_ACTION`. That is wrong in a way that matters: `ANALYST_ACTION`
+means *a human confirmed or rejected something*, so reusing it made an automated
+rendering step indistinguishable from a human decision when querying the ledger — and
+the human-confirmation gate is a safety property whose audit trail has to be
+unambiguous. `tests/contract/test_api_surface.py` caught it by asserting that
+confirming one action produces exactly one `analyst_action` node.
+
+`REPORT_GENERATED` attests that a report was produced from a given chain at a given
+time, which is provenance worth keeping in its own right.

@@ -57,6 +57,13 @@ class EvidenceType(StrEnum):
     TECHNIQUE_MAP = "technique_map"
     VISION_MATCH = "vision_match"
 
+    # M7
+    #: Attests that a report was rendered from a given chain at a given time. Added in
+    #: T0.6: the REPORT stage was previously mis-typed as ANALYST_ACTION, which means
+    #: "a human confirmed something" and made a rendering step indistinguishable from
+    #: a human decision in the ledger.
+    REPORT_GENERATED = "report_generated"
+
     # M5 / M6
     ML_PREDICTION = "ml_prediction"
     ANOMALY_SIGNAL = "anomaly_signal"
