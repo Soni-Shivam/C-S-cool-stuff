@@ -694,3 +694,25 @@ correctness risk.
 - `PIPELINE_ORDER` in `contracts/job.py` encodes §7.1 as data.
 - 37 concrete models exist; `tests/contract/test_roundtrip.py` requires a constructed
   example for **every** one, so coverage cannot decay as the contracts grow.
+
+### A5. The `uuid7_hex[:12]` id convention is unsafe — corrected in `drishti/util.py`
+
+§0 specifies ids as `f"{prefix}_{uuid7_hex[:12]}"`. **Those 12 hex chars are exactly
+the 48-bit millisecond timestamp of a UUIDv7**, so the truncation discards every
+random bit and any two ids minted in the same millisecond are identical. Appending 50
+ledger nodes in a loop produced 50 identical ids and `UNIQUE constraint failed:
+evidence.id`; `tests/contract/test_ledger_chain.py` caught it.
+
+Widening the random part does not fix it either. At 24 random bits a 400-node job has
+roughly a 1-in-200 chance of an internal collision, and a system whose central claim
+is evidence integrity cannot ship a 0.5% chance of two artefacts sharing an identity.
+
+`new_id()` therefore keeps the **format** (`prefix_` + 12 hex, sortable) and changes
+the **composition**: 8 hex chars of millisecond time plus 4 hex chars of a
+per-process counter. Two ids can only collide if one process issues 65,536 ids inside
+a single millisecond. `UNIQUE(id)` in SQL remains the backstop.
+
+Related: `uuid7_hex()` is still available and is a conformant RFC 9562 v7, but it is
+time-ordered only down to the **millisecond** — within one millisecond the random
+bits decide ordering, since the optional sub-millisecond counter is not implemented.
+That is the second reason `new_id` uses an explicit counter instead.

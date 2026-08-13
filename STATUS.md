@@ -29,7 +29,7 @@ Established by inspection on 2026-08-13, not assumed.
 - [x] T0.1  Repo skeleton + tooling                DONE  H00  tests: 26/26 · lint+mypy clean
 - [ ] T0.2  Config                                 TODO
 - [x] T0.3  All contracts, verbatim                DONE  H01  37 models · tests: 140/140
-- [ ] T0.4  Evidence Ledger                        TODO  ← highest priority in P0
+- [x] T0.4  Evidence Ledger                        DONE  H02  tests: 178/178 · CLI verified
 - [ ] T0.5  Job runner + pipeline skeleton          TODO
 - [ ] T0.6  API surface                            TODO
 - [ ] T0.7  TraceSource abstraction + fixture      TODO
@@ -158,6 +158,10 @@ Established by inspection on 2026-08-13, not assumed.
   `DecryptedBlob`, `DexLoadEvent`, `FileWrite`, `VisionMatch`, `StageEvent`). Defined, and
   the doc amended with an addendum per its own §0 rule. Also adopted v1's stricter
   detonator wire contract, which the doc did not specify at all.
+- **T0.4: the `uuid7_hex[:12]` id convention in §0 is unsafe** and was corrected. Those 12
+  hex chars are the 48-bit ms timestamp, so ids collided within a millisecond (50 identical
+  ids in a 50-node loop). `new_id()` keeps the format but composes it from 8 hex of time +
+  4 hex of a per-process counter. Documented as addendum A5.
 - **`DynamicTrace.outcome` added** because `detonated: bool` cannot express
   *inconclusive*, and a sample that emitted nothing must never read as benign.
 - **Canary artifact path is `canary/dist/`,** not Gradle's `canary/app/build/outputs/…`.
