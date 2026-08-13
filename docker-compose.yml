@@ -1,0 +1,44 @@
+# Local development services only.
+#
+# There is deliberately NO emulator, NO frida-server and NO mitmproxy here.
+# Detonation happens exclusively on the sealed GCE detonator (CLAUDE.md), and a
+# compose file that could start an analysis sandbox on a laptop is an invitation
+# to run a sample in the wrong place.
+#
+# 00_GUIDING_MAP.md §3: SQLite (WAL) + an in-process job runner. No Celery, no
+# Redis, no Postgres unless we hit a writer-lock wall.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DRISHTI_DB_PATH=/data/drishti.db
+      - DRISHTI_LEDGER_KEY_PATH=/data/ledger_ed25519.key
+      # Never live in the container: it has no route to a detonator.
+      - DRISHTI_SANDBOX_MODE=replay
+    env_file:
+      - .env
+    volumes:
+      - drishti-data:/data
+      - ./data/fixtures:/app/data/fixtures:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8080/api/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Optional static enrichment, off by default (00_GUIDING_MAP.md §3: MobSF's
+  # image is 3GB+ and its output schema is unstable). Start with:
+  #   docker compose --profile mobsf up
+  mobsf:
+    image: opensecurity/mobile-security-framework-mobsf:latest
+    profiles: ["mobsf"]
+    ports:
+      - "8000:8000"
+
+volumes:
+  drishti-data:

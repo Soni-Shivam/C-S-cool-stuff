@@ -5,7 +5,11 @@
 *.apks
 *.xapk
 *.dex
-!canary/**/*.apk
+# The one APK we author ourselves. Committed as a prebuilt artifact so the demo
+# does not require a Java/Gradle toolchain. Note this MUST be outside any ignored
+# directory — git cannot re-include a file whose parent directory is excluded,
+# which is why the artifact lives in canary/dist/ and not canary/app/build/.
+!canary/dist/*.apk
 data/samples/
 observations/
 
@@ -30,8 +34,10 @@ venv/
 .ruff_cache/
 .mypy_cache/
 *.egg-info/
-dist/
-build/
+# Root-anchored deliberately: bare `dist/`/`build/` also match canary/dist/ and
+# canary/app/build/, and an unanchored `build/` silently un-allowlists the canary.
+/dist/
+/build/
 
 # ─── Corpus & ML artifacts (large / regenerable / data not code) ──────────────
 *.csv
@@ -40,7 +46,9 @@ build/
 *.pkl
 *.onnx
 *.tflite
-models/
+# `models/*` not `models/` — a directory pattern excludes the directory itself and
+# no `!` rule can re-include anything inside it, so `!models/.gitkeep` would be dead.
+models/*
 !models/.gitkeep
 data/corpus/
 androzoo_cache/
@@ -78,5 +86,7 @@ Thumbs.db
 *.tfvars
 !*.tfvars.example
 
-# Gradle build cache (v1 left this in-tree)
+# Gradle (v1 left its build cache in-tree)
 .gradle/
+canary/app/build/
+v1-reference/**/build/

@@ -26,7 +26,7 @@ Established by inspection on 2026-08-13, not assumed.
 
 ## P0 — FOUNDATIONS (H00→H06)
 
-- [ ] T0.1  Repo skeleton + tooling                TODO
+- [x] T0.1  Repo skeleton + tooling                DONE  H00  tests: 26/26 · lint+mypy clean
 - [ ] T0.2  Config                                 TODO
 - [ ] T0.3  All contracts, verbatim                TODO
 - [ ] T0.4  Evidence Ledger                        TODO  ← highest priority in P0
@@ -139,6 +139,24 @@ Established by inspection on 2026-08-13, not assumed.
   `00_GUIDING_MAP.md` §8; additive only.
 - `v1-reference/README.md` landed in PR #1 (restructure) rather than PR #2, so the
   directory is not unexplained at review time.
+- **T0.1 dependency extras.** `PHASE_0` T0.1 lists one flat dependency block. Split into
+  core + `[lab]` (frida<17, frida-tools, mitmproxy) + `[rag]` (chromadb,
+  sentence-transformers) + `[yara]`. Reason: a laptop never instruments or proxies a
+  sample, so installing frida/mitmproxy there contradicts the safety posture; and
+  sentence-transformers pulls ~2GB of torch for a feature that is cut-listed
+  (`00_GUIDING_MAP.md` §10 item 7). `make install` stays core+dev; `make install-lab` is
+  for the detonator.
+- **T0.1 LLM provider.** `PHASE_0` T0.2 specifies `anthropic_api_key` and
+  `claude-sonnet-4-5`. Both SDKs are installed and the provider is selected at runtime
+  (`DRISHTI_LLM_PROVIDER`), defaulting to **gemini** — that is the key that exists and v1
+  demonstrated two live end-to-end runs with it. `mock` remains available for tests. No
+  code depends on the choice yet; revisit at T3.1.
+- **T0.1 added `GET /api/health`** ahead of T0.6's frozen route list, because the
+  container healthcheck must be real rather than decorative. Not an analysis endpoint.
+- **Canary artifact path is `canary/dist/`,** not Gradle's `canary/app/build/outputs/…`.
+  git cannot re-include a file whose parent directory is excluded, so a `!` allowlist
+  inside an ignored `build/` directory can never fire. `tests/contract/test_repo_invariants.py`
+  caught this and now guards both directions.
 
 ## Open risks
 
@@ -153,3 +171,10 @@ Established by inspection on 2026-08-13, not assumed.
 - Corpus recency: only 117 samples from 2024–25 in v1's list, while the paper names 2024–25
   families as primary targets. Needs a fresh AndroZoo index and ideally MalwareBazaar labels.
 - API keys were shared in plaintext and are not yet rotated.
+- **No Java runtime on the dev laptop**, so the `canary/` APK cannot be built locally
+  (T0.9 / T4.1 depend on it). Either install a JDK or build the canary on a GCE VM. The
+  prebuilt artifact is committed at `canary/dist/` precisely so the demo does not depend
+  on a local toolchain.
+- **A formatter in the dev environment reformats Python code blocks inside `docs/*.md`**
+  when ruff is run repo-wide, producing a ~400-line diff in the spec. `make fmt` is scoped
+  to `drishti tests scripts` to prevent it. Do not run `ruff format .` at the repo root.

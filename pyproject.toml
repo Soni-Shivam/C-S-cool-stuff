@@ -1,0 +1,110 @@
+[project]
+name = "drishti"
+version = "0.1.0"
+description = "Defensive Android malware triage: calibrated scoring, grounded reporting, hash-chained evidence"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+
+# Pinned deliberately. A surprise breaking release at H50 is a bad way to die
+# (docs/PHASE_0_FOUNDATIONS.md T0.1).
+dependencies = [
+    "fastapi>=0.115,<0.116",
+    "uvicorn[standard]>=0.32,<0.33",
+    "pydantic>=2.9,<3",
+    "pydantic-settings>=2.6,<3",
+    "androguard>=4.1,<5",          # NOT 3.x — the 4.x API differs substantially
+    "networkx>=3.4,<4",
+    "xgboost>=2.1,<3",
+    "scikit-learn>=1.5,<2",
+    "shap>=0.46,<0.47",
+    "cryptography>=43,<44",        # Ed25519 for the evidence ledger
+    "structlog>=24.4,<25",
+    "jinja2>=3.1,<4",              # prompts live in files, never inline in Python
+    "python-multipart>=0.0.12",
+    "sse-starlette>=2.1",
+    "pyyaml>=6.0,<7",
+    # LLM providers. Both SDKs are small and pure-python; the provider is chosen at
+    # runtime by config. See DEVIATION-2 in STATUS.md.
+    "google-genai>=1.0",
+    "anthropic>=0.39,<1",
+]
+
+[project.optional-dependencies]
+# Lab-only. These are needed on the GCE detonator, NOT on a developer laptop —
+# the laptop never instruments or proxies a sample. Keeping them out of the core
+# install keeps `make install` fast and matches the safety posture in CLAUDE.md.
+lab = [
+    # frida MUST stay <17: 17+ imports typing.NotRequired (Python 3.11+) and the
+    # GCE image ships Python 3.10, so `import frida` raises and the whole collector
+    # breaks — not just a version probe. Verified working pair below.
+    # See docs/CARRIED_FINDINGS.md defect 3.
+    "frida>=16.7.19,<17",
+    "frida-tools>=13,<14",
+    "mitmproxy>=11,<12",
+]
+# Cut-listed in 00_GUIDING_MAP.md §10 item 7. sentence-transformers pulls torch
+# (~2GB), so it is opt-in rather than a default tax on every install.
+rag = [
+    "chromadb>=0.5,<0.6",
+    "sentence-transformers>=3.2,<4",
+]
+# Optional static enrichment, behind a feature flag (00_GUIDING_MAP.md §3).
+yara = ["yara-python>=4.5"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "httpx>=0.27",                 # fastapi TestClient
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["drishti"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# tests/lab needs a live GCP detonator and is excluded from CI by default.
+addopts = "-q --strict-markers"
+markers = [
+    "gcp: requires a live GCP lab (never runs in CI, never runs on a laptop)",
+    "slow: e2e tests that take minutes",
+]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# v1-reference/ is a frozen historical copy. Linting it produces 140 findings for
+# code nobody will fix — v1-reference/README.md rule 3 says do not fix bugs there.
+extend-exclude = ["v1-reference", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "E501",    # line length is handled by the formatter
+    "B008",    # FastAPI Depends() in defaults is idiomatic
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["N802", "N803"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+# v1-reference/ is a frozen historical copy. Nothing imports it and nothing
+# type-checks it. See v1-reference/README.md.
+exclude = ["v1-reference/", "\\.venv/"]
+
+[[tool.mypy.overrides]]
+module = ["androguard.*", "shap.*", "xgboost.*", "frida.*", "mitmproxy.*", "yara.*"]
+ignore_missing_imports = true
