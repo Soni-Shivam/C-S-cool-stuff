@@ -27,11 +27,11 @@ Established by inspection on 2026-08-13, not assumed.
 ## P0 — FOUNDATIONS (H00→H06)
 
 - [x] T0.1  Repo skeleton + tooling                DONE  H00  tests: 26/26 · lint+mypy clean
-- [ ] T0.2  Config                                 TODO
+- [x] T0.2  Config                                 DONE  H03  tests: 204/204
 - [x] T0.3  All contracts, verbatim                DONE  H01  37 models · tests: 140/140
 - [x] T0.4  Evidence Ledger                        DONE  H02  tests: 178/178 · CLI verified
-- [ ] T0.5  Job runner + pipeline skeleton          TODO
-- [ ] T0.6  API surface                            TODO
+- [x] T0.5  Job runner + pipeline skeleton          DONE  H03  11 stages · chain verified
+- [~] T0.6  API surface                            WIP   4 of ~18 routes (health, submit, get, SSE, verify)
 - [ ] T0.7  TraceSource abstraction + fixture      TODO
 - [ ] T0.8  UI shell                               TODO
 - [ ] T0.9  Sandbox VM groundwork                  TODO  ← now GCP, see CLAUDE.md
@@ -162,6 +162,12 @@ Established by inspection on 2026-08-13, not assumed.
   hex chars are the 48-bit ms timestamp, so ids collided within a millisecond (50 identical
   ids in a 50-node loop). `new_id()` keeps the format but composes it from 8 hex of time +
   4 hex of a per-process counter. Documented as addendum A5.
+- **T0.5 appends 11 ledger nodes per run, not the 13 that T0.5's text states.** The
+  canonical order in `01_DATA_CONTRACTS.md` §7.1 has 11 stages and the stub walk appends
+  exactly one node each. `PHASE_0`'s own exit criterion is ">=5 ledger nodes", which holds.
+  Counted honestly rather than padded.
+- **T0.5 landed 4 routes, not the full frozen surface.** T0.6 owns the remaining ~14. The
+  four here are what T0.5's acceptance criterion needs (submit, poll, stream, verify).
 - **`DynamicTrace.outcome` added** because `detonated: bool` cannot express
   *inconclusive*, and a sample that emitted nothing must never read as benign.
 - **Canary artifact path is `canary/dist/`,** not Gradle's `canary/app/build/outputs/…`.
