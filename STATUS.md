@@ -35,7 +35,7 @@ Established by inspection on 2026-08-13, not assumed.
 - [x] T0.6  API surface                            DONE  H04  19 routes frozen · tests: 235/235
 - [x] T0.7  TraceSource abstraction + fixture      DONE  H05  pre/post-morph arc · tests: 261/261
 - [ ] T0.8  UI shell                               TODO
-- [ ] T0.9  Sandbox VM groundwork                  TODO  ← now GCP, see CLAUDE.md
+- [~] T0.9  Sandbox VM groundwork                  WIP   H08  infra/gcp LIFTed + canary source; image/VM not built
 - [x] T0.10 Ingest module M1, for real             DONE  H07  guards+split+intel · tests: 304/304
 
 ## P1 — STATIC ENGINE (H04→H16)
@@ -111,10 +111,10 @@ Established by inspection on 2026-08-13, not assumed.
 ## Salvage from v1 (see `docs/SALVAGE.md`)
 
 - [x] known_bad_hashes.txt LIFT -> data/kb/                 DONE  H07
-- [ ] Lab infra LIFT (`infra/m3/**` → `infra/gcp/`)        TODO
+- [x] Lab infra LIFT (`infra/m3/**` → `infra/gcp/`)        DONE  H08  + auto_delete and snapshot-policy fixes
 - [ ] Containment verification LIFT                        TODO
 - [ ] M3 harness + hook catalogue LIFT                     TODO
-- [ ] canary/ from `demo-apks/m3-inert-fixture`            TODO
+- [~] canary/ source written to §4 spec                    WIP   H08  needs a JDK to build the APK
 - [~] Rescue v1 lab data off VM disks → GCS                WIP   ← urgent, pre-teardown
       - [x] Snapshot all 4 boot disks                      DONE  H00  4/4 READY
             `v1-rescue-{drishti-detonator,m3-extractor,m3-control-builder,m3-detonator-debug}-20260813`

@@ -10,6 +10,7 @@
 # directory — git cannot re-include a file whose parent directory is excluded,
 # which is why the artifact lives in canary/dist/ and not canary/app/build/.
 !canary/dist/*.apk
+!canary/dist/.gitkeep
 data/samples/
 # Root-anchored: bare `observations/` also matched data/fixtures/observations/, which
 # holds REAL rescued ObservationArtifacts committed on purpose as regression fixtures

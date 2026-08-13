@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DRISHTI canary. Permissions are the minimum the four behaviours in
+  docs/00_GUIDING_MAP.md §4 require, and each is justified below.
+
+  READ_SMS is a dangerous permission and is declared deliberately: the canary reads an
+  inbox COUNT (never a body or an address), and declaring it also makes the canary a
+  realistic target for M2's permission-combo rules. It is not granted at runtime by
+  default, so the count returns -1 unless an operator grants it explicitly.
+
+  Nothing here permits sending SMS, drawing overlays, running an accessibility service,
+  or installing packages.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- (2) read an SMS inbox count -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+
+    <!-- (3) one HTTP GET to the emulator's host loopback -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- (1) probe for a package by name. Required from API 30 onwards, where package
+         visibility is filtered by default. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
+    <application
+        android:allowBackup="false"
+        android:label="DRISHTI Canary"
+        android:theme="@style/CanaryTheme"
+        tools:ignore="UnusedAttribute"
+        xmlns:tools="http://schemas.android.com/tools">
+
+        <!-- Cleartext is permitted ONLY so the GET to 10.0.2.2 works. That address is
+             the emulator's alias for its own host loopback and is never routable. -->
+        <meta-data android:name="cleartextTrafficPermitted" android:value="true" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
