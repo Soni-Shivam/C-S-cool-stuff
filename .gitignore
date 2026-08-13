@@ -1,77 +1,82 @@
-# Secrets
+# ─── Samples & malware. Rule #1: no APK enters git. ────────────────────────────
+# 00_GUIDING_MAP.md §4 requires this from commit #1, with an allowlist for the
+# inert canary only.
+*.apk
+*.apks
+*.xapk
+*.dex
+!canary/**/*.apk
+data/samples/
+observations/
+
+# ─── Secrets ──────────────────────────────────────────────────────────────────
 .env
-.env.local
+.env.*
 !.env.example
 *.pem
 *.key
+*.p12
+*.jks
+*-signing.pub
+credentials.json
+service-account*.json
 
-# Python
+# ─── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 .venv/
 venv/
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 *.egg-info/
 dist/
 build/
 
-# ML artifacts (large / regenerable)
-backend/drishti/data/models/*.bin
-backend/drishti/data/models/*.pkl
-backend/drishti/data/models/*.joblib
-models/
-backend/drishti/data/androzoo_cache/
-backend/samples/
+# ─── Corpus & ML artifacts (large / regenerable / data not code) ──────────────
 *.csv
 *.csv.gz
-latest.csv.gz
-features.csv
+*.joblib
+*.pkl
 *.onnx
 *.tflite
-*.safetensors
+models/
+!models/.gitkeep
+data/corpus/
+androzoo_cache/
 
-# Uploaded / analyzed samples (never commit APKs)
-backend/uploads/
-*.apk
-observations/
-observations*.json
-backend/quarantine/
-quarantine/
-containment-manifest*.json
-control-plane-attestation*.json
-pilot-authorization*.json
-
-# Node / Next
-node_modules/
-.next/
-out/
-frontend/.env*.local
-
-# Android / Gradle
-**/.gradle/
-**/local.properties
-**/build/
-*.aab
-
-# MLflow local stores
+# ─── Experiment tracking (v1 left 1.7MB of mlflow state in-tree) ─────────────
+mlflow.db
 mlruns/
-backend/mlruns/
-backend/mlflow.db
 
-# Infrastructure local state / build manifests
-**/.terraform/
+# ─── Runtime output ───────────────────────────────────────────────────────────
+logs/
+*.log
+.cache/
+*.pcap
+*.sqlite
+*.db-wal
+*.db-shm
+data/drishti.db
+
+# ─── Node / UI ────────────────────────────────────────────────────────────────
+node_modules/
+ui/dist/
+.vite/
+
+# ─── OS / editor litter ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ─── Terraform ────────────────────────────────────────────────────────────────
+.terraform/
 *.tfstate
 *.tfstate.*
-*.tfplan
-packer-manifest.json
+*.tfvars
+!*.tfvars.example
 
-# LaTeX build
-paper/*.aux
-paper/*.log
-paper/*.out
-paper/*.bbl
-paper/*.blg
-paper/*.synctex.gz
-
-# OS
-.DS_Store
+# Gradle build cache (v1 left this in-tree)
+.gradle/
