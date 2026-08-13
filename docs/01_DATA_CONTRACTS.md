@@ -4,7 +4,8 @@
 > If you need a field that isn't here, add it here first, update the version stamp,
 > then implement. All models live in `drishti/contracts/` as pydantic v2 models.
 >
-> Contract version: `1.0.0` — bump minor for additive, major for breaking.
+> Contract version: `1.1.0` — bump minor for additive, major for breaking.
+> See the Addendum at the end of this file for what 1.1.0 added.
 
 ---
 
@@ -616,3 +617,80 @@ output as untrusted input to a system-command surface. Write
 
 **CI (GitHub Actions, ~15 min to set up at H03) runs `pytest tests/contract` on
 every push.** This single thing is what prevents the H64 integration disaster.
+
+---
+
+## Addendum — contract version 1.1.0
+
+> Added 2026-08-13 during T0.3, under the §0 rule: *if you need a field that isn't
+> here, add it here first, then implement.* This section is the "add it here first"
+> half. Version bumped **1.0.0 → 1.1.0** — additive only, nothing above changed.
+
+### A1. Models referenced by §1–§8 but never defined
+
+Eight models were used by other definitions without being specified. They are now in
+`drishti/contracts/`:
+
+| Model | Referenced by | Module |
+|---|---|---|
+| `FileMeta` | §7.1 pipeline (`INGEST → FileMeta`), `PHASE_0` T0.10 | `static_report.py` |
+| `ThreatIntel` | §6 scorer signature (`intel: ThreatIntel`) | `static_report.py` |
+| `PermissionCombo` | §2 `StaticReport.permission_combos` | `static_report.py` |
+| `DecryptedBlob` | §3 `DynamicTrace.decrypted_blobs` | `dynamic_trace.py` |
+| `DexLoadEvent` | §3 `DynamicTrace.dex_loads` | `dynamic_trace.py` |
+| `FileWrite` | §3 `DynamicTrace.file_writes` | `dynamic_trace.py` |
+| `VisionMatch` | §4 `GenAIVerdict.impersonation` | `genai_verdict.py` |
+| `StageEvent` | §7 `Job.stage_history` | `job.py` |
+
+### A2. The detonator wire contract
+
+`§3` describes `DynamicTrace`, which is what the *pipeline* consumes. It does not
+describe what crosses out of the detonation VM. That boundary needs its own, stricter
+contract, and v1 already had a good one — ported here as `ObservationArtifact`,
+`ObservationEvent`, `FailureRecord`, `SnapshotLifecycle`, `HarnessMetadata`.
+
+Stricter than `DrishtiModel` in three ways:
+
+1. **`strict=True`** — no type coercion. `"true"` must not become `True` on a path
+   carrying observations from executed malware.
+2. **`redacted: Literal[True]`** and a validator that **refuses to construct** if
+   `drishti.m3_dynamic.redaction.contains_sensitive_text` still matches the detail.
+   Redaction happens in the Frida hook too; this is the second gate, because a hook
+   bug must not become a data leak.
+3. **`simulated: Literal[False]`** — "simulated" is unrepresentable on this path, so
+   a synthetic observation can never be mistaken for a measured one.
+
+**Known caveat, found by the round-trip test:** strict mode also refuses `list →
+tuple`, so a strict model with tuple fields cannot parse its own JSON. Collection
+fields on `ObservationArtifact` therefore carry `Field(strict=False)`. Scalar
+strictness is the property that matters; container-shape coercion is not a
+correctness risk.
+
+### A3. Additive fields on existing models
+
+| Model | Field | Why |
+|---|---|---|
+| `DynamicTrace` | `outcome` | `detonated: bool` cannot express *inconclusive*. A sample that emitted nothing must not read as benign — environment-aware stalling is indistinguishable from a clean app otherwise (`CARRIED_FINDINGS.md` H1/H2). |
+| `DynamicTrace` | `emulator_image`, `vm_instance_id`, `harness_version`, `containment_verified`, `captured_at` | Replay-vs-live in the UI is derived from trace provenance, never from a config flag someone forgets to flip. |
+| `ApiEvent` | `count` | The normaliser collapses identical (api, args) pairs; the count is itself a signal (32 crypto ops/second is a deobfuscation loop, not incidental use). |
+| `DecryptedBlob` | `occurrences` | One real sample called `Cipher.doFinal` 1,925 times in 60s. |
+| `FailureRecord` | `install_unsupported` (enum member) | v1 scored a tooling limit — API 30 refusing an ancient APK — as sample evasion, inflating its evasion numbers (`CARRIED_FINDINGS.md` defect 11). |
+| `MLPrediction` | `feature_schema_version` | Feature skew (risk R3) is only detectable if the prediction records which schema produced it. |
+| `ThreatIntel` | `label_derived` | AndroZoo labels are VT-derived, so a VT feed in `R` leaks the label and makes composite metrics circular. Refused by default. |
+| `CompositeScore` | `limitations`, `anomaly_escalated` | The report's Limitations section is generated from real flags, never hardcoded. |
+| `GenAIVerdict` | `behaviours`, `provider` | `B` is computed from the enumerated behaviour booleans; storing them makes the derivation auditable rather than asserted. |
+| `MorphPlan` | `human_reviewed` | Mirrors the `MORPH_ACTION` ledger content shape in §1.3. |
+| `SandboxPlan` | `pass_num` | `PHASE_4` T4.8 varies duration by pass. |
+| `PermissionCombo`, `Severity` | — | `Severity` StrEnum extracted so combo severity and YARA severity share one vocabulary. |
+
+### A4. Enforcement notes
+
+- `GROUNDING_REQUIRED` in `contracts/evidence.py` names the node types whose
+  `evidence_refs` must resolve. `store.append()` (T0.4) enforces it; the schema
+  cannot.
+- `BAND_FLOOR` and `BAND_ORDER` in `contracts/score.py` are the single source for
+  band boundaries, so the scorer and the anomaly escalator cannot disagree about
+  where HIGH starts.
+- `PIPELINE_ORDER` in `contracts/job.py` encodes §7.1 as data.
+- 37 concrete models exist; `tests/contract/test_roundtrip.py` requires a constructed
+  example for **every** one, so coverage cannot decay as the contracts grow.

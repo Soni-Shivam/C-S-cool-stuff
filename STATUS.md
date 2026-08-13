@@ -28,7 +28,7 @@ Established by inspection on 2026-08-13, not assumed.
 
 - [x] T0.1  Repo skeleton + tooling                DONE  H00  tests: 26/26 · lint+mypy clean
 - [ ] T0.2  Config                                 TODO
-- [ ] T0.3  All contracts, verbatim                TODO
+- [x] T0.3  All contracts, verbatim                DONE  H01  37 models · tests: 140/140
 - [ ] T0.4  Evidence Ledger                        TODO  ← highest priority in P0
 - [ ] T0.5  Job runner + pipeline skeleton          TODO
 - [ ] T0.6  API surface                            TODO
@@ -153,6 +153,13 @@ Established by inspection on 2026-08-13, not assumed.
   code depends on the choice yet; revisit at T3.1.
 - **T0.1 added `GET /api/health`** ahead of T0.6's frozen route list, because the
   container healthcheck must be real rather than decorative. Not an analysis endpoint.
+- **Contract version bumped 1.0.0 -> 1.1.0** (additive). `01_DATA_CONTRACTS.md` referenced
+  eight models it never defined (`FileMeta`, `ThreatIntel`, `PermissionCombo`,
+  `DecryptedBlob`, `DexLoadEvent`, `FileWrite`, `VisionMatch`, `StageEvent`). Defined, and
+  the doc amended with an addendum per its own §0 rule. Also adopted v1's stricter
+  detonator wire contract, which the doc did not specify at all.
+- **`DynamicTrace.outcome` added** because `detonated: bool` cannot express
+  *inconclusive*, and a sample that emitted nothing must never read as benign.
 - **Canary artifact path is `canary/dist/`,** not Gradle's `canary/app/build/outputs/…`.
   git cannot re-include a file whose parent directory is excluded, so a `!` allowlist
   inside an ignored `build/` directory can never fire. `tests/contract/test_repo_invariants.py`

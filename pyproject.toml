@@ -102,7 +102,12 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["N802", "N803"]
+"tests/**" = ["N802", "N803", "N812"]
+# Contract field names are the formula symbols from 01_DATA_CONTRACTS.md §6.1 —
+# `S`, `C`, `behavioural_risk_B`, `B_rationale`. Snake-casing them would break the
+# correspondence between the code and the scoring formula the paper states, which is
+# the more important readability property here.
+"drishti/contracts/*.py" = ["N815"]
 
 [tool.mypy]
 python_version = "3.11"
