@@ -113,7 +113,13 @@ Established by inspection on 2026-08-13, not assumed.
 - [ ] Containment verification LIFT                        TODO
 - [ ] M3 harness + hook catalogue LIFT                     TODO
 - [ ] canary/ from `demo-apks/m3-inert-fixture`            TODO
-- [ ] Rescue v1 lab data off VM disks → GCS                TODO  ← urgent, pre-teardown
+- [~] Rescue v1 lab data off VM disks → GCS                WIP   ← urgent, pre-teardown
+      - [x] Snapshot all 4 boot disks                      DONE  H00  4/4 READY
+            `v1-rescue-{drishti-detonator,m3-extractor,m3-control-builder,m3-detonator-debug}-20260813`
+            auto_delete cliff removed; disks recoverable even if instances are deleted
+      - [ ] Copy 9 detonation artifacts + manifests → GCS   TODO  blocked: v2 project not created
+      - [ ] Copy v1 feature CSV + samples.csv → GCS         TODO  blocked: v2 project not created
+      - [ ] Stop the 3 running VMs (~$1/hr)                 TODO  after copy-off
 
 ---
 
