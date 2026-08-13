@@ -18,6 +18,7 @@ from drishti.api import main as api_main
 from drishti.api.jobs import JobRunner
 from drishti.config import Settings
 from drishti.contracts.job import JobStage
+from tests.apk_fixtures import minimal_apk_bytes
 
 #: Every route T0.6 freezes. `{id}` is substituted at runtime.
 FROZEN_ROUTES: set[tuple[str, str]] = {
@@ -42,7 +43,8 @@ FROZEN_ROUTES: set[tuple[str, str]] = {
     ("GET", "/api/logs/stream"),
 }
 
-APK_BYTES = b"PK\x03\x04" + b"stub" * 64
+# A real zip: M1's guards reject a corrupt archive since T0.10.
+APK_BYTES = minimal_apk_bytes()
 
 
 @pytest.fixture

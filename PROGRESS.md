@@ -11,6 +11,65 @@ Conventions:
   useful part of this file.
 - **Not verified** is stated explicitly on every entry. Absence of a claim is deliberate.
 
+## 2026-08-14 · T0.10 — real M1 ingest (first non-stub module)
+
+**Branch:** `feat/p0-ingest` · **Phase:** P0 · Follows `docs/PHASE_0_FOUNDATIONS.md` T0.10
+
+The first module that actually does something. Everything before this was scaffolding.
+
+- **`guards.py`** — size cap (300MB), zip magic on the first four bytes, and zip-bomb
+  detection read from the **central directory** so nothing is extracted to find out. Every
+  guard runs *before* androguard sees the file: androguard is a large parser on
+  attacker-controlled input, so cheap structural checks come first.
+- **`ingest.py`** — sha256, split-APK reassembly, androguard manifest facts, dedupe, then
+  the ledger. Split bundles are detected **by content, not extension** (the same bundle
+  arrives as `.apks`, `.xapk` or `.zip` depending on the tool), and the base APK is the
+  member whose manifest has no `split` attribute rather than the one named `base.apk`.
+- **`intel.py`** — ADAPTed from v1 per `docs/SALVAGE.md`. Graded `R` bands, because v1's
+  binary version left 24 of 25 reputation points dead and scored a VT-39 banking trojan
+  64/Medium instead of 88/Critical.
+
+Two rules the tests pin down: **a clean intel result never lowers a score** (`R` is a
+floor-raiser; unknown maps to a positive floor because a zero-day is unknown to every
+engine), and **a label-derived feed is refused by default** with the refusal recorded, since
+AndroZoo's labels *are* VT counts and using them would make composite metrics circular.
+
+### Found
+
+**1. The test fixtures were never valid zips.** They were `b"PK\x03\x04" + b"stub"*64` —
+enough to pass a magic check, not a real archive. Real M1 rejected all of them as corrupt,
+which is correct behaviour, and 24 tests failed. Replaced with `tests/apk_fixtures.py`
+producing genuine minimal zips. The placeholder manifest inside means androguard still
+refuses it, so every pipeline run now exercises the degradation path for free.
+
+**2. Zip-slip was possible in bundle extraction** and is now closed — member names are
+flattened, so a member called `../../../../tmp/evil.apk` cannot escape the temp directory.
+There is a test that would have written to `/tmp` if it could.
+
+**3. An earlier deviation was wrong, and T0.10 resolved it.** I had recorded that a run
+produces 11 ledger nodes rather than the 13 `PHASE_0` T0.5 predicted. With real M1 writing
+`FILE_META` + `THREAT_INTEL` it is **12**, and **13** for a split bundle. The doc's estimate
+was fair; my stub was just thin.
+
+### Verified
+
+Against a real uvicorn server: a valid APK-shaped zip → 12 ledger nodes, chain verifies,
+`GET /ingest` returns real `FileMeta` with `partial=true` and `manifest parse failed` as the
+stated reason. A `%PDF` upload named `.apk` → job `failed` with
+`not a zip archive (magic b'%PDF')`, no 500.
+
+304 tests (+27), ruff clean, mypy clean over 41 files.
+
+### Not verified
+
+- **No genuinely parseable APK has been ingested.** Every fixture has a placeholder
+  manifest, so the androguard *success* path — package, label, versionCode, min/target sdk —
+  is exercised only by the code, never by a test. That needs `canary/` (T0.9), and it is the
+  most significant gap in this task.
+- MalwareBazaar lookup is a `Protocol` with no implementation; only the local
+  `known_bad_hashes.txt` feed is wired (6 entries, LIFTed from v1).
+- Dedupe takes a `seen_hashes` set from the caller; nothing persists it yet.
+
 ---
 
 ## 2026-08-14 · Legacy detonation artifacts rescued + contract reconciled

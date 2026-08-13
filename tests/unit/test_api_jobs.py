@@ -17,6 +17,7 @@ from drishti.api import main as api_main
 from drishti.api.jobs import JobRunner
 from drishti.config import Settings
 from drishti.contracts.job import JobStage
+from tests.apk_fixtures import minimal_apk_bytes
 
 
 @pytest.fixture
@@ -38,7 +39,8 @@ def client(tmp_path):
         deps.set_runner(None)
 
 
-APK_BYTES = b"PK\x03\x04" + b"stub" * 64
+# A real zip: M1's guards reject a corrupt archive since T0.10.
+APK_BYTES = minimal_apk_bytes()
 
 
 def _submit(client) -> str:

@@ -36,6 +36,7 @@ from drishti.contracts.score import CompositeScore, MLPrediction, SeverityBand
 from drishti.contracts.static_report import CertificateInfo, FileMeta, StaticReport
 from drishti.ledger.store import LedgerStore
 from drishti.logging import get_logger
+from drishti.m1_ingest.ingest import ingest as m1_ingest
 from drishti.m3_dynamic.trace_source import (
     ReplayTraceSource,
     TraceSource,
@@ -178,22 +179,23 @@ _EMPTY_CERT = CertificateInfo(
 )
 
 
-def _stub_ingest(ctx: Context, apk_path: Path, sha256: str, filename: str) -> FileMeta:
-    node = ctx.ledger.append(
-        type=EvidenceType.FILE_META,
-        source_tool="m1_ingest:stub",
-        content={"sha256": sha256, "filename": filename},
-        confidence=1.0,
-    )
-    size = apk_path.stat().st_size if apk_path.exists() else 0
-    return FileMeta(
-        sha256=sha256,
-        size_bytes=size,
+def _ingest(ctx: Context, apk_path: Path, sha256: str, filename: str) -> FileMeta:
+    """Real M1 (T0.10). No longer a stub.
+
+    `IngestRejectedError` is allowed to propagate: a refused upload is not a degraded
+    analysis, it is a file we will not analyse at all, and the `stage()` contextmanager
+    turns it into an ERROR node plus JobStage.FAILED with the reason intact.
+    """
+    return m1_ingest(
+        apk_path,
+        ctx.ledger,
         filename=filename,
-        partial=True,
-        errors=("stub: M1 lands in T0.10",),
-        ledger_refs=(node.id,),
+        known_bad_path=_KNOWN_BAD_PATH if _KNOWN_BAD_PATH.exists() else None,
     )
+
+
+#: Curated exact-match list — the only feed permitted to trigger the S=100 override.
+_KNOWN_BAD_PATH = Path("data/kb/known_bad_hashes.txt")
 
 
 def _stub_static(ctx: Context, meta: FileMeta) -> StaticReport:
@@ -429,7 +431,7 @@ def run_pipeline(
 
     try:
         with stage(run, ctx, JobStage.INGEST):
-            meta = _stub_ingest(ctx, apk_path, job.sha256, job.filename)
+            meta = _ingest(ctx, apk_path, job.sha256, job.filename)
             ctx.record("ingest", meta)
 
         with stage(run, ctx, JobStage.STATIC):

@@ -36,7 +36,7 @@ Established by inspection on 2026-08-13, not assumed.
 - [x] T0.7  TraceSource abstraction + fixture      DONE  H05  pre/post-morph arc · tests: 261/261
 - [ ] T0.8  UI shell                               TODO
 - [ ] T0.9  Sandbox VM groundwork                  TODO  ← now GCP, see CLAUDE.md
-- [ ] T0.10 Ingest module M1, for real             TODO
+- [x] T0.10 Ingest module M1, for real             DONE  H07  guards+split+intel · tests: 304/304
 
 ## P1 — STATIC ENGINE (H04→H16)
 
@@ -110,6 +110,7 @@ Established by inspection on 2026-08-13, not assumed.
 
 ## Salvage from v1 (see `docs/SALVAGE.md`)
 
+- [x] known_bad_hashes.txt LIFT -> data/kb/                 DONE  H07
 - [ ] Lab infra LIFT (`infra/m3/**` → `infra/gcp/`)        TODO
 - [ ] Containment verification LIFT                        TODO
 - [ ] M3 harness + hook catalogue LIFT                     TODO
@@ -164,10 +165,10 @@ Established by inspection on 2026-08-13, not assumed.
   hex chars are the 48-bit ms timestamp, so ids collided within a millisecond (50 identical
   ids in a 50-node loop). `new_id()` keeps the format but composes it from 8 hex of time +
   4 hex of a per-process counter. Documented as addendum A5.
-- **T0.5 appends 11 ledger nodes per run, not the 13 that T0.5's text states.** The
-  canonical order in `01_DATA_CONTRACTS.md` §7.1 has 11 stages and the stub walk appends
-  exactly one node each. `PHASE_0`'s own exit criterion is ">=5 ledger nodes", which holds.
-  Counted honestly rather than padded.
+- ~~T0.5 appends 11 ledger nodes, not 13~~ — **resolved by T0.10.** With real M1 writing
+  `FILE_META` + `THREAT_INTEL` a run is **12** nodes, and **13** for a split bundle (which
+  also writes `SPLIT_APK`). `PHASE_0` T0.5's "13 ledger nodes" was a fair estimate; the
+  earlier 11 was only low because M1 was a stub.
 - **T0.6 froze 19 routes and added 3 beyond the doc's list** (`/ingest`, `/ledger/export`,
   `/logs/stream` was listed; `/ingest` and `/ledger/export` are additive). A contract test
   asserts no *undeclared* `/api` route exists, so the surface cannot drift silently.

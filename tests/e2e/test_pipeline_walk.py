@@ -19,6 +19,12 @@ from drishti.ledger.store import LedgerStore
 from drishti.pipeline import STAGES_IN_ORDER, Context, run_pipeline
 from drishti.util import new_id, now
 
+#: 11 stage nodes + M1's extra THREAT_INTEL node. PHASE_0 T0.5 predicted "13 ledger
+#: nodes"; with real M1 and no split APK the true figure is 12, and it will be 13 for a
+#: split bundle (which also writes SPLIT_APK). The doc's estimate was close and the
+#: earlier "11" was only low because M1 was a stub.
+EXPECTED_NODES_PER_RUN = 12
+
 
 @pytest.fixture
 def settings(tmp_path) -> Settings:
@@ -33,10 +39,15 @@ def settings(tmp_path) -> Settings:
 
 @pytest.fixture
 def apk(tmp_path):
-    """Not a real APK. The P0 pipeline is stubs and never parses it."""
-    path = tmp_path / "sample.apk"
-    path.write_bytes(b"PK\x03\x04" + b"stub" * 64)
-    return path
+    """A structurally valid APK-shaped zip.
+
+    Must be a real zip since T0.10: M1's guards reject a corrupt archive outright, and
+    they are right to. The manifest inside is a placeholder, so androguard refuses it and
+    M1 returns partial=True — the degradation path, exercised for free on every run.
+    """
+    from tests.apk_fixtures import write_minimal_apk
+
+    return write_minimal_apk(tmp_path / "sample.apk")
 
 
 def _job(sha256: str = "a" * 64) -> Job:
@@ -63,12 +74,14 @@ def test_pipeline_walks_every_stage_and_chain_verifies(settings, apk) -> None:
     completed = [e.stage for e in events if e.status == "completed"]
     assert completed == list(STAGES_IN_ORDER), "stages must run in canonical §7.1 order"
 
-    # One ledger node per executed stage.
-    assert store.count(job.id) == len(STAGES_IN_ORDER)
+    # 11 stages, but real M1 (T0.10) writes FILE_META *and* THREAT_INTEL — intel is
+    # recorded even when nothing is known, because "no feed had an opinion on this file"
+    # is a finding and `gamma` reads whether intel exists at all.
+    assert store.count(job.id) == EXPECTED_NODES_PER_RUN
 
     verification = store.verify_chain(job.id)
     assert verification.ok is True, verification.reason
-    assert verification.node_count == len(STAGES_IN_ORDER)
+    assert verification.node_count == EXPECTED_NODES_PER_RUN
     store.close()
 
 
@@ -207,7 +220,7 @@ def test_two_concurrent_jobs_keep_separate_chains(settings, apk) -> None:
         for job_id in (first.id, second.id):
             result = store.verify_chain(job_id)
             assert result.ok is True, f"{job_id}: {result.reason}"
-            assert result.node_count == len(STAGES_IN_ORDER)
+            assert result.node_count == EXPECTED_NODES_PER_RUN
         store.close()
     finally:
         runner.shutdown()
