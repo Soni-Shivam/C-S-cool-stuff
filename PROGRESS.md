@@ -14,6 +14,80 @@ Conventions:
   `Soni-Shivam/CyberShield` returns nothing — no pull request was ever opened against the
   remote. Verified 2026-08-17.
 
+## 2026-08-17 · T0.9 — the canary APK finally builds, and M1 parses a real one
+
+**Branch:** `feat/canary-apk` · **Phase:** P0
+
+T0.9 had sat at WIP since H08 with the note *"needs a JDK to build the APK"*. Nobody had
+ever compiled it — and **three separate bugs were waiting in the committed source**, each
+of which had been invisible precisely because the build had never run.
+
+### Found
+
+**1. `style/CanaryTheme` did not exist.** The manifest referenced `@style/CanaryTheme`;
+`styles.xml` defined `AppTheme`. Resource linking failed outright.
+
+**2. Java and Kotlin disagreed on JVM target.** AGP defaults Java to 1.8 while Kotlin took
+17 from the toolchain, and Gradle refuses to build on the mismatch. Both pinned to 17.
+
+**3. `in` is a reserved keyword in Kotlin.** The package `in.drishti.canary` — the India
+TLD — cannot be a Kotlin source package at all: *"Package name must be a '.'-separated
+identifier list"*. Fixed by splitting `namespace` (a Kotlin identifier, now
+`drishti.canary`) from `applicationId` (only a string, still `in.drishti.canary`), so the
+**installed** package keeps the `.in` identity that `canary/README.md` and the frontier's
+`PROBE_PACKAGE` both reference. Renaming the applicationId instead would have silently
+invalidated the morph target the whole demo turns on.
+
+### The gap this closes
+
+`PROGRESS.md` recorded under T0.10: *"No genuinely parseable APK has been ingested. Every
+fixture has a placeholder manifest, so the androguard success path is exercised only by
+the code, never by a test. That needs `canary/` (T0.9), and it is the most significant gap
+in this task."*
+
+That gap is now closed. Real M1 against the real APK:
+
+```
+package      in.drishti.canary
+app_label    DRISHTI Canary
+version      1.0  code 1
+min/target   26 / 35
+partial      False        <- first time; every prior fixture forced degradation
+errors       ()
+ledger       2 nodes, chain ok = True
+```
+
+`tests/unit/test_canary_ingest.py` pins all of it. The APK is committed at `canary/dist/`
+so the test runs anywhere without a JDK, and a missing artifact **fails** rather than
+skipping — a skip would quietly restore exactly the blind spot this removes.
+
+### Toolchain
+
+`canary/build.sh` provisions JDK 17, Gradle 8.10.2 and Android SDK 35 under
+`~/drishti-tools/` and **needs no root** — `sudo` requires a password on this machine, and
+nothing here actually needs it. The system JDK 11 is untouched. Ubuntu 22.04's `apt`
+Gradle is 4.4.1, far below AGP 8.7.3's floor, so pinning our own is also more
+reproducible than arguing with the distro.
+
+**Building an APK is not running one.** This compiles source we wrote, whose behaviour is
+enumerated exhaustively in `canary/README.md`. No sample is involved.
+
+### Verified
+
+Behaviour audited against `CLAUDE.md` §4 before building: PackageManager probe, SMS inbox
+**count** only (id column — no body, no address), one HTTP GET to `10.0.2.2` (the
+emulator's own host loopback, never routable), and `Log.i`. Nothing else. 342 tests pass.
+
+### Not verified
+
+- **The APK has never been installed or executed**, on an emulator or anywhere else.
+  Detonation happens only on the sealed GCE detonator, which does not exist yet.
+- The morph loop it exists to prove has not been run; `PROBE_PACKAGE` has never missed and
+  then hit.
+- Only M1 has seen it. M2 static analysis does not exist yet.
+
+---
+
 ## 2026-08-17 · Stratified corpus sample list (T2.2, part 1)
 
 **Branch:** `feat/stratified-sample-list` · **Phase:** P2 prep · Contract addendum **A9**

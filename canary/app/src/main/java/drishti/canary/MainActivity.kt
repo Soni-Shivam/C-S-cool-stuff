@@ -1,4 +1,4 @@
-package in.drishti.canary
+package drishti.canary
 
 import android.app.Activity
 import android.os.Bundle

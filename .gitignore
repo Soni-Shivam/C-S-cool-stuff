@@ -100,3 +100,6 @@ v1-reference/**/build/
 
 # Local agent worktrees. Never commit their contents.
 .worktrees/
+
+# Machine-specific Android SDK path, written by canary/build.sh.
+local.properties

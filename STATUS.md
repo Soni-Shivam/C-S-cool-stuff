@@ -45,7 +45,10 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - [x] T0.6  API surface                            DONE  H04  19 routes frozen · tests: 235/235
 - [x] T0.7  TraceSource abstraction + fixture      DONE  H05  pre/post-morph arc · tests: 261/261
 - [ ] T0.8  UI shell                               TODO
-- [~] T0.9  Sandbox VM groundwork                  WIP   H08  infra/gcp LIFTed + canary source; image/VM not built
+- [~] T0.9  Sandbox VM groundwork                  WIP   2026-08-17  canary APK BUILDS + ingests; image/VM not built
+      canary/dist/canary-debug.apk sha256 fec80d93... — 3 bugs fixed that only a real
+      build could surface. M1 parses it cleanly (partial=False), closing T0.10's
+      "no genuinely parseable APK has been ingested" gap.
 - [x] T0.10 Ingest module M1, for real             DONE  H07  guards+split+intel
 - [x] P0.11 Ledger concurrency hardening           DONE  2026-08-17  615a803 · tests: 314/314
 

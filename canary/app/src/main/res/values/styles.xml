@@ -1,1 +1,10 @@
-<resources><style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:fontFamily">sans</item><item name="android:colorAccent">#0F766E</item></style></resources>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The manifest references @style/CanaryTheme; this file previously defined "AppTheme",
+     so resource linking failed. Nobody had caught it because the APK had never been
+     built — there was no JDK 17 on the machine. -->
+<resources>
+    <style name="CanaryTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#0F766E</item>
+    </style>
+</resources>
