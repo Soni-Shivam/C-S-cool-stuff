@@ -220,14 +220,34 @@ def _write_manifest_evidence(
     return refs
 
 
+def canonical_signature(full_name: str) -> str:
+    """Normalise androguard's method signature to the smali form everything else uses.
+
+    androguard emits `Lcom/foo/Bar; methodName (Args)Ret` — class and method separated
+    by "; ", NOT the `;->` form that smali, the sink taxonomy, and every Android write-up
+    use. Matching `PackageManager;->getPackageInfo` against that string never succeeds,
+    which is how the entire sink layer came to be dead code: zero sink hits and zero call
+    paths on every real sample, with the failure looking exactly like "this app has no
+    interesting behaviour".
+
+    Found by running the pipeline over real malware. No unit test caught it, because the
+    hand-built graph fixtures used the very format the matcher expected.
+    """
+    class_part, separator, rest = full_name.partition("; ")
+    if not separator:
+        return full_name
+    method = rest.split(" ", 1)[0]
+    return f"{class_part};->{method}"
+
+
 def _call_graph(analysis: Any) -> nx.DiGraph:
     graph = nx.DiGraph()
     for method in analysis.get_methods():
         if method.is_external():
             continue
-        source = method.full_name
+        source = canonical_signature(method.full_name)
         for _, callee, _ in method.get_xref_to():
-            graph.add_edge(source, callee.full_name)
+            graph.add_edge(source, canonical_signature(callee.full_name))
     return graph
 
 
@@ -239,11 +259,17 @@ def _sink_paths(
         for node in graph
         if any(
             name in node
+            # Canonical form is `Lcom/foo/Bar;->onCreate`, so match on `;->name`
+            # rather than the `->name(` shape the raw androguard string never has.
             for name in (
-                "->onCreate(",
-                "->onReceive(",
-                "->onStartCommand(",
-                "->onAccessibilityEvent(",
+                ";->onCreate",
+                ";->onReceive",
+                ";->onStartCommand",
+                ";->onAccessibilityEvent",
+                ";->onBind",
+                ";->doInBackground",
+                ";->onHandleIntent",
+                ";->attachBaseContext",
             )
         )
     }
