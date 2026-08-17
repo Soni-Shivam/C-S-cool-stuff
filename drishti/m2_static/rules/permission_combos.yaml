@@ -1,0 +1,51 @@
+- id: OTP_THEFT_SURFACE
+  all_of: [RECEIVE_SMS, READ_SMS]
+  severity: high
+  mitre: T1582
+  description: Can receive and read SMS, creating an OTP interception surface.
+- id: OVERLAY_CREDENTIAL_THEFT
+  all_of: [SYSTEM_ALERT_WINDOW, INTERNET]
+  plus_component_type: service
+  severity: high
+  mitre: T1056
+  description: Can draw overlays and communicate through a service.
+- id: ACCESSIBILITY_ABUSE
+  requires_service_binding: android.permission.BIND_ACCESSIBILITY_SERVICE
+  severity: critical
+  mitre: T1417
+  description: Declares an accessibility-bound service.
+- id: DROPPER_CAPABILITY
+  all_of: [REQUEST_INSTALL_PACKAGES]
+  severity: high
+  mitre: T1407
+  description: Can request installation of additional packages.
+- id: SPYWARE_HARVEST
+  all_of: [READ_CONTACTS, READ_CALL_LOG, INTERNET]
+  severity: high
+  mitre: T1412
+  description: Can collect contacts and call history then transmit it.
+- id: PERSISTENT_BOOT
+  all_of: [RECEIVE_BOOT_COMPLETED, FOREGROUND_SERVICE]
+  severity: medium
+  mitre: T1547
+  description: Can resume foreground work after device boot.
+- id: LOCATION_TRACKING
+  all_of: [ACCESS_FINE_LOCATION, INTERNET]
+  severity: medium
+  mitre: T1430
+  description: Can collect and transmit precise location.
+- id: CAMERA_MIC_SURVEILLANCE
+  all_of: [CAMERA, RECORD_AUDIO, INTERNET]
+  severity: high
+  mitre: T1429
+  description: Can collect camera and microphone data then transmit it.
+- id: EXTERNAL_STORAGE_EXFIL
+  all_of: [READ_EXTERNAL_STORAGE, INTERNET]
+  severity: medium
+  mitre: T1537
+  description: Can read shared storage and transmit it.
+- id: NOTIFICATION_LISTENER
+  requires_service_binding: android.permission.BIND_NOTIFICATION_LISTENER_SERVICE
+  severity: high
+  mitre: T1417
+  description: Declares a notification-listener service.
