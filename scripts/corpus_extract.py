@@ -31,14 +31,23 @@ import subprocess
 import sys
 import tempfile
 import time
+import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlencode
 from urllib.request import urlopen
+
+import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 ANDROZOO_URL = "https://androzoo.uni.lu/api/download"
+MALWAREBAZAAR_URL = "https://mb-api.abuse.ch/api/v1/"
+
+#: MalwareBazaar ships samples inside a zip encrypted with this password, the long-standing
+#: convention for handing malware around without a mail scanner eating it.
+MB_ZIP_PASSWORD = b"infected"
 
 #: Anything larger is a parser risk and a memory risk for marginal signal.
 MAX_APK_BYTES = 60_000_000
@@ -64,8 +73,50 @@ def assert_not_a_laptop(override: bool) -> None:
         )
 
 
+def download_from_malwarebazaar(sha256: str, api_key: str, dest: Path, timeout: int = 180) -> int:
+    """Fetch one sample from MalwareBazaar and unwrap its encrypted zip.
+
+    The API returns a password-protected archive rather than the APK directly. Standard
+    zipfile handles ZipCrypto; abuse.ch now uses AES, so pyzipper is tried first and the
+    stdlib is the fallback.
+    """
+    import io
+
+    response = httpx.post(
+        MALWAREBAZAAR_URL,
+        headers={"Auth-Key": api_key},
+        data={"query": "get_file", "sha256_hash": sha256},
+        timeout=timeout,
+    )
+    response.raise_for_status()
+    payload = response.content
+    if payload[:1] == b"{":
+        raise ValueError(f"MalwareBazaar refused: {payload[:120]!r}")
+
+    def _extract(opener: Any) -> bytes:
+        with opener(io.BytesIO(payload)) as archive:
+            names = [n for n in archive.namelist() if not n.endswith("/")]
+            if not names:
+                raise ValueError("empty archive")
+            return bytes(archive.read(names[0], pwd=MB_ZIP_PASSWORD))
+
+    try:
+        import pyzipper
+
+        blob = _extract(pyzipper.AESZipFile)
+    except Exception:
+        blob = _extract(zipfile.ZipFile)
+
+    if not blob:
+        raise ValueError("archive contained no bytes")
+    if len(blob) > MAX_APK_BYTES:
+        raise ValueError(f"exceeds {MAX_APK_BYTES} byte cap")
+    dest.write_bytes(blob)
+    return len(blob)
+
+
 def download_apk(sha256: str, api_key: str, dest: Path, timeout: int = 180) -> int:
-    """Fetch one APK by hash. Returns bytes written."""
+    """Fetch one APK by hash from AndroZoo. Returns bytes written."""
     url = f"{ANDROZOO_URL}?{urlencode({'apikey': api_key, 'sha256': sha256})}"
     written = 0
     with urlopen(url, timeout=timeout) as response, dest.open("wb") as handle:
@@ -90,7 +141,9 @@ def upload_to_gcs(path: Path, bucket: str, sha256: str) -> None:
     )
 
 
-def process_one(row: dict, api_key: str, bucket: str, workdir: Path, retain: bool) -> dict:
+def process_one(
+    row: dict, api_key: str, bucket: str, workdir: Path, retain: bool, source: str = "androzoo"
+) -> dict:
     """Download, analyse, extract, retain, delete. Returns a result record."""
     from drishti.ledger.store import LedgerStore
     from drishti.m2_static.engine import analyse
@@ -110,7 +163,10 @@ def process_one(row: dict, api_key: str, bucket: str, workdir: Path, retain: boo
         "features": {},
     }
     try:
-        record["bytes"] = download_apk(sha, api_key, apk)
+        if source == "malwarebazaar":
+            record["bytes"] = download_from_malwarebazaar(sha, api_key, apk)
+        else:
+            record["bytes"] = download_apk(sha, api_key, apk)
         # A throwaway ledger per sample: M2 wants somewhere to append, and corpus
         # extraction is not an investigation whose chain anyone will verify.
         with tempfile.TemporaryDirectory() as scratch:
@@ -145,14 +201,20 @@ def main() -> int:
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--bucket", default="cybershield-505518-corpus")
     parser.add_argument("--no-retain", action="store_true", help="skip the GCS upload")
+    parser.add_argument("--source", choices=("androzoo", "malwarebazaar"), default="androzoo")
     parser.add_argument("--i-am-the-extractor-vm", action="store_true")
     args = parser.parse_args()
 
     assert_not_a_laptop(args.i_am_the_extractor_vm)
 
-    api_key = os.environ.get("DRISHTI_ANDROZOO_API_KEY", "").strip()
+    key_var = (
+        "DRISHTI_MALWAREBAZAAR_API_KEY"
+        if args.source == "malwarebazaar"
+        else "DRISHTI_ANDROZOO_API_KEY"
+    )
+    api_key = os.environ.get(key_var, "").strip()
     if not api_key:
-        sys.exit("DRISHTI_ANDROZOO_API_KEY is not set")
+        sys.exit(f"{key_var} is not set")
 
     # Resume support: a batch that dies at sample 900 must not start over.
     done: set[str] = set()
@@ -191,7 +253,13 @@ def main() -> int:
         ):
             futures = {
                 pool.submit(
-                    process_one, row, api_key, args.bucket, workdir, not args.no_retain
+                    process_one,
+                    row,
+                    api_key,
+                    args.bucket,
+                    workdir,
+                    not args.no_retain,
+                    args.source,
                 ): row
                 for row in rows
             }

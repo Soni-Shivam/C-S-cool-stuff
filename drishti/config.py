@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     llm_cache_dir: Path = Path(".cache/llm")
 
     # ── storage ──────────────────────────────────────────────────────────────
+    models_dir: Path = Path("models")
     db_path: Path = Path("data/drishti.db")
     ledger_key_path: Path = Path("data/ledger_ed25519.key")
 
