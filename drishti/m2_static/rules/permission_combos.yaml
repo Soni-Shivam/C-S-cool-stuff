@@ -49,3 +49,27 @@
   severity: high
   mitre: T1417
   description: Declares a notification-listener service.
+- id: SILENT_SMS_FRAUD
+  all_of: [SEND_SMS]
+  severity: critical
+  mitre: T1582
+  description: Can send SMS; premium-rate fraud and self-propagation surface.
+- id: ANTI_UNINSTALL_PERSISTENCE
+  requires_service_binding: android.permission.BIND_DEVICE_ADMIN
+  severity: high
+  mitre: T1626
+  description: Binds device-admin authority, commonly used to resist uninstall.
+- id: CLIPBOARD_MONITOR
+  all_of: [INTERNET]
+  plus_component_type: service
+  any_of: [FOREGROUND_SERVICE, RECEIVE_BOOT_COMPLETED]
+  severity: medium
+  mitre: T1414
+  description: Long-running service with network egress; clipboard-monitoring shape.
+- id: SCREEN_CAPTURE
+  all_of: [FOREGROUND_SERVICE]
+  any_of: [INTERNET]
+  plus_component_type: service
+  severity: high
+  mitre: T1513
+  description: Foreground service with egress; screen-capture and streaming shape.

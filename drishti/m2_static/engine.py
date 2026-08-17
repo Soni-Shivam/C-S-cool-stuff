@@ -29,18 +29,14 @@ from drishti.ledger.store import LedgerStore
 from drishti.m2_static.callgraph import backward_paths
 from drishti.m2_static.hypotheses import derive_hypotheses
 from drishti.m2_static.rules import effective_exported, evaluate_permission_combos
+from drishti.m2_static.sinks import SINK_SIGNATURES
 
 _URL = re.compile(r"https?://[^\s\"']+", re.IGNORECASE)
 _PACKAGE = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*){2,}$")
 _CRYPTO = re.compile(r"(?:AES|DES|RSA)/(?:CBC|ECB|GCM)/[A-Za-z0-9]+")
-_SINKS = {
-    "pkg_query": "PackageManager;->getPackageInfo",
-    "dex_load": "DexClassLoader;-><init>",
-    "network": "HttpURLConnection;->connect",
-    "sms_body": "SmsMessage;->getMessageBody",
-    "overlay": "WindowManager;->addView",
-    "reflection": "java/lang/reflect/Method;->invoke",
-}
+#: Imported from the taxonomy so there is ONE definition of what a sink is.
+#: drishti/m2_static/sinks.py carries severity and MITRE mapping alongside each marker.
+_SINKS = SINK_SIGNATURES
 _ANDROID_NS = "{http://schemas.android.com/apk/res/android}"
 
 

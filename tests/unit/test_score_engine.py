@@ -42,13 +42,40 @@ def _ml(*, probability: float = 0.7, anomaly: bool = False) -> MLPrediction:
     )
 
 
-def test_noisy_or_and_determinism() -> None:
-    """Identical evidence always produces identical score and noisy-OR fusion."""
+def test_noisy_or_fusion() -> None:
+    """Two partially-correlated detectors at 0.7 fuse to ~0.91, not 1.4 clipped to 1.0."""
     genai = GenAIVerdict(sha256="a" * 64, behavioural_risk_B=0.7, ledger_refs=("ev_ai",))
-    first = score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None)
-    assert first == score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None)
-    factor = next(item for item in first.factors if item.symbol == "F_AI")
+    result = score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None)
+    factor = next(item for item in result.factors if item.symbol == "F_AI")
     assert factor.raw == 0.91
+
+
+def test_scorer_is_deterministic() -> None:
+    """100 identical runs, 100 identical results.
+
+    00_GUIDING_MAP.md §9.3 specifies this count explicitly. The scorer is the one
+    component that must return the same answer for the same ledger every time — it is
+    what makes "every score point traces to an artefact" checkable rather than a claim.
+    Running it twice would pass even if a dict iteration order or a set had leaked in;
+    100 runs is what makes an ordering bug actually surface.
+    """
+    genai = GenAIVerdict(sha256="a" * 64, behavioural_risk_B=0.7, ledger_refs=("ev_ai",))
+    baseline = score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None)
+    for _ in range(100):
+        assert score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None) == baseline
+
+
+def test_scorer_uses_no_clock_and_no_randomness() -> None:
+    """Purity, asserted against the source rather than trusted.
+
+    M6 must do no I/O, call no LLM, and use no clock or randomness (CLAUDE.md rule 3).
+    A drifting score would make the ledger attest something unreproducible.
+    """
+    import pathlib
+
+    source = pathlib.Path("drishti/m6_score/engine.py").read_text()
+    for forbidden in ("datetime.now", "time.time", "random.", "uuid", "requests", "open("):
+        assert forbidden not in source, f"m6_score/engine.py must not use {forbidden}"
 
 
 def test_known_bad_is_an_explicit_override() -> None:
