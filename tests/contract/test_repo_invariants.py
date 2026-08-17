@@ -144,6 +144,38 @@ def test_gradle_build_output_is_still_ignored() -> None:
     )
 
 
+def test_canary_builder_is_compile_only_and_user_local() -> None:
+    """The local canary build cannot accidentally become an APK execution path.
+
+    `canary/` is the single inert target we author, but this workstation still must
+    never install or launch it. The builder may download toolchains and compile, then
+    must leave execution to the sealed GCP runtime.
+    """
+    builder = REPO_ROOT / "canary" / "build.sh"
+    assert builder.is_file(), "canary/build.sh must provide a rootless reproducible build"
+    text = builder.read_text(encoding="utf-8")
+    assert "${DRISHTI_TOOLS:-$HOME/drishti-tools}" in text
+    assert "assembleDebug" in text
+    assert '"$HERE/dist/canary.apk"' in text
+    assert "local.properties" in text
+    assert "--retry-all-errors" in text, (
+        "toolchain downloads must retry the intermittent TLS transport failures "
+        "documented for this development network"
+    )
+    assert "PIPESTATUS" in text, (
+        "sdkmanager license acceptance must distinguish its success from the expected "
+        "SIGPIPE exit of the yes producer under pipefail"
+    )
+    forbidden = ("adb install", "adb shell", "emulator ", "monkey ")
+    assert not any(command in text for command in forbidden), (
+        "canary/build.sh must compile only; installation and execution belong only on "
+        "the sealed GCP detonator"
+    )
+    assert _is_ignored("canary/local.properties"), (
+        "Android SDK paths are machine-local and must not be committed"
+    )
+
+
 def test_models_gitkeep_survives() -> None:
     """`models/` holds gitignored binaries but must keep its .gitkeep.
 

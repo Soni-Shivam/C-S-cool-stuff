@@ -95,6 +95,7 @@ Thumbs.db
 
 # Gradle (v1 left its build cache in-tree)
 .gradle/
+canary/local.properties
 canary/app/build/
 v1-reference/**/build/
 

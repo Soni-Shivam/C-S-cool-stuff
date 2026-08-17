@@ -31,7 +31,7 @@
 - Test: `tests/contract/test_repo_invariants.py`
 
 **Interfaces:**
-- Produces `canary/dist/canary-debug.apk` and prints its SHA-256.
+- Produces `canary/dist/canary.apk` and prints its SHA-256.
 - Never installs, launches, or parses an APK as part of build verification.
 
 - [ ] **Step 1: Add a failing repository-invariant test**

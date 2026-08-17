@@ -7,7 +7,7 @@ Protocol: `docs/00_GUIDING_MAP.md` §13.
 - **Started:** 2026-08-13 · **Last reconciled:** 2026-08-17
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
 - **Phase:** P0 FOUNDATIONS — T0.1–T0.7 + T0.10 done; **T0.8 and T0.9 remaining**
-- **Tests:** 300 contract+unit · 14 e2e · **314 total, all passing** (`615a803`)
+- **Tests:** **341 contract+unit, all passing** (`c658a64`; canary build milestone)
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
 
@@ -45,7 +45,7 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - [x] T0.6  API surface                            DONE  H04  19 routes frozen · tests: 235/235
 - [x] T0.7  TraceSource abstraction + fixture      DONE  H05  pre/post-morph arc · tests: 261/261
 - [ ] T0.8  UI shell                               TODO
-- [~] T0.9  Sandbox VM groundwork                  WIP   H08  infra/gcp LIFTed + canary source; image/VM not built
+- [~] T0.9  Sandbox VM groundwork                  WIP   H09  canary compiled (SHA-256 `9854900c…`); sealed image/VM pending
 - [x] T0.10 Ingest module M1, for real             DONE  H07  guards+split+intel
 - [x] P0.11 Ledger concurrency hardening           DONE  2026-08-17  615a803 · tests: 314/314
 
@@ -131,7 +131,7 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - [x] Lab infra LIFT (`infra/m3/**` → `infra/gcp/`)        DONE  H08  + auto_delete and snapshot-policy fixes
 - [ ] Containment verification LIFT                        TODO
 - [ ] M3 harness + hook catalogue LIFT                     TODO
-- [~] canary/ source written to §4 spec                    WIP   H08  needs JDK 17 to build the APK
+- [x] canary/ source written to §4 spec                    DONE  H09  compile-only builder + `dist/canary.apk`; 341 tests
 - [x] ~~Rescue v1 lab data off VM disks → GCS~~            **LOST**  2026-08-17
 
       Both GCP projects were deleted. The 4 boot-disk snapshots, the 14 rescued
@@ -243,10 +243,9 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - Corpus recency: only 117 samples from 2024–25 in v1's list, while the paper names 2024–25
   families as primary targets. Needs a fresh AndroZoo index and ideally MalwareBazaar labels.
 - API keys were shared in plaintext and are not yet rotated.
-- **No Java runtime on the dev laptop**, so the `canary/` APK cannot be built locally
-  (T0.9 / T4.1 depend on it). Either install a JDK or build the canary on a GCE VM. The
-  prebuilt artifact is committed at `canary/dist/` precisely so the demo does not depend
-  on a local toolchain.
+- **Canary compile path verified locally without execution.** `canary/build.sh` keeps its
+  JDK/SDK under `$DRISHTI_TOOLS`, compiles only, and produces the committed inert artifact.
+  Android execution remains deferred to the sealed GCP runtime.
 - ~~A formatter in the dev environment reformats `docs/*.md`~~ — **resolved.** It was
   `ruff` itself: it formats Python code blocks inside markdown, so a repo-wide
   `ruff format` rewrote the spec (~445 lines in `01_DATA_CONTRACTS.md` alone) and CI's
