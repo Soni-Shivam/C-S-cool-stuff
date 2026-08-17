@@ -49,11 +49,13 @@ canary lets us rehearse it without a real sample.
 
 ## Building
 
-Requires a JDK and the Android SDK.
+Run the audited compile-only builder. It downloads its pinned JDK 17, Gradle, and
+Android SDK components into `$DRISHTI_TOOLS` (default: `$HOME/drishti-tools`), never
+installs them system-wide, and has no `adb`, emulator, install, launch, or test-device
+command.
 
 ```bash
-cd canary && ./gradlew :app:assembleDebug
-cp app/build/outputs/apk/debug/app-debug.apk dist/canary.apk
+./canary/build.sh
 ```
 
 The built artifact is committed at **`canary/dist/canary.apk`** so the demo does not depend
@@ -62,7 +64,5 @@ only `canary/dist/*.apk`, because **git cannot re-include a file whose parent di
 excluded** — an allowlist pointing inside Gradle's ignored `build/` directory can never fire.
 `tests/contract/test_repo_invariants.py` guards both directions.
 
-> **Not yet built.** There is no JDK on the current development machine, so `dist/` is
-> empty and no genuinely parseable APK has been ingested by M1 yet — androguard's success
-> path is exercised only by code, never by a test. Build this on a machine with a JDK, or on
-> a GCE builder, and commit the artifact.
+The builder has compiled the artifact without executing it. Ingestion and every Android
+runtime action remain restricted to the isolated GCP workflow.
