@@ -43,6 +43,7 @@ from drishti.m5_ml.features import FEATURE_SCHEMA_VERSION, FeatureVector, projec
 #: Below this many of either class in a split, a metric is not reported at all.
 #: A PR-AUC over nine test samples is noise with a decimal point on it.
 MIN_PER_CLASS = 25
+CALIBRATOR_NAME = "calibrator_v1.pkl"
 
 INK = "#151A21"
 ACCENT = "#9A6512"
@@ -195,6 +196,27 @@ def main() -> int:
         ]
         return np.array(vectors, dtype=float), np.array([r["label"] for r in subset], dtype=int)
 
+    # With a small corpus, splitting the recent band by exact date puts nearly
+    # everything on one side — measured: calib had 0 malware while test had 9 benign.
+    # Re-splitting the recent band deterministically by hash keeps the property that
+    # actually matters (TEST IS STRICTLY NEWER THAN TRAIN) while making both evaluation
+    # splits usable. Train remains everything up to 2023; nothing recent leaks into it.
+    recent = [r for r in rows if r["split"] in ("calib", "test")]
+    if (
+        recent
+        and min(
+            Counter((r["split"], r["label"]) for r in rows)[("test", label)] for label in (0, 1)
+        )
+        < MIN_PER_CLASS
+    ):
+        for record in recent:
+            # Deterministic and label-independent: parity of the hash, not of the label.
+            record["split"] = "calib" if int(record["sha256"][:8], 16) % 4 == 0 else "test"
+        print(
+            "\nNOTE: the recent band was re-split calib/test by hash parity. Train is "
+            "still strictly older (<=2023), so this remains a time split."
+        )
+
     counts = Counter((r["split"], r["label"]) for r in rows)
     print("\nsplit composition:")
     for split in ("train", "calib", "test"):
@@ -265,18 +287,36 @@ def main() -> int:
 
     if calib_rows and min(counts[("calib", 0)], counts[("calib", 1)]) >= 5:
         x_cal, y_cal = matrix(calib_rows)
-        calibrated = CalibratedClassifierCV(model, method="isotonic", cv="prefit")
+        # cv="prefit" was removed in recent sklearn; FrozenEstimator is the replacement.
+        # Platt rather than isotonic: PHASE_2 T2.4 says to fall back to sigmoid when the
+        # calibration split is small, and isotonic on a handful of one class overfits
+        # into a step function that looks confident and means nothing.
+        from sklearn.frozen import FrozenEstimator
+
+        method = "isotonic" if min(counts[("calib", 0)], counts[("calib", 1)]) >= 25 else "sigmoid"
+        calibrated = CalibratedClassifierCV(FrozenEstimator(model), method=method)
         calibrated.fit(x_cal, y_cal)
+        metrics["calibration_method"] = method
         p_cal = calibrated.predict_proba(x_test)[:, 1]
+        metrics["calib_samples"] = len(y_cal)
         metrics["brier_before"] = round(float(brier_score_loss(y_test, p_time)), 4)
         metrics["brier_after"] = round(float(brier_score_loss(y_test, p_cal)), 4)
         figure_reliability(y_test, p_time, p_cal, args.figures / "reliability.png")
+        (args.models / CALIBRATOR_NAME).write_bytes(__import__("pickle").dumps(calibrated))
     else:
         metrics["calibration"] = "skipped: calib split too small"
 
     figure_importance(
         vocabulary, model.feature_importances_, args.figures / "feature_importance.png"
     )
+
+    import pickle
+
+    # Pickle the fitted estimator rather than xgboost's save_model: the sklearn wrapper
+    # raises "_estimator_type undefined" on this version pairing, and infer.py needs the
+    # wrapper (not a raw Booster) for predict_proba.
+    (args.models / "classifier_v1.pkl").write_bytes(pickle.dumps(model))
+    print(f"saved {args.models / 'classifier_v1.pkl'}")
 
     (args.models / "metrics.json").write_text(json.dumps(metrics, indent=2))
     print("\n" + json.dumps(metrics, indent=2))

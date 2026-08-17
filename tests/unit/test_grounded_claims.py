@@ -52,7 +52,8 @@ def test_the_catalogue_offers_only_real_ids(ledger) -> None:
 def test_a_claim_citing_real_evidence_passes(ledger) -> None:
     _, citable = build_evidence_catalogue(ledger, "job_claims")
     real = next(
-        n for n in ledger.query(job_id="job_claims")
+        n
+        for n in ledger.query(job_id="job_claims")
         if n.id in citable and n.type is EvidenceType.MANIFEST_ENTRY
     )
     assert Verifier(ledger, "job_claims").check_claim(_claim((real.id,))) is VerifierStatus.PASS

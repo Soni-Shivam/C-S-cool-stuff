@@ -30,7 +30,7 @@ from drishti.m5_ml.features import (
 
 log = get_logger(__name__)
 
-MODEL_FILE = "classifier_v1.json"
+MODEL_FILE = "classifier_v1.pkl"
 CALIBRATOR_FILE = "calibrator_v1.pkl"
 VOCAB_FILE = "vocab_v1.json"
 
@@ -63,10 +63,11 @@ def load_bundle(models_dir: Path) -> ModelBundle | None:
     if not model_path.exists() or not vocab_path.exists():
         return None
     try:
-        from xgboost import XGBClassifier
+        import pickle
 
-        model = XGBClassifier()
-        model.load_model(str(model_path))
+        # The fitted sklearn wrapper, not a raw Booster: predict_proba lives on the
+        # wrapper, and xgboost's save_model refuses the wrapper on this version pairing.
+        model = pickle.loads(model_path.read_bytes())
         vocabulary = load_vocabulary(vocab_path)
     except Exception as exc:
         log.error("model_load_failed", error=str(exc))

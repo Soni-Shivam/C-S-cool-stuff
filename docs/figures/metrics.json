@@ -1,0 +1,12 @@
+{
+  "pr_auc_random_split": 0.9925,
+  "pr_auc_time_split": 0.9541,
+  "generalisation_gap": 0.0384,
+  "train_samples": 205,
+  "test_samples": 144,
+  "features": 340,
+  "calibration_method": "sigmoid",
+  "calib_samples": 48,
+  "brier_before": 0.3686,
+  "brier_after": 0.1302
+}
