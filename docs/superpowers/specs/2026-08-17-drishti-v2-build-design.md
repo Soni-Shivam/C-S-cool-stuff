@@ -82,14 +82,51 @@ that did nothing is the same defect class as v1's `nc -z` bug, where `blocked()`
 **Fix:** `ok=False`, `reason="empty chain: no nodes for job <id>"`. Callers audited.
 **Test first:** `test_empty_chain_does_not_verify`.
 
-### 3.3 Bug — dedupe writes zero ledger nodes
+### 3.3 Bug — the ledger signing key is created non-atomically
 
-T0.10's dedupe short-circuits the pipeline, so a deduplicated job leaves **no evidence
-trail at all** — contradicting the §7 invariant that every job traces to artefacts.
+> **Correction.** An earlier draft of this spec attributed the failing e2e test to
+> T0.10's dedupe short-circuiting the pipeline. That was wrong. M1's `ingest()` writes
+> `FILE_META` and `THREAT_INTEL` regardless of `dedupe_hit`; dedupe is only a flag on
+> `FileMeta`. The real cause was found by reproducing the failure in isolation.
 
-**Fix:** a deduped job still appends `FILE_META` plus a dedupe marker citing the prior
-job's node. `tests/e2e/test_pipeline_walk.py::test_two_concurrent_jobs_keep_separate_chains`
-switches to two **distinct** APKs — it was accidentally testing dedupe, not chain isolation.
+`crypto.load_or_create_key` (`drishti/ledger/crypto.py:92`) does check-then-act:
+
+```python
+if path.exists():                      # thread A: False, thread B: False
+    return loaded
+key = Ed25519PrivateKey.generate()     # A makes K_A, B makes K_B
+with open(path, "wb", ...) as handle:  # A writes K_A, B overwrites it with K_B
+    handle.write(pem)
+return key                             # A returns K_A — no longer on disk
+```
+
+`JobRunner` defaults to `job_workers=2` and each worker constructs its own
+`LedgerStore`, so **on a fresh install the first two concurrent uploads produce a
+permanently unverifiable ledger.** The affected nodes are signed with a key that was
+overwritten and never persisted: the evidence is not re-signable.
+
+One root cause, two symptoms — which is why it read as flaky:
+
+| Interleaving | Symptom |
+|---|---|
+| Lost key — B overwrites A's | 12 nodes, `first_bad_seq=0`, `"signature is not valid for this node_hash"` (reproduced 3/3 in isolation) |
+| Torn read — B reads a half-written PEM | `LedgerStore.__init__` raises, worker dies, `node_count=0` and a full-timeout stream hang |
+
+**Fix:** write to a temp file, `fsync`, then `os.link` into place — `link` fails if the
+destination exists, making create-if-absent a single atomic step — and always re-read so
+every caller converges on whichever key won. A corrupt key file raises `LedgerKeyError`
+rather than being silently replaced; regenerating would invalidate every chain already
+signed.
+
+### 3.4 Bug — a worker thread can die before publishing `_DONE`
+
+`JobRunner._run` (`drishti/api/jobs.py:110`) constructs `LedgerStore` **above** its
+`try`, so an exception there skips both the handler that marks the job `FAILED` and the
+`finally` that publishes the done sentinel. The docstring promises *"Must never raise —
+a dead worker thread is a silent hang"*, and the line above the `try` breaks that
+promise. The SSE consumer blocks for its full timeout on a job stuck in `QUEUED`.
+
+**Fix:** construct the ledger inside the `try`; close it defensively in the `finally`.
 
 ---
 
