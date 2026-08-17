@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import sys
 from collections.abc import Iterator
 from pathlib import Path
@@ -43,9 +44,20 @@ OUTPUT_COLUMNS = [
 ]
 
 
+def _open_index(path: Path):
+    """Open the index, transparently handling gzip.
+
+    AndroZoo ships `latest.csv.gz` (~3.5GB); the plain `.csv` URL is a 404. Decompressing
+    it first would cost ~15GB of disk for no benefit, so it is read as a stream.
+    """
+    if path.suffix == ".gz":
+        return gzip.open(path, mode="rt", newline="", encoding="utf-8", errors="replace")
+    return path.open(newline="", encoding="utf-8", errors="replace")
+
+
 def read_index(path: Path) -> Iterator[IndexRow]:
     """Stream AndroZoo's index. Never materialises it — it is tens of millions of rows."""
-    with path.open(newline="", encoding="utf-8", errors="replace") as handle:
+    with _open_index(path) as handle:
         for record in csv.DictReader(handle):
             try:
                 yield IndexRow(
@@ -133,10 +145,27 @@ def main() -> int:
     if not args.index_csv.exists():
         print(f"error: {args.index_csv} does not exist", file=sys.stderr)
         return 2
-    if args.index_csv.stat().st_size < 1_000_000:
+    # The v1 trap: a saved HTTP 404 page looks like an index until you parse it
+    # (SALVAGE.md — "Saved HTTP 404 HTML pages, not the AndroZoo index").
+    # Check FORMAT first, then apply a size floor appropriate to that format: a gzipped
+    # index is legitimately ~10x smaller than the plain CSV, so one floor cannot serve both.
+    size = args.index_csv.stat().st_size
+    if args.index_csv.suffix == ".gz":
+        with open(args.index_csv, "rb") as probe:
+            if probe.read(2) != b"\x1f\x8b":
+                print(
+                    f"error: {args.index_csv} is not gzip data — most likely a saved "
+                    "error page. Re-download it.",
+                    file=sys.stderr,
+                )
+                return 2
+        floor = 10_000
+    else:
+        floor = 1_000_000
+    if size < floor:
         print(
-            f"error: {args.index_csv} is only {args.index_csv.stat().st_size} bytes — "
-            "that is an HTTP error page, not the AndroZoo index. Re-download it.",
+            f"error: {args.index_csv} is only {size} bytes, below the {floor}-byte floor "
+            "for this format — that is an error page, not the AndroZoo index.",
             file=sys.stderr,
         )
         return 2
