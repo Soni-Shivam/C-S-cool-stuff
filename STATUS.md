@@ -55,10 +55,10 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 
 ## P1 — STATIC ENGINE (H04→H16)
 
-- [~] T1.1 Manifest & permission analysis          WIP   H10  components + exported semantics + 10 auditable combo rules
+- [x] T1.1 Manifest & permission analysis          DONE  2026-08-17 · 14 combo rules, DoD enforced by test
 - [ ] T1.2 Certificate analysis                    TODO
 - [~] T1.3 Strings, constants, packing signals     WIP   H10  URLs/packages/crypto, entropy and native-lib signals
-- [~] T1.4 Call-graph + backward sink walk         WIP   H10  bounded reverse BFS, six initial sink signatures
+- [~] T1.4 Call-graph + backward sink walk         WIP   2026-08-17 · 29-sink taxonomy in sinks.py; BFS bounded
 - [ ] T1.5 Over-privilege & drift                  TODO
 - [~] T1.6 Hypothesis derivation                   WIP   H10  evidence-cited static→dynamic bridge (six kinds)
 - [ ] T1.7 MobSF enrichment (optional)             TODO
@@ -73,7 +73,7 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - [ ] T2.4 Calibration                             TODO
 - [ ] T2.5 Anomaly detector                        TODO
 - [ ] T2.6 SHAP explanations                       TODO
-- [~] T2.7 The scorer                              WIP   #8 · noisy-OR + override + bands; determinism asserted 2x not 100x
+- [~] T2.7 The scorer                              WIP   #8 · noisy-OR + override + bands; determinism 100x + purity asserted
 - [ ] T2.8 Bands and proposed actions              TODO
 - [ ] T2.9 Scorer test suite                       TODO
 
@@ -156,10 +156,10 @@ tests; these are the distances still to close, each traced to the doc that requi
 
 | Requirement | Source | Required | Actual |
 |---|---|---|---|
-| Permission-combo rules | `PHASE_1` DoD | ≥ 14 | **10** |
-| Sink taxonomy | `PHASE_1` DoD | ≥ 18 | **~7** |
+| Permission-combo rules | `PHASE_1` DoD | ≥ 14 | **14** — enforced by test |
+| Sink taxonomy | `PHASE_1` DoD | ≥ 18 | **29** in `m2_static/sinks.py` — enforced by test |
 | Feature vector width | `PHASE_2` T2.1 | 12 families | **12/12 families, 71 features on the canary** (was 5/12, 17) |
-| Scorer determinism test | `00_GUIDING_MAP` §9.3 | 100× identity | **runs 2×** |
+| Scorer determinism test | `00_GUIDING_MAP` §9.3 | 100× identity | **done** — plus a source-level purity assertion |
 | Feature parity test | `PHASE_2` T2.1 (R3 mitigation) | golden-file element-wise | **done** — `tests/contract/test_feature_parity.py` |
 | Vocabulary pinning | `PHASE_2` T2.1 | frozen vocab, width asserted both paths | **done** — `build_vocabulary`/`project`/`load_vocabulary` |
 
