@@ -97,3 +97,6 @@ Thumbs.db
 .gradle/
 canary/app/build/
 v1-reference/**/build/
+
+# Local agent worktrees. Never commit their contents.
+.worktrees/
