@@ -10,6 +10,92 @@ Conventions:
 - **Found** entries are bugs or wrong claims discovered while building. They are the most
   useful part of this file.
 - **Not verified** is stated explicitly on every entry. Absence of a claim is deliberate.
+- **PR numbers below refer to local branch history.** `gh pr list --state all` on
+  `Soni-Shivam/CyberShield` returns nothing — no pull request was ever opened against the
+  remote. Verified 2026-08-17.
+
+## 2026-08-17 · Ledger concurrency hardening + reality reconciliation
+
+**Branch:** `fix/p0-ledger-hardening` · **Phase:** P0
+**Plan:** `docs/superpowers/plans/2026-08-17-ledger-hardening-and-reconciliation.md`
+
+Establishing a real test baseline surfaced three defects. `tests/e2e` had never been run
+alongside the rest of the suite, so none of them had been seen.
+
+### Found
+
+**1. The ledger signing key was created non-atomically.** `load_or_create_key` did
+check-then-act, so two `LedgerStore` instances built concurrently — and `job_workers`
+defaults to 2 — both generated a key and the second overwrote the first. The losing thread
+signed every one of its nodes with a key that was not on disk. **On a fresh install the
+first two concurrent uploads produced a permanently unverifiable ledger, and the evidence
+is not re-signable.** Measured: 8 threads released through a barrier produced **8 distinct
+keys**, not 1.
+
+**2. A worker thread could die before publishing `_DONE`.** `JobRunner._run` constructed
+`LedgerStore` *above* its `try`, so a failure there skipped both the handler that marks the
+job `FAILED` and the `finally` that publishes the sentinel. Observed as a job stuck in
+`QUEUED` with `error=None` while the SSE consumer blocked for its full timeout. The
+docstring promised the worker never raises; the line above the `try` broke that promise.
+
+**3. Schema initialisation could not survive lock contention.** SQLite returns
+`SQLITE_BUSY` **without invoking the busy handler** when two connections each hold a shared
+lock and both try to upgrade — the one case it cannot wait out without risking deadlock —
+and `CREATE TABLE IF NOT EXISTS` is precisely a read plus an upgrade. Measured **2 failures
+in 480 concurrent constructions**. A longer connect timeout does not fix it: probing showed
+the busy handler *does* run and simply times out (failed at exactly 5.01s against a held
+`EXCLUSIVE` lock), so the fix is a bounded retry with jittered backoff.
+
+**4. `STATUS.md` asserted infrastructure that no longer exists.** Both GCP projects are
+gone, taking the four rescue snapshots, the 14 rescued observation artifacts, the 3
+attestations, `samples.csv` and the v1 feature CSV. The trial billing account is closed.
+The PRs `PROGRESS.md` cites were never opened on the remote.
+
+### A wrong diagnosis, corrected
+
+The first explanation for the failing e2e test was that T0.10's dedupe short-circuited the
+pipeline and left a job with no ledger nodes. **That was wrong** — M1's `ingest()` writes
+`FILE_META` and `THREAT_INTEL` regardless of `dedupe_hit`; dedupe is only a flag on
+`FileMeta`. The real cause was found by reproducing in isolation, where the failure was
+`first_bad_seq=0, "signature is not valid for this node_hash"` — a signing problem, not an
+ingest one. One root cause produced two different symptoms, which is why it read as flake.
+
+### Verified
+
+- 8 threads racing to create a key now yield exactly 1, and it is the key on disk.
+- **1,440 concurrent `LedgerStore` constructions, zero failures** (was 2 in 480).
+- `test_two_concurrent_jobs_keep_separate_chains` passes **6/6 in isolation**, having
+  failed **3/3** before this branch.
+- 314 tests pass (300 contract+unit, 14 e2e). ruff clean, mypy clean over 41 files.
+
+### Changed
+
+- `drishti/ledger/crypto.py` — atomic key creation via temp-file + `fsync` + `os.link`;
+  new `LedgerKeyError`; a corrupt key raises rather than being silently replaced
+- `drishti/ledger/store.py` — `initialise_schema()` with bounded retry; `verify_chain`
+  rejects an empty chain
+- `drishti/api/jobs.py` — ledger constructed inside the `try`
+- `tests/unit/test_ledger_key_concurrency.py`, `tests/unit/test_job_runner_failure_paths.py`
+  — new; `tests/contract/test_ledger_chain.py` — empty-chain expectation reversed
+
+### Reversed a documented decision
+
+`test_empty_chain_verifies` asserted *"a job with no evidence is vacuously valid, not an
+error"*. True of chain integrity in the abstract, wrong for this result specifically:
+`verify_chain`'s output is rendered to a human as a trust signal by the UI badge, the CLI
+exit code and the report, and demo beat #7 is showing it green. "No violations found
+because nothing was checked" must not look identical to "verified". Same shape as v1's
+`nc -z` bug.
+
+### Not verified
+
+- **No GCP resource was created, started, or touched.** Laptop only.
+- Nothing was detonated and no sample was analysed.
+- The key fix is tested against **threads, not processes**. `os.link` is atomic across
+  processes too, but there is no test for that case.
+- The sqlite retry is proven by injection and by a 1,440-construction stress run, not by a
+  deterministic reproduction of the upgrade-deadlock race itself — that race is inherently
+  timing-dependent.
 
 ## 2026-08-14 · T0.10 — real M1 ingest (first non-stub module)
 
@@ -75,6 +161,12 @@ stated reason. A `%PDF` upload named `.apk` → job `failed` with
 ## 2026-08-14 · Legacy detonation artifacts rescued + contract reconciled
 
 **Branch:** `feat/rescue-artifacts` · **Phase:** P0 (side track: v1 salvage)
+
+> **SUPERSEDED 2026-08-17.** The rescue described below was real and succeeded, but the
+> project holding the output has since been deleted. `gs://drishti-v2-260814-artifacts/`
+> no longer exists and the 14 artifacts are unrecoverable. **What survives is the 2
+> artifacts committed to `data/fixtures/observations/`** and the contract fix — both of
+> which are in this repo and unaffected. Read the rest of this entry as history.
 
 ### What happened
 
@@ -292,6 +384,10 @@ out of the commit.
 ---
 
 ## 2026-08-13/14 · GCP
+
+> **SUPERSEDED 2026-08-17.** Every resource named below has been deleted — both projects,
+> all four snapshots, all three buckets and their contents. None of it is recoverable.
+> See the 2026-08-17 entry and `STATUS.md`. History, not current state.
 
 - **Legacy project `drishti-m3-08130038`:** all four boot disks snapshotted
   (`v1-rescue-*-20260813`) — they were on `auto_delete=true` with **zero buckets and zero
