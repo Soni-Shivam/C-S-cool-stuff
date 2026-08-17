@@ -201,9 +201,30 @@ def _components(apk: Any, target_sdk: int) -> tuple[Component, ...]:
     return tuple(output)
 
 
+#: Components recorded individually before falling back to an aggregate. Real apps carry
+#: hundreds; one measured sample had 453, which alone put a run at 516 ledger nodes
+#: against the 50-400 sanity band in 00_GUIDING_MAP.md 12.
+MAX_INDIVIDUAL_COMPONENTS = 25
+
+
 def _write_manifest_evidence(
     ledger: LedgerStore, permissions: tuple[str, ...], components: tuple[Component, ...]
 ) -> dict[str, str]:
+    """Record manifest facts without flooding the ledger.
+
+    Permissions keep one node each: combo rules cite them as `parents`, so they must be
+    individually addressable for the evidence graph to be a graph rather than a list.
+
+    Components do not. A real app has hundreds of them and almost all are ordinary UI —
+    one measured sample produced 453, putting a single run at 516 nodes against the
+    50-400 band. This is the same aggregation rule CLAUDE.md rule 11 already demands for
+    dynamic events, applied where the same explosion happens statically.
+
+    What survives individually is what an analyst would actually click: components that
+    are **exported without permission protection**, which is the attack surface. The rest
+    are summarised per kind with counts, so nothing is lost from the report — only from
+    the node count.
+    """
     refs: dict[str, str] = {}
     for permission in permissions:
         refs[permission] = ledger.append(
@@ -211,11 +232,34 @@ def _write_manifest_evidence(
             source_tool="androguard",
             content={"kind": "permission", "name": permission},
         ).id
-    for component in components:
+
+    # Exported-and-unprotected first: these are the ones worth a node of their own.
+    interesting = [c for c in components if c.exported and not c.permission]
+    remainder = [c for c in components if not (c.exported and not c.permission)]
+    for component in interesting[:MAX_INDIVIDUAL_COMPONENTS]:
         ledger.append(
             type=EvidenceType.MANIFEST_ENTRY,
             source_tool="androguard",
             content={"kind": component.kind.value, **component.model_dump(mode="json")},
+        )
+
+    summarised = remainder + interesting[MAX_INDIVIDUAL_COMPONENTS:]
+    if summarised:
+        counts: dict[str, int] = {}
+        for component in summarised:
+            counts[component.kind.value] = counts.get(component.kind.value, 0) + 1
+        ledger.append(
+            type=EvidenceType.MANIFEST_ENTRY,
+            source_tool="androguard",
+            content={
+                "kind": "component_summary",
+                "counts": counts,
+                "total": len(summarised),
+                "note": (
+                    "components not exported-unprotected, or beyond the "
+                    f"{MAX_INDIVIDUAL_COMPONENTS}-node cap, aggregated by kind"
+                ),
+            },
         )
     return refs
 
