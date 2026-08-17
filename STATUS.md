@@ -24,7 +24,8 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 | GCP (v2 `drishti-v2-260814`) | **GONE.** Same. The corpus bucket, artifacts bucket, `samples.csv`, the 14 rescued v1 observation artifacts and the 3 attestations are **unrecoverable** |
 | Trial billing account | `01996C-C72085-6358D2` — **`open: false`** (closed) |
 | Usable billing account | `017B2F-A06E63-B76B98`, INR, `open: true` |
-| GCP (v3) | **`cybershield-505518`**, billing linked. compute/storage/oslogin enabled; **IAP not yet enabled**. **0 VMs, 0 buckets** |
+| GCP (v3) | **`cybershield-505518`**, billing linked. compute/storage/oslogin/**IAP**/billingbudgets enabled. **3 buckets in `us-east1`** (versioned, PAP `enforced`, uniform access, noncurrent deleted @7d). **0 VMs** — bootstrap creates no compute |
+| Budget guard | Project budget `drishti-cybershield-505518` = **₹4,200 (≈$50)**, alerts at 60/90/100%. Sits inside the account-wide ₹10,000 alert that already existed |
 | Compute quota | `CPUS_ALL_REGIONS: 32`, `asia-south1 CPUS: 100`, `DISKS_TOTAL_GB: 4096`, `INSTANCES: 24` — no increase needed |
 | Extractor VM (pre-existing) | `instance-20260817-080247`, project `internship-505513`, `us-east1-c`, `n2-standard-2`, 500GB `pd-standard`, **public IP**, **nested virt OFF**, SA scope `devstorage.read_only`. Usable for static extraction; **disqualified as a detonator** |
 | Secrets | `.env` recreated (gitignored). `ANDROZOO_API_KEY` set — **exposed in a chat transcript, rotate post-demo**. `GEMINI_API_KEY` **not yet provided** |
@@ -222,8 +223,12 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - **The AndroZoo API key was exposed in a chat transcript.** Rotate after the demo.
 - **`GEMINI_API_KEY` is not set.** P3 is blocked on it; the `mock` provider covers tests
   until it arrives.
-- **The lab is entirely unbuilt.** No VPC, no firewall, no Packer image, no detonator, no
-  corpus. `infra/gcp/` holds the scripts but nothing has been run in `cybershield-505518`.
+- **The lab is still mostly unbuilt.** Buckets, APIs and budget alerts exist as of
+  2026-08-17; **no VPC, no firewall, no Packer image, no detonator, no corpus.**
+- **GitHub Actions has never run on this repo** — 0 workflows registered, 0 runs ever,
+  despite valid YAML on the default branch, `enabled: true`, and a non-fork repo. The API
+  returns 200 with `total_count: 0`, so it is not a token-scope problem. **PRs are being
+  merged on local verification**, which is weaker than the CI gate the docs assume.
 - **R1 (emulator/frida)** is no longer partially retired — it is **fully open again**. v1's
   proof that the image boots with frida 16.7.19 rested on a project that no longer exists.
   The knowledge survives in `docs/CARRIED_FINDINGS.md`; the running system does not.

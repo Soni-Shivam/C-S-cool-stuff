@@ -14,6 +14,60 @@ Conventions:
   `Soni-Shivam/CyberShield` returns nothing — no pull request was ever opened against the
   remote. Verified 2026-08-17.
 
+## 2026-08-17 · GCP bootstrap — buckets, APIs, budget guard
+
+**Branch:** `feat/gcp-bootstrap` · **Phase:** P0 (lab rebuild)
+
+`infra/gcp/bootstrap.sh` — idempotent, creates **no compute**. Empty buckets and a budget
+cost effectively nothing, so this runs safely ahead of any spending decision. VMs stay a
+separate, explicit step.
+
+Three buckets in **`us-east1`** (deviation from `CLAUDE.md`'s `asia-south1`, recorded in
+Decisions — co-located with the extractor VM, since moving ~120GB cross-region would cost
+about $12 in egress and buy nothing). All three: versioned, `public-access-prevention:
+enforced`, uniform bucket-level access, noncurrent versions deleted after 7 days.
+
+That lifecycle rule is not housekeeping. Versioning is mandated by `CLAUDE.md`, and
+without the rule one accidental re-upload of the corpus silently turns 120GB into 240GB.
+
+### Found
+
+**`gcloud billing` bills the API call to the *quota* project, not `--project`.** The quota
+project defaults to `gcloud config get project`, which on this machine is an unrelated
+project (`internship-505513`). The budget call therefore failed with *"Cloud Billing Budget
+API has not been used in project internship-505513"* — which reads exactly like a
+permissions problem and is not one; the API was enabled on the right project the whole
+time. `--billing-project="$PROJECT"` is the fix, and the script comments say why so the
+next person does not re-diagnose it.
+
+This is the same failure shape `CLAUDE.md` warns about for IAM: *"a configured account
+with no credentials on it produces an authorisation error that reads exactly like a
+missing role."*
+
+### Verified
+
+Read back from the API, not from the script's own output:
+
+| Bucket | Location | Versioning | PAP | Uniform | Lifecycle |
+|---|---|---|---|---|---|
+| `-corpus` | US-EAST1 | True | enforced | True | Delete @7d noncurrent |
+| `-artifacts` | US-EAST1 | True | enforced | True | Delete @7d noncurrent |
+| `-models` | US-EAST1 | True | enforced | True | Delete @7d noncurrent |
+
+Budget `drishti-cybershield-505518` = ₹4,200 (≈$50 at ~₹84/USD), thresholds 0.6/0.9/1.0.
+It sits inside a pre-existing account-wide ₹10,000 alert. Re-running the script is a
+clean no-op that re-asserts the declarative settings — proven by running it twice.
+
+### Not verified
+
+- **No compute was created or started.** `0 instance(s)` after the run.
+- **The ≈$50 conversion is an assumption**, not a lookup — the budget is denominated in
+  INR because the billing account is, and the rate was not queried.
+- No VPC, firewall, Packer image, detonator, or corpus exists yet.
+- Nothing was uploaded to any bucket; all three are empty.
+
+---
+
 ## 2026-08-17 · Ledger concurrency hardening + reality reconciliation
 
 **Branch:** `fix/p0-ledger-hardening` · **Phase:** P0
