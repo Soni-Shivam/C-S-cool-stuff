@@ -247,6 +247,19 @@ def analyse(
         status = verifier.check_claim(candidate)
         claims.append(candidate.model_copy(update={"verifier_status": status}))
 
+    # ── agents ───────────────────────────────────────────────────────────────
+    # Two agents, per 00_GUIDING_MAP 10 item 6, which pre-agreed collapsing six to
+    # interpreter + mapper when time is short. Two that work beat six that are stubs.
+    from drishti.m4_genai.agents.code_interpreter import explain_paths
+    from drishti.m4_genai.agents.technique_mapper import map_techniques
+
+    techniques = map_techniques(static, ledger, job_id)
+
+    for explanation in explain_paths(static, ledger, job_id, llm):
+        claims.append(
+            explanation.model_copy(update={"verifier_status": verifier.check_claim(explanation)})
+        )
+
     verified = [c for c in claims if c.verifier_status is VerifierStatus.PASS]
     log.info(
         "genai_claims_verified",
@@ -263,6 +276,7 @@ def analyse(
         "model": settings.resolved_llm_model,
         "claims_total": len(claims),
         "claims_verified": len(verified),
+        "techniques": [t.technique_id for t in techniques],
         # The static nodes this rests on. ledger.append() rejects an AI_CLAIM whose
         # evidence_refs are empty or unresolvable — that rejection IS the product.
         "evidence_refs": list(static_refs),
@@ -279,6 +293,7 @@ def analyse(
         sha256=static.sha256,
         summary=response.summary[:2000],
         claims=tuple(claims),
+        techniques=techniques,
         behavioural_risk_B=b_value,
         B_rationale=(
             f"{len(contributing)} enumerated behaviours asserted: {', '.join(contributing)}"

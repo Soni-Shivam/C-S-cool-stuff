@@ -1,0 +1,27 @@
+{
+  "_source": "MITRE ATT&CK for Mobile. Hand-curated to the techniques this system can actually evidence.",
+  "_note": "Only techniques referenced by drishti/m2_static/sinks.py or rules/permission_combos.yaml appear here. A technique with no evidence path would be a claim we cannot ground.",
+  "techniques": {
+    "T1056": {"name": "Input Capture", "tactic": "Collection", "description": "Capture user input, typically by drawing over another app or abusing accessibility."},
+    "T1095": {"name": "Non-Application Layer Protocol", "tactic": "Command and Control", "description": "Communicate over raw sockets rather than HTTP, bypassing inspection."},
+    "T1406": {"name": "Obfuscated Files or Information", "tactic": "Defense Evasion", "description": "Hide code or strings, commonly via reflection or packing."},
+    "T1407": {"name": "Download New Code at Runtime", "tactic": "Defense Evasion", "description": "Fetch and execute code after installation, defeating install-time review."},
+    "T1412": {"name": "Capture SMS Messages", "tactic": "Collection", "description": "Read incoming SMS, the primary OTP interception path."},
+    "T1414": {"name": "Clipboard Data", "tactic": "Collection", "description": "Read the clipboard, commonly to swap cryptocurrency addresses."},
+    "T1417": {"name": "Input Injection", "tactic": "Impact", "description": "Abuse accessibility services to observe or drive the UI of other apps."},
+    "T1418": {"name": "Software Discovery", "tactic": "Discovery", "description": "Enumerate installed packages, often to gate a payload on a target bank being present."},
+    "T1426": {"name": "System Information Discovery", "tactic": "Discovery", "description": "Read device and SIM identifiers, often as a geo or logic-bomb gate."},
+    "T1429": {"name": "Audio Capture", "tactic": "Collection", "description": "Record audio from the microphone."},
+    "T1430": {"name": "Location Tracking", "tactic": "Discovery", "description": "Track the device's physical location."},
+    "T1437": {"name": "Application Layer Protocol", "tactic": "Command and Control", "description": "Use HTTP or similar to reach command infrastructure."},
+    "T1513": {"name": "Screen Capture", "tactic": "Collection", "description": "Capture the screen, including content from other applications."},
+    "T1521": {"name": "Encrypted Channel", "tactic": "Command and Control", "description": "Encrypt traffic or payloads, including custom cryptography."},
+    "T1537": {"name": "Transfer Data to Cloud Account", "tactic": "Exfiltration", "description": "Move collected data to attacker-controlled storage."},
+    "T1547": {"name": "Boot or Logon Autostart Execution", "tactic": "Persistence", "description": "Start automatically after reboot."},
+    "T1582": {"name": "SMS Control", "tactic": "Impact", "description": "Send or manipulate SMS without user action, enabling fraud and propagation."},
+    "T1623": {"name": "Command and Scripting Interpreter", "tactic": "Execution", "description": "Execute shell commands on the device."},
+    "T1626": {"name": "Abuse Elevation Control Mechanism", "tactic": "Privilege Escalation", "description": "Exercise device-admin authority, commonly to resist uninstall."},
+    "T1628": {"name": "Hide Artifacts", "tactic": "Defense Evasion", "description": "Conceal the app's own presence, such as hiding its launcher icon."},
+    "T1636": {"name": "Protected User Data", "tactic": "Collection", "description": "Access contacts, call logs, SMS or notification content."}
+  }
+}
