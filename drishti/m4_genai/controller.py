@@ -25,9 +25,10 @@ from pydantic import BaseModel, Field
 
 from drishti.config import Settings
 from drishti.contracts.evidence import EvidenceType
-from drishti.contracts.genai_verdict import GenAIVerdict
+from drishti.contracts.genai_verdict import GenAIVerdict, GroundedClaim, VerifierStatus
 from drishti.contracts.static_report import StaticReport
 from drishti.ledger.store import LedgerStore
+from drishti.ledger.verifier import Verifier
 from drishti.logging import get_logger
 from drishti.m4_genai.client import LLMClient
 from drishti.m4_genai.safety import BEHAVIOUR_WEIGHTS, behavioural_risk, wrap_untrusted
@@ -38,9 +39,23 @@ _PROMPTS = Path(__file__).parent / "prompts"
 
 #: Caps on how much sample-derived text reaches the prompt. The budget is 12k tokens in
 #: (00_GUIDING_MAP.md §12) and a real APK carries far more strings than that.
+#: Node types that carry no behavioural information and so cannot ground a claim on
+#: their own. Listing them here keeps them out of the catalogue entirely, rather than
+#: offering the model bait it will be rejected for taking.
+_NON_CITABLE = {EvidenceType.AI_CLAIM, EvidenceType.SCORE_FACTOR, EvidenceType.ERROR}
+
+MAX_CATALOGUE_ENTRIES = 60
 MAX_URLS = 15
 MAX_STRINGS = 20
 MAX_PATHS = 8
+
+
+class ClaimOut(BaseModel):
+    """One claim the model made, before verification."""
+
+    text: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+    behaviour: str = ""
 
 
 class ChecklistResponse(BaseModel):
@@ -53,7 +68,7 @@ class ChecklistResponse(BaseModel):
 
     summary: str = ""
     behaviours: dict[str, bool] = Field(default_factory=dict)
-    reasoning: dict[str, str] = Field(default_factory=dict)
+    claims: list[ClaimOut] = Field(default_factory=list)
 
 
 def _environment() -> Environment:
@@ -69,6 +84,53 @@ def build_system_prompt() -> str:
     """Render the checklist instructions. Contains no sample-derived text."""
     template = _environment().get_template("behaviour_checklist.jinja")
     return template.render(behaviour_names=sorted(BEHAVIOUR_WEIGHTS))
+
+
+def build_evidence_catalogue(ledger: LedgerStore, job_id: str) -> tuple[str, set[str]]:
+    """List the ledger nodes the model may cite, with ids it must copy verbatim.
+
+    Giving the model the real ids is what makes grounding checkable. Without a
+    catalogue it can only invent plausible-looking references, every one of which the
+    verifier then rejects — which produces a report with no assertable content and
+    looks like the model failed rather than like it was never given anything to cite.
+    """
+    lines: list[str] = []
+    valid: set[str] = set()
+    for node in ledger.query(job_id=job_id):
+        if node.type in _NON_CITABLE:
+            continue
+        summary = _describe(node)
+        if summary is None:
+            continue
+        lines.append(f"  {node.id}  [{node.type.value}]  {summary}")
+        valid.add(node.id)
+        if len(lines) >= MAX_CATALOGUE_ENTRIES:
+            break
+    if not lines:
+        return "", set()
+    return "EVIDENCE CATALOGUE (cite these ids verbatim):\n" + "\n".join(lines), valid
+
+
+def _describe(node: Any) -> str | None:
+    """A one-line, non-attacker-controlled description of a node."""
+    content = node.content
+    kind = node.type.value
+    if kind == "manifest_entry":
+        name = str(content.get("name", ""))[:60]
+        return f"{content.get('kind', 'entry')}: {name}" if name else None
+    if kind == "permission_combo":
+        return f"rule {content.get('rule_id')} severity {content.get('severity')}"
+    if kind == "sink_hit":
+        return f"sink {content.get('sink_id')}"
+    if kind == "call_path":
+        return f"{content.get('sink_id')} reachable from {str(content.get('entrypoint', ''))[-40:]}"
+    if kind == "certificate":
+        return f"age_days={content.get('age_days')} debug={content.get('debug_cert')}"
+    if kind == "string_const":
+        return "extracted string constant"
+    if kind == "threat_intel":
+        return f"verdict {content.get('verdict')}"
+    return None
 
 
 def build_user_turn(static: StaticReport) -> str:
@@ -133,6 +195,8 @@ def analyse(
     """
     llm = client or LLMClient(settings)
     static_refs = tuple(static.ledger_refs)
+    job_id = ledger._job_id or ""
+    catalogue, citable = build_evidence_catalogue(ledger, job_id)
 
     # No static evidence means any claim would be ungrounded, and ledger.append() refuses
     # an AI_CLAIM with empty evidence_refs — that refusal IS the product (CLAUDE.md rule
@@ -146,9 +210,12 @@ def analyse(
             provider=settings.llm_provider,
         )
 
+    user_turn = build_user_turn(static)
+    if catalogue:
+        user_turn = f"{catalogue}\n\n{user_turn}"
     response = llm.complete_as(
         system=build_system_prompt(),
-        user=build_user_turn(static),
+        user=user_turn,
         schema=ChecklistResponse,
     )
     if response is None:
@@ -164,11 +231,38 @@ def analyse(
     # B is computed here, from the enumerated answers. The model never supplies it.
     b_value, contributing = behavioural_risk(dict(response.behaviours))
 
+    # Every claim is checked against the ledger. Rejected claims are RETAINED, not
+    # dropped: the rejection count feeds the report's Limitations section, and a
+    # verifier that quietly deleted its failures would make the system look more
+    # certain than it is.
+    verifier = Verifier(ledger, job_id or None)
+    claims: list[GroundedClaim] = []
+    for item in response.claims[:20]:
+        candidate = GroundedClaim(
+            text=item.text[:500],
+            evidence_refs=tuple(item.evidence_refs[:8]),
+            agent="behaviour_checklist",
+            verifier_status=VerifierStatus.PASS,
+        )
+        status = verifier.check_claim(candidate)
+        claims.append(candidate.model_copy(update={"verifier_status": status}))
+
+    verified = [c for c in claims if c.verifier_status is VerifierStatus.PASS]
+    log.info(
+        "genai_claims_verified",
+        total=len(claims),
+        passed=len(verified),
+        rejected=len(claims) - len(verified),
+        citable_nodes=len(citable),
+    )
+
     content: dict[str, Any] = {
         "behaviours_true": list(contributing),
         "behavioural_risk_B": b_value,
         "summary": response.summary[:2000],
         "model": settings.resolved_llm_model,
+        "claims_total": len(claims),
+        "claims_verified": len(verified),
         # The static nodes this rests on. ledger.append() rejects an AI_CLAIM whose
         # evidence_refs are empty or unresolvable — that rejection IS the product.
         "evidence_refs": list(static_refs),
@@ -184,6 +278,7 @@ def analyse(
     return GenAIVerdict(
         sha256=static.sha256,
         summary=response.summary[:2000],
+        claims=tuple(claims),
         behavioural_risk_B=b_value,
         B_rationale=(
             f"{len(contributing)} enumerated behaviours asserted: {', '.join(contributing)}"
