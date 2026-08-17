@@ -66,7 +66,9 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 ## P2 — ML & SCORING (H10→H24)
 
 - [ ] T2.1 Feature extractor                       TODO
-- [ ] T2.2 Dataset assembly                        TODO  ← corpus rebuild, see Decisions
+- [~] T2.2 Dataset assembly                        WIP   2026-08-17 · sample list done, corpus not built
+      Stratified sample-list builder + contract A9 + 20 tests. The real AndroZoo index
+      has not been fetched; every number so far is from a synthetic 60k-row index.
 - [ ] T2.3 Train the classifier                    TODO
 - [ ] T2.4 Calibration                             TODO
 - [ ] T2.5 Anomaly detector                        TODO

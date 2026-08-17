@@ -68,6 +68,17 @@ def _observation_event() -> C.ObservationEvent:
 
 #: One minimal-but-valid instance per concrete contract model.
 FACTORIES: dict[str, Any] = {
+    # ── corpus ──
+    "CorpusSample": lambda: C.CorpusSample(
+        sha256="a" * 64,
+        label=1,
+        split="train",
+        time_band="2021-2023",
+        dex_date="2022-02-01",
+        pkg_name="com.example.app",
+        vt_detection=37,
+        apk_size=4_812_003,
+    ),
     # ── evidence ──
     "EvidenceNode": lambda: C.EvidenceNode(
         id="ev_01932ab8f4c1",

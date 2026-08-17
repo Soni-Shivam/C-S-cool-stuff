@@ -777,3 +777,37 @@ top level.
 Two real artifacts are now committed at `data/fixtures/observations/` and validated in CI
 (`tests/contract/test_real_observation_artifacts.py`). A contract that cannot read the data
 it was designed for is the wrong contract, and only real data catches that.
+
+### A9. `CorpusSample` — the corpus sample list (T2.2)
+
+`build_sample_list.py` produces rows that `corpus_extract.py` consumes on the extractor
+VM. That is a module boundary, so per §0 it is a model, not a dict.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `sha256` | `str` | AndroZoo identity; what the downloader requests |
+| `label` | `int` | 1 malware, 0 benign. Derived from `vt_detection` under the policy below |
+| `split` | `Literal["train","calib","test"]` | **Three-way.** `PHASE_2` T2.4 requires calibration on a held-out third split — calibrating on test is a leak a good judge will catch |
+| `time_band` | `str` | One of four bands (`<=2017`, `2018-2020`, `2021-2023`, `2024-2026`) |
+| `dex_date` | `str` | ISO date, already inside the plausibility window |
+| `pkg_name` | `str` | May be empty; AndroZoo does not always carry it |
+| `vt_detection` | `int` | Retained for provenance and audit **only** |
+| `apk_size` | `int` | Bytes, from the index. Summed to report exact corpus size before any transfer |
+
+**Labelling policy**, unchanged from v1 and deliberately conservative: malware is
+`vt_detection >= 10` (strong consensus), benign is `vt_detection == 0` **and** distributed
+via `play.google.com`. Rows with `1 <= vt_detection < 10` are **discarded** as an
+ambiguous adware grey zone — training on them is training on label noise. This exclusion
+must be disclosed wherever corpus composition is reported.
+
+**`vt_detection` never reaches the scorer.** AndroZoo's labels *are* VirusTotal counts, so
+feeding them into `R` would make composite-score metrics circular. `reputation.py` already
+refuses a label-derived feed by default (`allow_label_derived=False`); this field is
+carried for provenance and must not be wired into scoring to make a number look better.
+
+**Ordering is part of the contract.** Rows are emitted round-robin across `(time_band,
+label)` cells from a seeded shuffle, so **any prefix of the list is itself balanced across
+label and time band**. This is what makes a metered download interruptible: stopped at any
+row count it still yields a balanced, time-spanning corpus with a valid time split. Bucket
+order would yield thousands of malware rows and no test set. Enforced by
+`tests/unit/test_sample_list.py::test_any_prefix_is_balanced`, not by convention.
