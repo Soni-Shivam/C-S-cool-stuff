@@ -7,7 +7,7 @@ Protocol: `docs/00_GUIDING_MAP.md` §13.
 - **Started:** 2026-08-13 · **Last reconciled:** 2026-08-17
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
 - **Phase:** P0 mostly done · P1/P2 **skeletons landed, below their DoD** (see Gaps)
-- **Tests:** **347 contract+unit, all passing** (M2 core milestone; commit pending)
+- **Tests:** **408 contract+unit, all passing** (measured 2026-08-17; the earlier 347 predated the M4 client/controller landing)
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
 
@@ -44,7 +44,11 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - [x] T0.5  Job runner + pipeline skeleton          DONE  H03  11 stages · chain verified
 - [x] T0.6  API surface                            DONE  H04  19 routes frozen · tests: 235/235
 - [x] T0.7  TraceSource abstraction + fixture      DONE  H05  pre/post-morph arc · tests: 261/261
-- [ ] T0.8  UI shell                               TODO
+- [x] T0.8  UI shell                               DONE  2026-08-17 · `ui/` Vite+React+TS+Tailwind
+      Four regions per the T0.8 sketch, plus the T6.4 stage strip and all seven tabs
+      built against the frozen T0.6 surface. Verified in a real browser against a live
+      API on the canary: upload -> SCORE_PRELIM -> factor -> evidence chip -> ledger
+      node, and "Verify chain" returning 29 nodes intact. Python tests unchanged at 408.
 - [~] T0.9  Sandbox VM groundwork                  WIP   H09  canary compiled (SHA-256 `9854900c…`); sealed image/VM pending
 - [x] T0.10 Ingest module M1, for real             DONE  H07  guards+split+intel
 - [x] P0.11 Ledger concurrency hardening           DONE  2026-08-17  615a803 · tests: 314/314
@@ -121,7 +125,11 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - [ ] T6.1 YARA generation                         TODO
 - [ ] T6.2 STIX 2.1 export                         TODO
 - [ ] T6.3 HTML report                             TODO
-- [ ] T6.4 Dashboard completion                    TODO
+- [~] T6.4 Dashboard completion                    WIP   2026-08-17 · seven tabs render live
+      Every panel is wired to a real endpoint and renders only what the API sent. What
+      remains is depth that depends on unbuilt modules (report embed T6.3, YARA T6.1,
+      STIX T6.2 all render their 501s today) plus the dev-only **tamper demo**, which is
+      deliberately unbuilt — see Deviations.
 - [ ] T6.5 Code freeze @ H68                       TODO
 - [ ] T6.6 Demo script                             TODO
 - [ ] T6.7 Backup plan                             TODO
@@ -244,6 +252,14 @@ not caught by any test or gate, only by reading `git log`. Single agent from her
   trail has to be unambiguous. Caught by the API surface test. Addendum A6.
 - **`DynamicTrace.outcome` added** because `detonated: bool` cannot express
   *inconclusive*, and a sample that emitted nothing must never read as benign.
+- **T6.4's "tamper demo" button is not built, on purpose.** The ledger is append-only in
+  SQL via triggers, so no API call can corrupt a node — and simulating the red banner in
+  the browser would prove nothing about the mechanism it claims to demonstrate. Building
+  it honestly needs a dev-mode endpoint that writes to the SQLite file directly. The
+  Ledger tab states this on screen rather than leaving a judge wondering where it went.
+- **The UI is a separate origin, not served by FastAPI.** `ui/` proxies `/api` to :8080 in
+  both `dev` and `preview`. Mounting the built assets on the app would put a non-`/api`
+  route into the file whose whole point (T0.6) is that its routes do not move.
 - **Canary artifact path is `canary/dist/`,** not Gradle's `canary/app/build/outputs/…`.
   git cannot re-include a file whose parent directory is excluded, so a `!` allowlist
   inside an ignored `build/` directory can never fire. `tests/contract/test_repo_invariants.py`
