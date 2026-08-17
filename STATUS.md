@@ -6,7 +6,7 @@ Protocol: `docs/00_GUIDING_MAP.md` §13.
 
 - **Started:** 2026-08-13 · **Last reconciled:** 2026-08-17
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
-- **Phase:** P0 FOUNDATIONS — T0.1–T0.7 + T0.10 done; **T0.8 and T0.9 remaining**
+- **Phase:** P0 mostly done · P1/P2 **skeletons landed, below their DoD** (see Gaps)
 - **Tests:** **347 contract+unit, all passing** (M2 core milestone; commit pending)
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
@@ -65,7 +65,7 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 
 ## P2 — ML & SCORING (H10→H24)
 
-- [ ] T2.1 Feature extractor                       TODO
+- [~] T2.1 Feature extractor                       WIP   #9 · 10 dims vs ~1200; no parity test, no pinned vocab
 - [~] T2.2 Dataset assembly                        WIP   2026-08-17 · sample list done, corpus not built
       Stratified sample-list builder + contract A9 + 20 tests. The real AndroZoo index
       has not been fetched; every number so far is from a synthetic 60k-row index.
@@ -73,7 +73,7 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - [ ] T2.4 Calibration                             TODO
 - [ ] T2.5 Anomaly detector                        TODO
 - [ ] T2.6 SHAP explanations                       TODO
-- [ ] T2.7 The scorer                              TODO
+- [~] T2.7 The scorer                              WIP   #8 · noisy-OR + override + bands; determinism asserted 2x not 100x
 - [ ] T2.8 Bands and proposed actions              TODO
 - [ ] T2.9 Scorer test suite                       TODO
 
@@ -148,6 +148,34 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
       Do not present the other 12 artifacts as available evidence.
 
 ---
+
+## Gaps against the documented Definition of Done
+
+Measured on `main` at `57823a8`, 2026-08-17. P1/P2 skeletons exist and pass their own
+tests; these are the distances still to close, each traced to the doc that requires it.
+
+| Requirement | Source | Required | Actual |
+|---|---|---|---|
+| Permission-combo rules | `PHASE_1` DoD | ≥ 14 | **10** |
+| Sink taxonomy | `PHASE_1` DoD | ≥ 18 | **~7** |
+| Feature vector width | `PHASE_2` T2.1 | ~1200 dims, 12 families | **10 scalars** |
+| Scorer determinism test | `00_GUIDING_MAP` §9.3 | 100× identity | **runs 2×** |
+| Feature parity test | `PHASE_2` T2.1 (R3 mitigation) | golden-file element-wise | **absent** |
+| Vocabulary pinning | `PHASE_2` T2.1 | `models/vocab_v1.json` frozen | **absent** |
+
+None of these is a defect in what exists — they are unbuilt depth. They are recorded here
+rather than in a branch so the number in any slide can be checked against them.
+
+## Concurrent-agent episode (2026-08-17)
+
+Two agents worked this repo in parallel for part of the day: this one (PRs #1–#3, #10–#11)
+and a Codex agent on `codex/*` branches (PRs #4–#9). **The canary was built twice**, in two
+incompatible ways — `namespace`/`applicationId` split versus backtick-escaping the Kotlin
+package. #6 landed first; #10 was closed as superseded and only its uncovered M1 test was
+salvaged as #11.
+
+Recorded because it is the kind of thing a retrospective forgets: the duplicated work was
+not caught by any test or gate, only by reading `git log`. Single agent from here.
 
 ## Decisions
 
