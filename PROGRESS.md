@@ -75,6 +75,103 @@ now warns explicitly on any empty split.
 
 ---
 
+## 2026-08-17 · Extractor VM live, and the sink layer was dead code
+
+**Phase:** P2 (T2.2) · Host: `instance-20260817-080247`, us-east1-c, n2-standard-8
+
+### The lab is running, and nothing touches the laptop
+
+The extractor VM was resized to `n2-standard-8` (8 vCPU / 31 GB / 470 GB) and given
+GCS write access, which needed a **cross-project IAM grant** — the VM's service account
+lives in `internship-505513` while the buckets are in `cybershield-505518`.
+
+`scripts/corpus_extract.py` refuses to run anywhere else. Both guards were verified on
+the laptop:
+
+    refusing to run: this script downloads real malware and must only run on the GCE
+    extractor VM
+    refusing to run: this host does not look like a GCE instance
+
+It needs an explicit flag **and** `/sys/class/dmi/id/product_name` to read `Google`. On
+the VM each sample is downloaded, parsed, uploaded to GCS and deleted, with the `unlink`
+in a `finally`. Only feature vectors and metrics come back.
+
+### Found: the sink layer had never worked
+
+Running the pipeline over a real 50 MB sample exposed it. androguard emits
+
+    Lcom/foo/Bar; method (Args)Ret          <- "; " separator
+
+while every marker in the taxonomy uses the smali form `Bar;->method`. **The substring
+never matched.** The 29-sink taxonomy, the entrypoint detection and the entire `reach:`
+feature family were permanently zero on every sample.
+
+The sample that exposed it: 453 components, 52 permissions including `SEND_SMS`, six
+permission combos fired — and zero sink hits. That is not plausible.
+
+**No unit test caught this.** The call-graph tests build their graphs by hand *in the
+format the matcher expected*, so the defect lived in the seam between androguard's
+output and our matcher, which nothing tested. Only a real APK could surface it.
+
+Fixed by `canonical_signature()`. On the canary it recovers the thread the whole
+frontier demo hangs on: `pkg_query` reachable from `onCreate` at depth 2. The feature
+golden file moved 71 → 74 and the parity tripwire caught it, as designed.
+
+### Found: `nohup` is not enough on a systemd host
+
+The first batch died silently when the SSH session ended. The serial console explained
+it: `session-10.scope: Deactivated successfully. Consumed 15min 6.576s CPU time`.
+systemd reaps the session's whole cgroup on logout; `nohup` only blocks SIGHUP. Relaunched
+under `systemd-run --user` with lingering enabled.
+
+### Measured: more download workers made it slower
+
+| Workers | Median s/sample | Throughput |
+|---|---|---|
+| 8 | 72.8 | ~96 samples/hr |
+| 24 | 124 | ~37 samples/hr |
+
+AndroZoo throttles total bandwidth per key, so extra connections only contend. Reverted
+to 8. At ~96 samples/hour a 1,200-sample batch is roughly 12 hours; the stratified
+ordering is what makes a partial result usable.
+
+### One sample, end to end
+
+`a481226218de3efd…` — `com.brightoilonline.c2b_phone` (云油加油), 50.5 MB, labelled
+malware, band 2021–2023.
+
+| Stage | Time | Output |
+|---|---|---|
+| M1 ingest | 1.32s | package, label 云油加油, v7.7.0, sdk 21/29, `partial=false` |
+| M2 static | 2.60s | 52 permissions, **6 combos**, 453 components, 22 exported-unprotected, entropy 7.081, 20 native libs |
+| M5 features | <0.01s | 122 features, **71 non-zero**, all 12 families |
+| M4 GenAI | 2.33s | 1 call, B=0.925, `reads_sms_content` + `exfiltrates_over_network` |
+| M6 score | <0.01s | **S=46 MEDIUM**, C=0.25, gamma 0.5 |
+| Ledger | — | **516 nodes**, chain verified |
+
+Combos fired: `OTP_THEFT_SURFACE`, `DROPPER_CAPABILITY`, `LOCATION_TRACKING`,
+`CAMERA_MIC_SURVEILLANCE`, `EXTERNAL_STORAGE_EXFIL`, `SILENT_SMS_FRAUD`.
+
+### Found: the ledger node budget is blown
+
+516 nodes for one sample, of which **505 are `manifest_entry`** — one per manifest
+element. `00_GUIDING_MAP.md` §12 sets a 50–400 sanity band, so this is outside it by
+30%. The same aggregation rule that `CLAUDE.md` rule 11 demands for dynamic events is
+needed for manifest facts. Not yet fixed.
+
+### Not verified
+
+- **The corpus is not built.** 40 samples were extracted on the pre-fix code and are
+  quarantined in `corpus_presinkfix.jsonl`; their `sink:`/`reach:` columns are
+  structurally zero and must not be trained on.
+- **No model has been trained.** No PR-AUC, no calibration curve, no time-split number.
+- Nothing has been detonated. `D` is zero on every sample because M3 does not exist.
+- The deep-dive sample's GenAI verdict is one run of a non-deterministic model.
+- `untrusted_blocks = 0` on that sample: it had no URLs or crypto constants, so the
+  injection-defence path was not exercised by it.
+
+---
+
 ## 2026-08-17 · The real AndroZoo index, and what it actually contains
 
 **Phase:** P2 (T2.2) · Sample list archived to
