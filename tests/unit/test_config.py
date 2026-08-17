@@ -76,3 +76,28 @@ def test_budgets_have_the_documented_defaults() -> None:
     assert settings.llm_max_calls_per_job == 25
     assert settings.llm_max_prompt_tokens == 12_000
     assert settings.static_timeout_s == 90
+
+
+# ── openrouter provider ──────────────────────────────────────────────────────
+def test_openrouter_is_a_selectable_provider() -> None:
+    settings = Settings(llm_provider="openrouter", openrouter_api_key="sk-or-v1-test")
+    assert settings.llm_provider == "openrouter"
+    assert settings.resolved_llm_model == "nvidia/nemotron-3.5-lightning:free"
+
+
+def test_openrouter_without_a_key_fails_at_startup() -> None:
+    """A missing key must fail before a run starts, not at stage GENAI_STATIC.
+
+    Discovering it mid-run means the job is already half-spent and the failure reads
+    like a model problem rather than a config one.
+    """
+    with pytest.raises(ValidationError, match="DRISHTI_OPENROUTER_API_KEY"):
+        Settings(llm_provider="openrouter", openrouter_api_key=None)
+
+
+def test_the_api_key_is_not_printed_by_repr() -> None:
+    """Keys have already been leaked once on this project (CARRIED_FINDINGS H8)."""
+    settings = Settings(llm_provider="openrouter", openrouter_api_key="sk-or-v1-secret")
+    assert "sk-or-v1-secret" not in repr(settings)
+    assert settings.openrouter_api_key is not None
+    assert settings.openrouter_api_key.get_secret_value() == "sk-or-v1-secret"

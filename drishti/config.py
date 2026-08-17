@@ -16,7 +16,7 @@ from typing import Literal
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-LLMProvider = Literal["gemini", "anthropic", "mock"]
+LLMProvider = Literal["openrouter", "gemini", "anthropic", "mock"]
 SandboxMode = Literal["live", "replay", "auto"]
 
 
@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     # `mock` is deterministic and needs no key, so tests and offline demos never
     # depend on a provider being reachable.
     llm_provider: LLMProvider = "mock"
+    openrouter_api_key: SecretStr | None = None
     gemini_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
     llm_model: str | None = None
@@ -93,7 +94,11 @@ class Settings(BaseSettings):
         half-spent, and the failure looks like a model problem rather than a config
         one.
         """
-        required = {"gemini": self.gemini_api_key, "anthropic": self.anthropic_api_key}
+        required = {
+            "openrouter": self.openrouter_api_key,
+            "gemini": self.gemini_api_key,
+            "anthropic": self.anthropic_api_key,
+        }
         if self.llm_provider in required and required[self.llm_provider] is None:
             raise ValueError(
                 f"llm_provider={self.llm_provider!r} requires "
@@ -108,6 +113,14 @@ class Settings(BaseSettings):
         if self.llm_model:
             return self.llm_model
         return {
+            # Verified callable 2026-08-17: HTTP 200, cost 0, reasoning_details present.
+            # Reasoning models spend most of their completion budget thinking — that probe
+            # burned 172 reasoning tokens to answer in 10 characters — so the
+            # llm_max_prompt_tokens budget is about INPUT and the output cap must leave
+            # room for reasoning as well as the answer.
+            "openrouter": "nvidia/nemotron-3.5-lightning:free",
+            # In the catalogue but UNVERIFIED: the project's credits are depleted, and a
+            # 429 masks whatever a 404 would have said. Probe before trusting it (STATUS.md).
             "gemini": "gemini-3.1-pro-preview",
             "anthropic": "claude-sonnet-4-5",
             "mock": "mock",
