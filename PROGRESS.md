@@ -75,6 +75,86 @@ now warns explicitly on any empty split.
 
 ---
 
+## 2026-08-17 · The real AndroZoo index, and what it actually contains
+
+**Phase:** P2 (T2.2) · Sample list archived to
+`gs://cybershield-505518-corpus/sample-lists/samples-seed20260817.csv`
+
+The index downloaded (3,512,086,448 bytes, `gzip -t` clean) and was streamed end to end.
+**27,606,781 rows scanned.** These are the first real corpus numbers this project has ever
+had; everything before was synthetic.
+
+### The date filter was not a nicety
+
+| Outcome | Rows | Share |
+|---|---|---|
+| Scanned | 27,606,781 | 100% |
+| **Dropped — implausible `dex_date`** | **19,479,745** | **70.6%** |
+| Dropped — VT grey zone (1–9 detections) | 1,798,395 | 6.5% |
+| Dropped — unlabelled or oversized | 1,154,354 | 4.2% |
+| Selected | 10,599 | 0.04% |
+
+**70.6% of AndroZoo carries an implausible `dex_date`.** v1 measured this at 20.6% on a
+6,000-row sample and treated it as a correctable annoyance. On the full index it is the
+dominant property of the data. Without the plausibility window the time split would not
+have been slightly contaminated — it would have been mostly noise.
+
+### The 2024–2026 malware cell is nearly empty
+
+| Band | Malware | Benign |
+|---|---|---|
+| ≤2017 | 1500 | 1500 |
+| 2018–2020 | 1500 | 1500 |
+| 2021–2023 | 1500 | 1500 |
+| **2024–2026** | **99** | 1500 |
+
+Target was 1500. AndroZoo yielded **99**. This is the exact weakness the corpus was
+supposed to fix, and it is now quantified rather than suspected: the paper names 2024–25
+families as primary targets, and the corpus cannot currently support a claim about them.
+**MalwareBazaar backfill is now a requirement, not an option.**
+
+Splits: train 9000 / calib 599 / test 1000. The calib split is thin for the same reason —
+it is drawn from 2024.
+
+### The stratified ordering earned its keep, and its limit is measured
+
+Any prefix stays balanced **until a cell exhausts**, which happens at row ~801 (99 malware
+× 8 cells). Measured on the real list:
+
+| Prefix | Size | malware/benign | 2024–2026 rows |
+|---|---|---|---|
+| 1,000 | 19.5 GB | 485 / 515 | 228 |
+| 2,000 | 37.1 GB | 914 / 1086 | 370 |
+| 4,000 | 73.5 GB | 1771 / 2229 | 656 |
+| 8,000 | 147.1 GB | 3485 / 4515 | 1228 |
+
+The degradation past ~2,000 rows is **supply, not algorithm** — there is no more recent
+malware to interleave. Stated plainly because the distinction decides whether the fix is
+code or more data. It is more data.
+
+### Found
+
+**The corpus is 193.9 GB, not the ~120 GB estimated.** Real APKs average ~18 MB, not the
+~10 MB assumed. At the transfer rate observed for the index (~415 KB/s from AndroZoo) a
+full download would take **on the order of 130 hours**, which is not viable. The stratified
+ordering is what makes this survivable: **the first 1,000 rows are 19.5 GB and are already
+balanced across label and all four bands.** A partial download is a usable corpus, which
+was the entire point of stratifying the download order rather than only the extraction
+order.
+
+### Not verified
+
+- **No APK has been downloaded.** This is index metadata only; nothing was fetched, and no
+  GCP compute was started.
+- The 193.9 GB figure is summed from AndroZoo's own `apk_size` column, not measured by
+  transferring anything.
+- The ~415 KB/s rate is from the index download on this network; AndroZoo's APK endpoint may
+  differ and parallel connections were not tested.
+- Labels are AndroZoo's `vt_detection` counts. They are **not** validated against any second
+  source, and they never reach the scorer (contract A9).
+
+---
+
 ## 2026-08-17 · GCP bootstrap — buckets, APIs, budget guard
 
 **Branch:** `feat/gcp-bootstrap` · **Phase:** P0 (lab rebuild)

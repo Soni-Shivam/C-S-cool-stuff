@@ -66,7 +66,10 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 ## P2 — ML & SCORING (H10→H24)
 
 - [x] T2.1 Feature extractor                       DONE  2026-08-17 · 12/12 families, 71 feats, parity test + vocab pinning
-- [~] T2.2 Dataset assembly                        WIP   2026-08-17 · sample list done, corpus not built
+- [~] T2.2 Dataset assembly                        WIP   2026-08-17 · REAL sample list built; no APK downloaded
+      27.6M index rows scanned, seed 20260817. 70.6% dropped for implausible dex_date.
+      10,599 rows selected = 193.9 GB. 2024-2026 malware yielded only 99 of 1500 —
+      MalwareBazaar backfill is now required. List archived to the corpus bucket.
       Stratified sample-list builder + contract A9 + 20 tests. The real AndroZoo index
       has not been fetched; every number so far is from a synthetic 60k-row index.
 - [ ] T2.3 Train the classifier                    TODO
