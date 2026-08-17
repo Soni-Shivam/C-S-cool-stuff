@@ -65,7 +65,7 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 
 ## P2 — ML & SCORING (H10→H24)
 
-- [~] T2.1 Feature extractor                       WIP   #9 · 10 dims vs ~1200; no parity test, no pinned vocab
+- [x] T2.1 Feature extractor                       DONE  2026-08-17 · 12/12 families, 71 feats, parity test + vocab pinning
 - [~] T2.2 Dataset assembly                        WIP   2026-08-17 · sample list done, corpus not built
       Stratified sample-list builder + contract A9 + 20 tests. The real AndroZoo index
       has not been fetched; every number so far is from a synthetic 60k-row index.
@@ -158,10 +158,10 @@ tests; these are the distances still to close, each traced to the doc that requi
 |---|---|---|---|
 | Permission-combo rules | `PHASE_1` DoD | ≥ 14 | **10** |
 | Sink taxonomy | `PHASE_1` DoD | ≥ 18 | **~7** |
-| Feature vector width | `PHASE_2` T2.1 | ~1200 dims, 12 families | **10 scalars** |
+| Feature vector width | `PHASE_2` T2.1 | 12 families | **12/12 families, 71 features on the canary** (was 5/12, 17) |
 | Scorer determinism test | `00_GUIDING_MAP` §9.3 | 100× identity | **runs 2×** |
-| Feature parity test | `PHASE_2` T2.1 (R3 mitigation) | golden-file element-wise | **absent** |
-| Vocabulary pinning | `PHASE_2` T2.1 | `models/vocab_v1.json` frozen | **absent** |
+| Feature parity test | `PHASE_2` T2.1 (R3 mitigation) | golden-file element-wise | **done** — `tests/contract/test_feature_parity.py` |
+| Vocabulary pinning | `PHASE_2` T2.1 | frozen vocab, width asserted both paths | **done** — `build_vocabulary`/`project`/`load_vocabulary` |
 
 None of these is a defect in what exists — they are unbuilt depth. They are recorded here
 rather than in a branch so the number in any slide can be checked against them.
