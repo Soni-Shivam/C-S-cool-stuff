@@ -16,7 +16,9 @@ Defence in depth, stated plainly:
 from __future__ import annotations
 
 import json
+import random
 import sqlite3
+import time
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +64,44 @@ CREATE TRIGGER IF NOT EXISTS ev_no_delete BEFORE DELETE ON evidence
 #: Names of the append-only triggers, so tests and audits can assert they exist.
 APPEND_ONLY_TRIGGERS = ("ev_no_update", "ev_no_delete")
 
+#: How long to keep retrying a lock-contended statement before giving up.
+SQLITE_TIMEOUT_S = 30.0
+
+
+def _is_locked(exc: sqlite3.OperationalError) -> bool:
+    message = str(exc).lower()
+    return "locked" in message or "busy" in message
+
+
+def initialise_schema(conn: sqlite3.Connection, *, timeout_s: float = SQLITE_TIMEOUT_S) -> None:
+    """Set WAL and create the schema, retrying while another connection holds the lock.
+
+    The retry is not belt-and-braces over the connection timeout — it is load-bearing.
+    SQLite returns `SQLITE_BUSY` *without invoking the busy handler* when two
+    connections each hold a shared lock and both try to upgrade, because that is the
+    one case it cannot wait out without risking deadlock. `CREATE TABLE IF NOT EXISTS`
+    is a read followed by an upgrade, so two workers opening a fresh database at the
+    same instant hit it directly: measured 2 failures in 480 concurrent constructions.
+
+    On the demo path that is not theoretical. `job_workers` defaults to 2, so two
+    uploads on a clean install race here, and the loser's job fails outright.
+    """
+    deadline = time.monotonic() + timeout_s
+    attempt = 0
+    while True:
+        try:
+            conn.execute("PRAGMA journal_mode=WAL;")
+            conn.execute("PRAGMA foreign_keys=ON;")
+            conn.executescript(_SCHEMA)
+            return
+        except sqlite3.OperationalError as exc:
+            if not _is_locked(exc) or time.monotonic() >= deadline:
+                raise
+            attempt += 1
+            # Jittered backoff, so two racing workers do not retry in lockstep and
+            # collide again on every attempt.
+            time.sleep(min(0.05 * attempt, 0.25) * (0.5 + random.random()))
+
 
 class LedgerError(Exception):
     """Base for ledger refusals."""
@@ -87,13 +127,11 @@ class LedgerStore:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._key: Ed25519PrivateKey = crypto.load_or_create_key(Path(key_path))
-        self._conn = sqlite3.connect(self.db_path, isolation_level=None)
+        self._conn = sqlite3.connect(self.db_path, isolation_level=None, timeout=SQLITE_TIMEOUT_S)
         self._conn.row_factory = sqlite3.Row
         # WAL so a reader (the API serving the ledger tab) never blocks the writer
         # (the pipeline appending nodes) — the two run concurrently by design.
-        self._conn.execute("PRAGMA journal_mode=WAL;")
-        self._conn.execute("PRAGMA foreign_keys=ON;")
-        self._conn.executescript(_SCHEMA)
+        initialise_schema(self._conn)
         self._job_id: str | None = None
 
     # ── lifecycle ────────────────────────────────────────────────────────────
@@ -295,11 +333,26 @@ class LedgerStore:
         Three independent checks per node, in the order an auditor would want them:
         contiguity, hash integrity, then signature validity. "Broken somewhere" is
         not a useful answer, so the first failure short-circuits with its seq.
+
+        An empty chain is reported as **not ok**: a job that produced no evidence has
+        nothing to attest, and a vacuous green here would be indistinguishable from a
+        real one.
         """
         job_id = job_id or self._require_job()
         rows = list(
             self._conn.execute("SELECT * FROM evidence WHERE job_id = ? ORDER BY seq", (job_id,))
         )
+        if not rows:
+            # Every consumer of this result renders it to a human — the UI badge, the
+            # CLI exit code, the report. None of them may read green for a job that
+            # produced nothing.
+            return ChainVerification(
+                ok=False,
+                node_count=0,
+                first_bad_seq=None,
+                reason=f"empty chain: no nodes for job {job_id!r}",
+            )
+
         pubkey = self._key.public_key()
         expected_prev = crypto.GENESIS_HASH
 

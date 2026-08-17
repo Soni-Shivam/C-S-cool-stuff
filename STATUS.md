@@ -4,24 +4,33 @@
 Update it after **every** task: task → DONE, hour, commit sha, test count.
 Protocol: `docs/00_GUIDING_MAP.md` §13.
 
-- **Started:** 2026-08-13 · **Clock:** H00
+- **Started:** 2026-08-13 · **Last reconciled:** 2026-08-17
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
-- **Phase:** P0 FOUNDATIONS — T0.1–T0.7 done; T0.8/T0.9/T0.10 remaining
+- **Phase:** P0 FOUNDATIONS — T0.1–T0.7 + T0.10 done; **T0.8 and T0.9 remaining**
+- **Tests:** 300 contract+unit · 14 e2e · **314 total, all passing** (`615a803`)
+- **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
 
 ---
 
 ## Verified environment facts
 
-Established by inspection on 2026-08-13, not assumed.
+Re-established by inspection on **2026-08-17**. Every row was checked with a command.
+The 2026-08-13 version of this table asserted GCP resources that no longer exist.
 
 | Item | State |
 |---|---|
-| GCP (v1, legacy) | `drishti-m3-08130038` / `asia-south1-a`; image `drishti-m3-tools-v1`; VMs `drishti-detonator`, `m3-control-builder`, `m3-extractor` were **running**; **0 buckets, 0 snapshots** → all lab output was on `auto_delete=true` disks |
-| GCP (v2) | **`drishti-v2-260814`** created, billing linked, compute/IAP/storage/oslogin enabled. Buckets `-corpus`/`-artifacts`/`-models` in `asia-south1` (private, versioned). VPCs, firewall, Packer image and detonator **not built yet** |
-| Secrets | `ANDROZOO_API_KEY`, `GEMINI_API_KEY` present in v1's `.env` but **were shared in plaintext → must be rotated**; `LEDGER_SIGNING_KEY` was empty |
-| v1 corpus list | `v1-reference/backend/samples.csv`, 6,000 rows, 3000/3000 balanced — **but split contaminated**: 1,235 rows (20.6%) dated 1980/81 all in train, 23 rows dated 2039–2107 all in test; only 62 rows from 2024, 55 from 2025 |
-| Test baseline | v1 claimed 124 tests passing. **Not independently verified by v2.** Do not quote it. |
+| GCP (v1, legacy `drishti-m3-08130038`) | **GONE.** Absent from `gcloud projects list`; `describe` returns permission-denied/absent. The four `v1-rescue-*` boot-disk snapshots went with it |
+| GCP (v2 `drishti-v2-260814`) | **GONE.** Same. The corpus bucket, artifacts bucket, `samples.csv`, the 14 rescued v1 observation artifacts and the 3 attestations are **unrecoverable** |
+| Trial billing account | `01996C-C72085-6358D2` — **`open: false`** (closed) |
+| Usable billing account | `017B2F-A06E63-B76B98`, INR, `open: true` |
+| GCP (v3) | **`cybershield-505518`**, billing linked. compute/storage/oslogin enabled; **IAP not yet enabled**. **0 VMs, 0 buckets** |
+| Compute quota | `CPUS_ALL_REGIONS: 32`, `asia-south1 CPUS: 100`, `DISKS_TOTAL_GB: 4096`, `INSTANCES: 24` — no increase needed |
+| Extractor VM (pre-existing) | `instance-20260817-080247`, project `internship-505513`, `us-east1-c`, `n2-standard-2`, 500GB `pd-standard`, **public IP**, **nested virt OFF**, SA scope `devstorage.read_only`. Usable for static extraction; **disqualified as a detonator** |
+| Secrets | `.env` recreated (gitignored). `ANDROZOO_API_KEY` set — **exposed in a chat transcript, rotate post-demo**. `GEMINI_API_KEY` **not yet provided** |
+| PR trail | **Zero PRs exist on the remote.** `gh pr list --state all` on `Soni-Shivam/CyberShield` returns nothing; `PROGRESS.md`'s PRs #1–#11 describe local branch history only |
+| v1 corpus list | `v1-reference/backend/samples.csv`, 6,000 rows, 3000/3000 balanced — **split contaminated**: 1,235 rows (20.6%) dated 1980/81 all in train, 23 rows dated 2039–2107 all in test; only 62 rows from 2024, 55 from 2025 |
+| Test baseline | **Measured 2026-08-17 at `615a803`: 300 contract+unit, 14 e2e, 314 total, all passing.** ruff clean, mypy clean over 41 source files. v1's claimed 124 remains unverified — do not quote it |
 
 ---
 
@@ -36,7 +45,12 @@ Established by inspection on 2026-08-13, not assumed.
 - [x] T0.7  TraceSource abstraction + fixture      DONE  H05  pre/post-morph arc · tests: 261/261
 - [ ] T0.8  UI shell                               TODO
 - [~] T0.9  Sandbox VM groundwork                  WIP   H08  infra/gcp LIFTed + canary source; image/VM not built
-- [x] T0.10 Ingest module M1, for real             DONE  H07  guards+split+intel · tests: 304/304
+- [x] T0.10 Ingest module M1, for real             DONE  H07  guards+split+intel
+- [x] P0.11 Ledger concurrency hardening           DONE  2026-08-17  615a803 · tests: 314/314
+
+      Not a roadmap task — three defects found while establishing a real test baseline.
+      The earlier "tests: 304/304" recorded against T0.10 counted a **failing** e2e test
+      as passing: contract+unit was run, `tests/e2e` was not. True state was 303/1.
 
 ## P1 — STATIC ENGINE (H04→H16)
 
@@ -114,15 +128,21 @@ Established by inspection on 2026-08-13, not assumed.
 - [x] Lab infra LIFT (`infra/m3/**` → `infra/gcp/`)        DONE  H08  + auto_delete and snapshot-policy fixes
 - [ ] Containment verification LIFT                        TODO
 - [ ] M3 harness + hook catalogue LIFT                     TODO
-- [~] canary/ source written to §4 spec                    WIP   H08  needs a JDK to build the APK
-- [~] Rescue v1 lab data off VM disks → GCS                WIP   ← urgent, pre-teardown
-      - [x] Snapshot all 4 boot disks                      DONE  H00  4/4 READY
-            `v1-rescue-{drishti-detonator,m3-extractor,m3-control-builder,m3-detonator-debug}-20260813`
-            auto_delete cliff removed; disks recoverable even if instances are deleted
-      - [x] Copy 14 detonation artifacts + 3 attestations   DONE  H06  gs://drishti-v2-260814-artifacts/v1-provenance/
-      - [x] Copy samples.csv → GCS                          DONE  H05  gs://drishti-v2-260814-corpus/v1-provenance/
-      - [x] Stop all legacy VMs                             DONE  H05  4/4 TERMINATED, disks+snapshots READY
-      - [ ] Copy v1 feature CSV off m3-extractor             TODO  provenance only; corpus is being re-extracted
+- [~] canary/ source written to §4 spec                    WIP   H08  needs JDK 17 to build the APK
+- [x] ~~Rescue v1 lab data off VM disks → GCS~~            **LOST**  2026-08-17
+
+      Both GCP projects were deleted. The 4 boot-disk snapshots, the 14 rescued
+      observation artifacts, the 3 attestations, `samples.csv` and the v1 feature CSV
+      are gone with them. Nothing listed under this item is recoverable.
+
+      **Surviving v1 provenance, in full:**
+      - `data/fixtures/observations/` — 2 real observation artifacts, committed as CI
+        fixtures and covered by `tests/contract/test_real_observation_artifacts.py`
+      - `docs/CARRIED_FINDINGS.md` — the measurements and the 11 defects
+      - `v1-reference/backend/samples.csv` — the 6,000-row corpus list (in-repo)
+
+      Any claim resting on the 9-sample v1 pilot is now supported only by those three.
+      Do not present the other 12 artifacts as available evidence.
 
 ---
 
@@ -134,6 +154,10 @@ Established by inspection on 2026-08-13, not assumed.
 | 2026-08-13 | Lab: **fresh GCP project for v2**, legacy project read-only until v2 detonates the canary | Clean IAM/VPC to the CLAUDE.md spec; legacy kept as the data source until rescue is proven |
 | 2026-08-13 | Branches: `v1` = immutable v1 record, `main` = v2 integration | origin had only `v1`; `main` was free |
 | 2026-08-13 | Corpus APKs **retained in GCS** after extraction | v1 deleted every APK post-extraction, which is exactly why a schema change now costs a full re-download |
+| 2026-08-17 | Lab rebuilt in **`cybershield-505518`**, region **`us-east1`** | Co-located with the pre-existing extractor VM. Moving 120GB cross-region would cost ~$12. **Deviates from `CLAUDE.md`'s `asia-south1`** |
+| 2026-08-17 | Extractor = the existing `internship-505513` VM; **detonator built separately and sealed** | Static parsing never executes a sample, so a shared project is tolerable there. Detonation is not: that VM has nested virt off, a public IP, and shares a VPC with an unrelated running VM |
+| 2026-08-17 | Corpus target **12,000 rows**, 50/50, 4 time bands, download order stratified | Makes any *prefix* of the download a balanced, time-spanning corpus, so a metered transfer can be stopped at any point and still yield a valid time split |
+| 2026-08-17 | Budget ceiling **$50**; every billable GCP resource confirmed before creation | The trial account is closed — there is no safety net |
 
 ## Deviations from roadmap
 
@@ -193,8 +217,16 @@ Established by inspection on 2026-08-13, not assumed.
 
 ## Open risks
 
-- **R1 (emulator/frida)** partially retired: v1 already proved the image boots with frida
-  16.7.19 and a working clean snapshot. Risk is now re-standing it in a new project.
+- **All v1 GCP provenance is unrecoverable** (2026-08-17). See the salvage section for
+  what survives. Do not quote the 14 artifacts, the snapshots, or the GCS copies.
+- **The AndroZoo API key was exposed in a chat transcript.** Rotate after the demo.
+- **`GEMINI_API_KEY` is not set.** P3 is blocked on it; the `mock` provider covers tests
+  until it arrives.
+- **The lab is entirely unbuilt.** No VPC, no firewall, no Packer image, no detonator, no
+  corpus. `infra/gcp/` holds the scripts but nothing has been run in `cybershield-505518`.
+- **R1 (emulator/frida)** is no longer partially retired — it is **fully open again**. v1's
+  proof that the image boots with frida 16.7.19 rested on a project that no longer exists.
+  The knowledge survives in `docs/CARRIED_FINDINGS.md`; the running system does not.
 - **v1 H1 — no benign controls were ever detonated**, so the dynamic false-positive rate is
   unmeasured. Any claim that observed techniques *distinguish* malware from ordinary apps is
   currently unsupported. P4 must detonate benign controls.

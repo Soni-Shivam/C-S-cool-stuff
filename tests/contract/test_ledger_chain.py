@@ -11,6 +11,7 @@ from __future__ import annotations
 import itertools
 import json
 import sqlite3
+from pathlib import Path
 
 import pytest
 
@@ -90,11 +91,11 @@ def test_fifty_node_chain_verifies(store) -> None:
     assert result.first_bad_seq is None
 
 
-def test_empty_chain_verifies(store) -> None:
-    """A job with no evidence is vacuously valid, not an error."""
-    result = store.verify_chain()
-    assert result.ok is True
-    assert result.node_count == 0
+# NOTE: `test_empty_chain_verifies` used to live here, asserting that an empty chain
+# is "vacuously valid, not an error". That was reversed deliberately — see
+# `test_empty_chain_does_not_verify` at the end of this file. The result of
+# verify_chain() is rendered to a human as a trust signal, and a green badge on a job
+# that produced no evidence is indistinguishable from a real one.
 
 
 # ── the tamper test ──────────────────────────────────────────────────────────
@@ -298,3 +299,39 @@ def test_export_is_independently_verifiable(store) -> None:
     pubkey = crypto.public_key_from_hex(exported["pubkey"])
     for node in exported["nodes"]:
         assert crypto.verify(pubkey, node["node_hash"], node["signature"])
+
+
+def test_empty_chain_does_not_verify(tmp_path: Path) -> None:
+    """ "Nothing to verify" is not "verified".
+
+    A vacuous pass here would let the demo's verify_chain beat go green on a job that
+    produced no evidence at all — the same shape as v1's `nc -z` bug, where a probe
+    reported success because it had never actually run.
+    """
+    store = LedgerStore(tmp_path / "ledger.db", tmp_path / "key.pem")
+    try:
+        result = store.verify_chain("job_that_never_ran")
+        assert result.ok is False
+        assert result.node_count == 0
+        assert result.first_bad_seq is None
+        assert result.reason is not None
+        assert "no nodes" in result.reason
+    finally:
+        store.close()
+
+
+def test_chain_with_one_node_still_verifies(tmp_path: Path) -> None:
+    """Guard the boundary: rejecting empty must not reject a single-node chain."""
+    store = LedgerStore(tmp_path / "ledger.db", tmp_path / "key.pem")
+    try:
+        store.open("job_single")
+        store.append(
+            type=EvidenceType.FILE_META,
+            source_tool="test",
+            content={"sha256": "a" * 64},
+        )
+        result = store.verify_chain("job_single")
+        assert result.ok is True
+        assert result.node_count == 1
+    finally:
+        store.close()

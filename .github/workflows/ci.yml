@@ -44,6 +44,15 @@ jobs:
       - name: Unit tests
         run: uv run pytest tests/unit
 
+      # e2e runs here too, despite `make test` scoping to contract+unit. It walks the
+      # whole pipeline on a fixture APK in well under a second, and leaving it out is
+      # how three ledger defects survived: the concurrency bug that made a fresh
+      # install's first two uploads unverifiable was only ever caught by
+      # tests/e2e/test_pipeline_walk.py, which nothing in CI executed.
+      # Still no GCP and still no sample — the fixture is a synthetic zip.
+      - name: End-to-end tests
+        run: uv run pytest tests/e2e
+
   # Belt and braces on the safety boundary: fail the build if a sample, a key, or
   # a synthetic model artifact ever lands in the tree. The contract test asserts
   # the .gitignore rules; this asserts the actual committed tree.

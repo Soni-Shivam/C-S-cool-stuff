@@ -104,11 +104,18 @@ class JobRunner:
 
     # ── internals ────────────────────────────────────────────────────────────
     def _run(self, job: Job, apk_path: Path) -> None:
-        """Worker body. Must never raise — a dead worker thread is a silent hang."""
-        # A per-job ledger connection: sqlite3 connections are not shareable across
-        # threads, and WAL means the concurrent reader is unaffected.
-        ledger = LedgerStore(self._settings.db_path, self._settings.ledger_key_path)
+        """Worker body. Must never raise — a dead worker thread is a silent hang.
+
+        Everything fallible lives inside the try, **including opening the ledger**.
+        When that construction sat above it, a failure there skipped both the handler
+        that marks the job FAILED and the finally that publishes the done sentinel, so
+        an SSE consumer blocked for its full timeout on a job stuck in QUEUED.
+        """
+        ledger: LedgerStore | None = None
         try:
+            # A per-job ledger connection: sqlite3 connections are not shareable across
+            # threads, and WAL means the concurrent reader is unaffected.
+            ledger = LedgerStore(self._settings.db_path, self._settings.ledger_key_path)
             with self._lock:
                 artefacts = self._artefacts.setdefault(job.id, {})
             # The same dict object the API reads, so a stage's output is visible the
@@ -129,7 +136,8 @@ class JobRunner:
                     update={"stage": JobStage.FAILED, "error": f"runner: {exc}"}
                 )
         finally:
-            ledger.close()
+            if ledger is not None:
+                ledger.close()
             self._publish(job.id, _DONE)
 
     def _publish(self, job_id: str, item: StageEvent | object) -> None:
