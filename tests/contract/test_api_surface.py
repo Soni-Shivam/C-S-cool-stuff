@@ -156,16 +156,31 @@ def test_artefacts_are_served_after_the_run(client, finished_job, kind) -> None:
     assert response.status_code == 200, response.text
 
 
-def test_stub_artefacts_declare_themselves_partial(client, finished_job) -> None:
-    """A stub must not read as a real analysis that found nothing."""
+def test_degraded_artefacts_declare_themselves_partial(client, finished_job) -> None:
+    """A degraded result must not read as a real analysis that found nothing.
+
+    The static stage is no longer a stub — real M2 runs — so this no longer looks for
+    the word "stub". What matters is unchanged and is the actual honesty requirement:
+    a partial result states WHY it is partial, so the report's Limitations section has
+    something real to generate from.
+    """
     body = client.get(f"/api/jobs/{finished_job}/static").json()
     assert body["partial"] is True
-    assert any("stub" in e for e in body["errors"])
+    assert body["errors"], "a partial result must say why it is partial"
 
 
-def test_score_reports_gamma_so_the_ui_knows_which_verdict_it_holds(client, finished_job) -> None:
+def test_score_reports_gamma_so_the_ui_can_show_evidence_quality(client, finished_job) -> None:
+    """gamma measures EVIDENCE, not progress.
+
+    It used to be handed to the stage as a literal (0.7 preliminary, 1.0 final), so it
+    read as "how far through the run are we". The real scorer derives it:
+    0.4*static + 0.3*(dynamic AND detonated) + 0.2*ml + 0.1*intel (PHASE_2 T2.7).
+    A run whose sample never detonated therefore ends BELOW 1.0, and that is the honest
+    answer — the UI should show lower confidence, not a full bar.
+    """
     body = client.get(f"/api/jobs/{finished_job}/score").json()
-    assert body["gamma"] == 1.0, "after a full run this should be the final verdict"
+    assert 0.0 <= body["gamma"] <= 1.0
+    assert body["gamma"] < 1.0, "nothing detonated, so confidence must not read as complete"
 
 
 # ── ledger ───────────────────────────────────────────────────────────────────

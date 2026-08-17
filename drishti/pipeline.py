@@ -220,6 +220,24 @@ def _stub_static(ctx: Context, meta: FileMeta) -> StaticReport:
     )
 
 
+def _static(ctx: Context, apk_path: Path, meta: FileMeta) -> StaticReport:
+    """Real M2. Falls back to the manifest facts M1 already has if androguard cannot parse.
+
+    M2 exists and is tested, but nothing called it — the pipeline still ran the stub, so a
+    full run reported package="" on an APK that parses perfectly well in isolation. Wiring
+    it is what makes every downstream stage see real evidence.
+    """
+    from drishti.m2_static.engine import analyse as m2_analyse
+
+    try:
+        return m2_analyse(apk_path, ctx.ledger)
+    except Exception as exc:
+        log.error("static_analysis_failed", error=str(exc))
+        return _stub_static(ctx, meta).model_copy(
+            update={"errors": (f"static analysis failed: {type(exc).__name__}: {exc}",)}
+        )
+
+
 def _stub_ml(ctx: Context, static: StaticReport) -> MLPrediction:
     node = ctx.ledger.append(
         type=EvidenceType.ML_PREDICTION,
@@ -238,19 +256,101 @@ def _stub_ml(ctx: Context, static: StaticReport) -> MLPrediction:
     )
 
 
-def _stub_genai(ctx: Context, sha256: str, which: JobStage) -> GenAIVerdict:
+def _genai(ctx: Context, static: StaticReport, sha256: str, which: JobStage) -> GenAIVerdict:
+    """Real M4. Degrades to a partial verdict rather than losing the static report."""
+    from drishti.m4_genai.controller import analyse as genai_analyse
+
+    if static.partial and not static.package:
+        # Nothing worth reasoning over: M2 could not parse the sample at all.
+        node = ctx.ledger.append(
+            type=EvidenceType.TECHNIQUE_MAP,
+            source_tool="m4_genai",
+            content={"stage": which.value, "note": "skipped: static analysis produced nothing"},
+            confidence=0.0,
+        )
+        return GenAIVerdict(
+            sha256=sha256,
+            partial=True,
+            errors=("skipped: static analysis produced no parseable facts",),
+            ledger_refs=(node.id,),
+        )
+    return genai_analyse(static, ctx.ledger, ctx.settings)
+
+
+def _genai_full(ctx: Context, sha256: str) -> GenAIVerdict:
+    """The post-sandbox GenAI pass.
+
+    Re-reasoning only earns its cost when there is dynamic evidence the static pass did
+    not see. Until M3 produces a real trace there is none, so this reuses the static
+    verdict and says so rather than re-sending an identical prompt and presenting the
+    same answer as though it were a second, corroborating opinion.
+    """
+    existing: GenAIVerdict | None = ctx.artefacts.get("genai")
     node = ctx.ledger.append(
         type=EvidenceType.TECHNIQUE_MAP,
-        source_tool="m4_genai:stub",
-        content={"stage": which.value, "note": "stub"},
+        source_tool="m4_genai",
+        content={
+            "stage": JobStage.GENAI_FULL.value,
+            "note": "reused the static-pass verdict; no dynamic evidence was available",
+        },
         confidence=0.0,
     )
-    return GenAIVerdict(
-        sha256=sha256,
-        partial=True,
-        errors=(f"stub: M4 {which.value} lands in P3",),
-        ledger_refs=(node.id,),
+    if existing is None:
+        return GenAIVerdict(
+            sha256=sha256,
+            partial=True,
+            errors=("no static-pass verdict to build on",),
+            ledger_refs=(node.id,),
+        )
+    updated: GenAIVerdict = existing.model_copy(
+        update={
+            "partial": True,
+            "errors": (
+                *existing.errors,
+                "full pass reused the static verdict: no dynamic evidence available",
+            ),
+            "ledger_refs": (*existing.ledger_refs, node.id),
+        }
     )
+    return updated
+
+
+def _score(ctx: Context, which: JobStage) -> CompositeScore:
+    """Real M6. Pure function over whatever evidence exists, then one node per factor.
+
+    The scorer itself does no I/O — persisting its factors is this wrapper's job, which
+    is what keeps `m6_score/engine.py` provably deterministic (CLAUDE.md rule 3).
+
+    Like M2 before it, the scorer existed and was tested but nothing called it: a full
+    run reported S=0 on an APK the engine scores perfectly well in isolation.
+    """
+    from drishti.m6_score.engine import score as m6_score
+
+    meta = ctx.artefacts.get("ingest")
+    result = m6_score(
+        static=ctx.artefacts.get("static"),
+        ml=ctx.artefacts.get("ml"),
+        genai=ctx.artefacts.get("genai"),
+        dynamic=ctx.artefacts.get("dynamic"),
+        intel=meta.intel if meta is not None else None,
+    )
+    for factor in result.factors:
+        ctx.ledger.append(
+            type=EvidenceType.SCORE_FACTOR,
+            source_tool="m6_score",
+            content={
+                "stage": which.value,
+                "symbol": factor.symbol,
+                "raw": factor.raw,
+                "weight": factor.weight,
+                "contribution": factor.contribution,
+            },
+            # Every score point traces back to the evidence that produced it. Without
+            # these parents the claim is marketing rather than a property.
+            parents=tuple(factor.evidence_refs),
+            confidence=1.0,
+        )
+    return result
 
 
 def _stub_score(ctx: Context, which: JobStage, gamma: float) -> CompositeScore:
@@ -435,17 +535,17 @@ def run_pipeline(
             ctx.record("ingest", meta)
 
         with stage(run, ctx, JobStage.STATIC):
-            static = _stub_static(ctx, meta)
+            static = _static(ctx, apk_path, meta)
             ctx.record("static", static)
 
         with stage(run, ctx, JobStage.ML):
             ctx.record("ml", _stub_ml(ctx, static))
 
         with stage(run, ctx, JobStage.GENAI_STATIC):
-            ctx.record("genai", _stub_genai(ctx, job.sha256, JobStage.GENAI_STATIC))
+            ctx.record("genai", _genai(ctx, static, job.sha256, JobStage.GENAI_STATIC))
 
         with stage(run, ctx, JobStage.SCORE_PRELIM):
-            preliminary = _stub_score(ctx, JobStage.SCORE_PRELIM, gamma=0.7)
+            preliminary = _score(ctx, JobStage.SCORE_PRELIM)
             ctx.record("score", preliminary)
         # Emitted the moment it exists, not at the end of the run.
         run.with_stage(JobStage.SCORE_PRELIM, preliminary=preliminary)
@@ -482,10 +582,10 @@ def run_pipeline(
                 ctx.record("dynamic", trace)
 
         with stage(run, ctx, JobStage.GENAI_FULL):
-            ctx.record("genai", _stub_genai(ctx, job.sha256, JobStage.GENAI_FULL))
+            ctx.record("genai", _genai_full(ctx, job.sha256))
 
         with stage(run, ctx, JobStage.SCORE_FINAL):
-            final = _stub_score(ctx, JobStage.SCORE_FINAL, gamma=1.0)
+            final = _score(ctx, JobStage.SCORE_FINAL)
             ctx.record("score", final)
         run.with_stage(JobStage.SCORE_FINAL, final=final)
 
