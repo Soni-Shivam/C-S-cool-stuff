@@ -1,0 +1,26 @@
+{
+  "rule11": {
+    "b_one": 0.4,
+    "b_many": 0.4,
+    "b_mixed": 0.98866,
+    "mixed_groups": 5,
+    "identical": true
+  },
+  "containment": {
+    "v1's probe\n(nc -z)": false,
+    "always-reachable\nprobe": false,
+    "shipped probe": true
+  },
+  "evasion": {
+    "probes, then nothing": "2 environment probe(s) and no other behaviour: the sample inspected its surroundings and committed to nothing",
+    "no observations at all": "no observations at all: the sample either detected the environment before any hook fired, or did nothing. Inconclusive, never benign.",
+    "probes AND 20 events of real action": "3 non-probe behaviour group(s) observed"
+  },
+  "detection_surface": {
+    "sinks": 29,
+    "categories": 10,
+    "kb_techniques": 21,
+    "covered": 18,
+    "behaviours": 16
+  }
+}
