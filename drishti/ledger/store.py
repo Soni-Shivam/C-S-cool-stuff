@@ -333,11 +333,26 @@ class LedgerStore:
         Three independent checks per node, in the order an auditor would want them:
         contiguity, hash integrity, then signature validity. "Broken somewhere" is
         not a useful answer, so the first failure short-circuits with its seq.
+
+        An empty chain is reported as **not ok**: a job that produced no evidence has
+        nothing to attest, and a vacuous green here would be indistinguishable from a
+        real one.
         """
         job_id = job_id or self._require_job()
         rows = list(
             self._conn.execute("SELECT * FROM evidence WHERE job_id = ? ORDER BY seq", (job_id,))
         )
+        if not rows:
+            # Every consumer of this result renders it to a human — the UI badge, the
+            # CLI exit code, the report. None of them may read green for a job that
+            # produced nothing.
+            return ChainVerification(
+                ok=False,
+                node_count=0,
+                first_bad_seq=None,
+                reason=f"empty chain: no nodes for job {job_id!r}",
+            )
+
         pubkey = self._key.public_key()
         expected_prev = crypto.GENESIS_HASH
 
