@@ -11,6 +11,12 @@ Contract version: 1.1.0 (1.0.0 plus the eight models listed in the doc's addendu
 from __future__ import annotations
 
 from drishti.contracts.base import AnalyserResult, DrishtiModel
+from drishti.contracts.corpus import (
+    MALWARE_MIN_VT,
+    TIME_BANDS,
+    CorpusSample,
+    Split,
+)
 from drishti.contracts.dynamic_trace import (
     ApiEvent,
     DecryptedBlob,
@@ -74,7 +80,9 @@ __all__ = [
     "BAND_ORDER",
     "CONTRACT_VERSION",
     "GROUNDING_REQUIRED",
+    "MALWARE_MIN_VT",
     "PIPELINE_ORDER",
+    "TIME_BANDS",
     "AnalyserResult",
     "ApiEvent",
     "CallPath",
@@ -83,6 +91,7 @@ __all__ = [
     "Component",
     "ComponentKind",
     "CompositeScore",
+    "CorpusSample",
     "DecryptedBlob",
     "DexLoadEvent",
     "DrishtiModel",
@@ -115,6 +124,7 @@ __all__ = [
     "Severity",
     "SeverityBand",
     "SnapshotLifecycle",
+    "Split",
     "StageEvent",
     "StaticReport",
     "StrictWireModel",

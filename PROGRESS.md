@@ -14,6 +14,67 @@ Conventions:
   `Soni-Shivam/CyberShield` returns nothing — no pull request was ever opened against the
   remote. Verified 2026-08-17.
 
+## 2026-08-17 · Stratified corpus sample list (T2.2, part 1)
+
+**Branch:** `feat/stratified-sample-list` · **Phase:** P2 prep · Contract addendum **A9**
+
+ADAPTed from v1's `build_sample_list.py`, which already had the `dex_date` plausibility
+window. Four things it did not have, all required by the v2 spec:
+
+1. **Three-way split** — `train`/`calib`/`test`. `PHASE_2` T2.4 calibrates on a held-out
+   third split; calibrating on test is a leak a good judge will catch.
+2. **Four time bands**, so the 2024-2026 band is visible as its own quantity rather than
+   averaged away. v1's corpus had 117 rows from 2024-25 total.
+3. **Stratified download order** — round-robin across `(time_band, label)` cells from a
+   seeded shuffle, so **any prefix of the list is itself balanced**. This is what makes a
+   metered, multi-hour transfer interruptible.
+4. **Measured size** — `apk_size` is summed from the index and printed in bytes *before*
+   anything downloads. The corpus size is never estimated.
+
+### Verified
+
+The prefix-balance test has teeth. Negative control over 400 rows, comparing our ordering
+against the alternatives:
+
+| Ordering | Worst label gap | Worst band gap | First bad prefix |
+|---|---|---|---|
+| **stratified (ours)** | **1** | **2** | never |
+| bucket order | **200** | bands absent | n=8 |
+| band-sorted | 1 | bands absent | n=8 |
+
+End-to-end on a 60,000-row synthetic index: 19,859 implausible dates dropped, 6,645
+VT grey-zone rows dropped, exactly 100 malware + 100 benign in each of the four bands.
+The HTTP-404-page guard fires on a short file, which is the v1 failure that wasted a
+debugging session (`SALVAGE.md`: *"Saved HTTP 404 HTML pages, not the AndroZoo index"*).
+
+### Found
+
+**1. A new contract model can silently escape the round-trip gate.** `test_roundtrip`
+discovers models via `DrishtiModel.__subclasses__()`, which only sees modules that have
+been **imported**. `drishti/contracts/corpus.py` was not exported from
+`contracts/__init__.py`, so `CorpusSample` was invisible to the gate and the full suite
+passed with it unguarded. Confirmed directly: discovered `False` before importing the
+module, `True` after. Fixed by exporting it, which immediately made the gate fail as it
+should, then adding the factory. Same import-order trap as the e2e ledger bug earlier
+today — a test that cannot see the thing it guards passes for the wrong reason.
+
+**2. An empty `calib` split fails silently.** The synthetic index put every recent row in
+`test`, leaving `calib` at zero. Nothing downstream would have complained; isotonic
+calibration and the reliability curve would simply not have happened, and that curve is
+one of the few things separating this project from prompting an LLM for a number. The CLI
+now warns explicitly on any empty split.
+
+### Not verified
+
+- **The real AndroZoo index has never been fetched or parsed.** Every number above is from
+  a synthetic 60,000-row index. Real composition, real drop rates and the real corpus size
+  are unknown until the index is downloaded.
+- Nothing was downloaded and no APK exists anywhere. No GCP resource was touched.
+- The 12,000-row target and the four band edges are design choices, not yet validated
+  against what AndroZoo actually supplies — in particular the 2024-2026 band may be thin.
+
+---
+
 ## 2026-08-17 · GCP bootstrap — buckets, APIs, budget guard
 
 **Branch:** `feat/gcp-bootstrap` · **Phase:** P0 (lab rebuild)
