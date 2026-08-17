@@ -7,7 +7,7 @@ Protocol: `docs/00_GUIDING_MAP.md` §13.
 - **Started:** 2026-08-13 · **Last reconciled:** 2026-08-17
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
 - **Phase:** P0 FOUNDATIONS — T0.1–T0.7 + T0.10 done; **T0.8 and T0.9 remaining**
-- **Tests:** **341 contract+unit, all passing** (`c658a64`; canary build milestone)
+- **Tests:** **347 contract+unit, all passing** (M2 core milestone; commit pending)
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
 
@@ -55,12 +55,12 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 
 ## P1 — STATIC ENGINE (H04→H16)
 
-- [ ] T1.1 Manifest & permission analysis          TODO
+- [~] T1.1 Manifest & permission analysis          WIP   H10  components + exported semantics + 10 auditable combo rules
 - [ ] T1.2 Certificate analysis                    TODO
-- [ ] T1.3 Strings, constants, packing signals     TODO
-- [ ] T1.4 Call-graph + backward sink walk         TODO
+- [~] T1.3 Strings, constants, packing signals     WIP   H10  URLs/packages/crypto, entropy and native-lib signals
+- [~] T1.4 Call-graph + backward sink walk         WIP   H10  bounded reverse BFS, six initial sink signatures
 - [ ] T1.5 Over-privilege & drift                  TODO
-- [ ] T1.6 Hypothesis derivation                   TODO
+- [~] T1.6 Hypothesis derivation                   WIP   H10  evidence-cited static→dynamic bridge (six kinds)
 - [ ] T1.7 MobSF enrichment (optional)             TODO
 
 ## P2 — ML & SCORING (H10→H24)
