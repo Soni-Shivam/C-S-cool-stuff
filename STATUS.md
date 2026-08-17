@@ -250,9 +250,17 @@ not caught by any test or gate, only by reading `git log`. Single agent from her
 
 - **All v1 GCP provenance is unrecoverable** (2026-08-17). See the salvage section for
   what survives. Do not quote the 14 artifacts, the snapshots, or the GCS copies.
-- **The AndroZoo API key was exposed in a chat transcript.** Rotate after the demo.
-- **`GEMINI_API_KEY` is not set.** P3 is blocked on it; the `mock` provider covers tests
-  until it arrives.
+- **The Gemini key is set and authenticates, but the project has no credits.** Every
+  `generateContent` call returns **429 `RESOURCE_EXHAUSTED` — "Your prepayment credits are
+  depleted"**. Listing models works (HTTP 200); generation does not. **P3 is blocked until
+  credits are topped up**; `mock` covers tests meanwhile. Verified 2026-08-17.
+- **The Gemini model list advertises models that are not callable.** `/v1beta/models`
+  returns `gemini-2.5-flash`, but calling it gives **404 — "no longer available to new
+  users, use models/gemini-3.6-flash"**. Anything that selects a model by reading the list
+  will break at runtime. `config.resolved_llm_model` defaults to `gemini-3.1-pro-preview`,
+  which is **in the list but unverified**, because a depleted-credit 429 masks a 404. T3.1
+  must call the configured model once at startup rather than trust the catalogue.
+- **Both API keys were pasted into a chat transcript.** Rotate after the demo.
 - **The lab is still mostly unbuilt.** Buckets, APIs and budget alerts exist as of
   2026-08-17; **no VPC, no firewall, no Packer image, no detonator, no corpus.**
 - **GitHub Actions has never run on this repo** — 0 workflows registered, 0 runs ever,
