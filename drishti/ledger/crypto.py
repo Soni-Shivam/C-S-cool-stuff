@@ -8,9 +8,11 @@ hash for the same node.** Everything in this module exists to make that true.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import os
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +34,14 @@ _UNHASHED_FIELDS = frozenset({"node_hash", "signature"})
 #: system means (confidences, SHAP values, scores) and well inside float64's exact
 #: decimal range, so rounding never loses meaning but always removes ambiguity.
 FLOAT_PRECISION = 6
+
+
+class LedgerKeyError(Exception):
+    """The signing key file exists but is not a usable Ed25519 private key.
+
+    Deliberately fatal. Regenerating would leave every previously signed node
+    unverifiable, so replacing a corrupt key is an operator decision.
+    """
 
 
 def normalise(obj: Any) -> Any:
@@ -77,8 +87,34 @@ def node_hash(node: dict[str, Any]) -> str:
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
 
 
+def _read_key(path: Path) -> Ed25519PrivateKey | None:
+    """Return the key at `path`, or None if there is nothing there yet.
+
+    A zero-length file counts as absent: that is what a crash mid-create leaves
+    behind, and it is the one corrupt state it is safe to overwrite.
+    """
+    try:
+        raw = path.read_bytes()
+    except FileNotFoundError:
+        return None
+    if not raw:
+        return None
+    try:
+        loaded = serialization.load_pem_private_key(raw, password=None)
+    except (ValueError, TypeError) as exc:
+        raise LedgerKeyError(f"{path} is not a readable PEM private key: {exc}") from exc
+    if not isinstance(loaded, Ed25519PrivateKey):
+        raise LedgerKeyError(f"{path} is not an Ed25519 private key: {type(loaded).__name__}")
+    return loaded
+
+
 def load_or_create_key(path: Path) -> Ed25519PrivateKey:
     """Load a PEM Ed25519 private key, generating and persisting one if absent.
+
+    Safe against concurrent creators. The previous check-then-act version let two
+    threads each generate a key and the second overwrite the first, so the first
+    thread signed nodes with a key that was no longer on disk and its chain could
+    never verify.
 
     v1 left `LEDGER_SIGNING_KEY` empty, so a fresh key was generated per run and
     chains from different runs could not be compared against a stable public key
@@ -89,14 +125,12 @@ def load_or_create_key(path: Path) -> Ed25519PrivateKey:
     tampering, not key theft from an already-compromised analysis host.
     """
     path = Path(path)
-    if path.exists():
-        loaded = serialization.load_pem_private_key(path.read_bytes(), password=None)
-        if not isinstance(loaded, Ed25519PrivateKey):
-            raise TypeError(f"{path} is not an Ed25519 private key: {type(loaded).__name__}")
-        return loaded
+    existing = _read_key(path)
+    if existing is not None:
+        return existing
 
-    key = Ed25519PrivateKey.generate()
     path.parent.mkdir(parents=True, exist_ok=True)
+    key = Ed25519PrivateKey.generate()
     pem = key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
@@ -109,9 +143,30 @@ def load_or_create_key(path: Path) -> Ed25519PrivateKey:
     def _private_opener(target: str, flags: int) -> int:
         return os.open(target, flags, 0o600)
 
-    with open(path, "wb", opener=_private_opener) as handle:
-        handle.write(pem)
-    return key
+    # Write to a uniquely-named temp file in the same directory, fsync it, then hard-link
+    # it into place. os.link raises FileExistsError if the destination exists, which makes
+    # "create only if absent" a single atomic step instead of a check followed by a write.
+    # Same directory so the link cannot cross a filesystem boundary.
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    try:
+        with open(tmp, "wb", opener=_private_opener) as handle:
+            handle.write(pem)
+            handle.flush()
+            os.fsync(handle.fileno())
+        # Suppressed FileExistsError means another creator won the race and theirs is
+        # the key of record — which the re-read below picks up.
+        with contextlib.suppress(FileExistsError):
+            os.link(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+    # Always re-read. Whoever won the link race owns the key on disk and every caller
+    # must return that one — returning our in-memory key after losing the race is
+    # precisely the bug this function used to have.
+    winner = _read_key(path)
+    if winner is None:
+        raise LedgerKeyError(f"failed to create or read a signing key at {path}")
+    return winner
 
 
 def public_key_hex(key: Ed25519PrivateKey | Ed25519PublicKey) -> str:
