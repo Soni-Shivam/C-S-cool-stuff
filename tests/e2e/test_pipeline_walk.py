@@ -10,20 +10,35 @@ rather than a traceback.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from drishti.api.jobs import JobRunner
 from drishti.config import Settings
+from drishti.contracts.evidence import EvidenceType
 from drishti.contracts.job import Job, JobStage
 from drishti.ledger.store import LedgerStore
 from drishti.pipeline import STAGES_IN_ORDER, Context, run_pipeline
 from drishti.util import new_id, now
 
-#: 11 stage nodes + M1's extra THREAT_INTEL node. PHASE_0 T0.5 predicted "13 ledger
-#: nodes"; with real M1 and no split APK the true figure is 12, and it will be 13 for a
-#: split bundle (which also writes SPLIT_APK). The doc's estimate was close and the
-#: earlier "11" was only low because M1 was a stub.
-EXPECTED_NODES_PER_RUN = 12
+#: Node count for a run over the SYNTHETIC fixture, whose manifest is a placeholder.
+#:
+#: It dropped from 12 to 10 when the real M2 and M4 were wired in, and both losses are
+#: correct rather than regressions:
+#:   * no MANIFEST_ENTRY — androguard cannot parse the placeholder, so there is no
+#:     manifest fact to record. The stub invented one.
+#:   * one TECHNIQUE_MAP instead of two — with no static evidence to cite, M4 refuses to
+#:     make a claim at all rather than append an ungrounded AI_CLAIM the ledger would
+#:     reject (CLAUDE.md rule 5).
+#:
+#: It then rose to 16 when the real M6 was wired in, because the scorer emits ONE NODE
+#: PER FACTOR at each of the two score stages instead of a single stub node. That is the
+#: mechanism behind "every score point traces back to an artefact" — without those nodes
+#: the claim is marketing rather than a property.
+#:
+#: A genuinely parseable APK produces more; see `test_a_real_apk_produces_more_evidence`.
+EXPECTED_NODES_PER_RUN = 16
 
 
 @pytest.fixture
@@ -135,9 +150,9 @@ def test_final_job_carries_both_verdicts(settings, apk) -> None:
     finished = run_pipeline(_job(), Context(settings=settings, ledger=store), apk_path=apk)
     assert finished.preliminary is not None, "preliminary verdict must survive to the end"
     assert finished.final is not None
-    assert finished.preliminary.gamma < finished.final.gamma, (
-        "gamma must rise once dynamic evidence exists"
-    )
+    # gamma is derived from evidence quality, not from how far the run got. With a
+    # non-detonating trace it correctly stays put; see the scorer's formula.
+    assert finished.preliminary.gamma == finished.final.gamma
     store.close()
 
 
@@ -148,7 +163,7 @@ def test_stage_failure_becomes_an_error_node_not_a_traceback(settings, apk, monk
     def boom(*_a, **_k):
         raise RuntimeError("androguard exploded")
 
-    monkeypatch.setattr(pipeline, "_stub_static", boom)
+    monkeypatch.setattr(pipeline, "_static", boom)
 
     store = LedgerStore(settings.db_path, settings.ledger_key_path)
     job = _job()
@@ -322,3 +337,27 @@ def test_no_fixture_falls_back_to_a_declared_stub(settings, apk) -> None:
     assert trace.partial is True
     assert any("no trace source available" in e for e in trace.errors)
     store.close()
+
+
+def test_a_real_apk_produces_more_evidence_than_an_unparseable_one(settings) -> None:
+    """The node count above is a floor for a fixture that cannot be parsed, not a target.
+
+    Wiring real M2/M4 made the synthetic-fixture count go DOWN, which is easy to misread
+    as a regression. This is the assertion that actually matters: a real APK yields more
+    evidence, including the manifest facts the placeholder cannot produce.
+    """
+    canary = Path(__file__).resolve().parents[2] / "canary" / "dist" / "canary.apk"
+    assert canary.exists(), "canary APK missing — run `bash canary/build.sh`"
+
+    store = LedgerStore(settings.db_path, settings.ledger_key_path)
+    job = _job()
+    run_pipeline(job, Context(settings=settings, ledger=store), apk_path=canary)
+
+    nodes = store.query(job_id=job.id)
+    assert len(nodes) > EXPECTED_NODES_PER_RUN, (
+        f"a parseable APK produced {len(nodes)} nodes, no more than the unparseable "
+        "fixture — M2 is probably not running"
+    )
+    types = {n.type for n in nodes}
+    assert EvidenceType.MANIFEST_ENTRY in types, "real M2 must record manifest facts"
+    assert store.verify_chain(job.id).ok is True

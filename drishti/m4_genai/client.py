@@ -132,21 +132,23 @@ class LLMClient:
         )
 
     # ── completion ───────────────────────────────────────────────────────────
-    def complete(self, *, system: str, user: str, max_output_tokens: int = 2000) -> str | None:
+    def complete(
+        self, *, system: str, user: str, max_output_tokens: int = 2000, json_mode: bool = False
+    ) -> str | None:
         """One completion. Returns None on any provider failure — never raises upward.
 
         `BudgetExceededError` is the exception, and it propagates on purpose: a blown
         budget is a bug in the caller's loop, not a flaky network.
         """
         self._check_budgets(system + user)
-        key = self._cache_key(system, user)
+        key = self._cache_key(system, user + f"\x00json={json_mode}")
         hit = self._cached(key)
         if hit is not None:
             log.info("llm_cache_hit", model=self._model, key=key[:12])
             return hit
 
         try:
-            completion = self._dispatch(system, user, max_output_tokens)
+            completion = self._dispatch(system, user, max_output_tokens, json_mode)
         except BudgetExceededError:
             raise
         except Exception as exc:
@@ -169,7 +171,9 @@ class LLMClient:
         loop: a model that cannot produce the schema twice will not produce it on the
         fifth try, and each attempt costs budget the job may need elsewhere.
         """
-        raw = self.complete(system=system, user=user, max_output_tokens=max_output_tokens)
+        raw = self.complete(
+            system=system, user=user, max_output_tokens=max_output_tokens, json_mode=True
+        )
         if raw is None:
             return None
         parsed = parse_and_validate(raw, schema)
@@ -191,35 +195,53 @@ class LLMClient:
         return repaired
 
     # ── providers ────────────────────────────────────────────────────────────
-    def _dispatch(self, system: str, user: str, max_output_tokens: int) -> str | None:
+    def _dispatch(
+        self, system: str, user: str, max_output_tokens: int, json_mode: bool = False
+    ) -> str | None:
         if self._provider == "mock":
             return self._mock(system, user)
         if self._provider == "openrouter":
-            return self._openrouter(system, user, max_output_tokens)
+            return self._openrouter(system, user, max_output_tokens, json_mode)
         raise LLMError(
             f"provider {self._provider!r} is configured but not implemented. "
             "openrouter and mock are verified working; gemini and anthropic are not "
             "wired because neither could be tested (see STATUS.md)."
         )
 
-    def _openrouter(self, system: str, user: str, max_output_tokens: int) -> str | None:
+    def _openrouter(
+        self, system: str, user: str, max_output_tokens: int, json_mode: bool = False
+    ) -> str | None:
         key = self._settings.openrouter_api_key
         if key is None:
             raise LLMError("openrouter selected but DRISHTI_OPENROUTER_API_KEY is unset")
+        body: dict[str, Any] = {
+            "model": self._model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "max_tokens": max_output_tokens,
+        }
+        if json_mode:
+            # Reasoning models emit their chain of thought as `content`. Measured on this
+            # model: the real analysis prompt came back as 7,669 characters of prose with
+            # the JSON buried inside, and response_format alone did NOT stop it — that
+            # only held on a trivial probe. Disabling reasoning is what actually produces
+            # clean JSON (1,360 chars, parses first time), and it stops the completion
+            # budget being spent on thinking tokens as well.
+            #
+            # Scraping the object out of the prose was the alternative, and it is the
+            # thing 00_GUIDING_MAP 9.4 warns against. Fixing the request beats parsing
+            # around the answer.
+            body["reasoning"] = {"enabled": False}
+            body["response_format"] = {"type": "json_object"}
         response = httpx.post(
             OPENROUTER_URL,
             headers={
                 "Authorization": f"Bearer {key.get_secret_value()}",
                 "Content-Type": "application/json",
             },
-            json={
-                "model": self._model,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                "max_tokens": max_output_tokens,
-            },
+            json=body,
             timeout=120.0,
         )
         response.raise_for_status()
