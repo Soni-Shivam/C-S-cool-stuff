@@ -17,9 +17,24 @@ install-lab: ## Install lab extras (frida<17, mitmproxy). GCE detonator only.
 up: ## Run the API with reload on :8080
 	uv run uvicorn drishti.api.main:app --reload --port 8080
 
+# The dashboard is a separate Vite app that proxies /api to :8080, so `make up`
+# has to be running alongside it. Proxying rather than serving the built assets
+# from FastAPI keeps the frozen route surface (T0.6) free of a UI mount.
+.PHONY: ui-install
+ui-install: ## Install dashboard dependencies
+	cd ui && npm install
+
 .PHONY: ui
-ui: ## Run the dashboard dev server
+ui: ## Run the dashboard dev server on :5173 (needs `make up` in another shell)
 	cd ui && npm run dev
+
+.PHONY: ui-build
+ui-build: ## Typecheck and build the dashboard to ui/dist
+	cd ui && npm run build
+
+.PHONY: ui-preview
+ui-preview: ui-build ## Serve the production build on :4173. Use this for the demo.
+	cd ui && npm run preview
 
 .PHONY: lint
 lint: ## ruff check + format check

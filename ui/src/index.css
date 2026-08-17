@@ -1,0 +1,78 @@
+@import 'tailwindcss';
+
+/**
+ * Dark, high-contrast, generous type.
+ *
+ * PHASE_6 T6.4 states the constraint plainly: "assume a washed-out projector and
+ * a judge three metres away". Every colour below is chosen for contrast on a bad
+ * beamer, not for elegance on a retina display. Base type is 15px, not 13px, and
+ * the severity colours stay distinguishable when the projector eats saturation.
+ */
+
+@theme {
+  --color-ink: #05070c;
+  --color-panel: #0c111b;
+  --color-panel-2: #121a28;
+  --color-line: #1e2a3d;
+  --color-line-soft: #17202f;
+  --color-fg: #e8eef8;
+  --color-muted: #8ea0bb;
+  --color-dim: #5f7089;
+
+  --color-accent: #4da3ff;
+  --color-accent-soft: #12314f;
+
+  --color-critical: #ff4d5e;
+  --color-high: #ff9838;
+  --color-medium: #ffd23f;
+  --color-low: #38d9a9;
+
+  --color-good: #38d9a9;
+  --color-bad: #ff4d5e;
+  --color-warn: #ffd23f;
+
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ink);
+  color: var(--color-fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Slim scrollbars: the ledger table and the API timeline both scroll, and the
+   default chrome bars eat real estate on a 1280px projector. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 4px;
+}
+
+@keyframes drishti-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulse {
+  animation: drishti-pulse 1.4s ease-in-out infinite;
+}
