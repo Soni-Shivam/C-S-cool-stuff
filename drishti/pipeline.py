@@ -238,6 +238,29 @@ def _static(ctx: Context, apk_path: Path, meta: FileMeta) -> StaticReport:
         )
 
 
+def _ml(ctx: Context, static: StaticReport) -> MLPrediction:
+    """Real M5 inference. Reports the absence of a model rather than faking a number."""
+    from drishti.m5_ml.infer import predict
+
+    result = predict(static, ctx.settings.models_dir)
+    node = ctx.ledger.append(
+        type=EvidenceType.ML_PREDICTION,
+        source_tool=f"m5_ml:{result.model_version}",
+        content={
+            "p_malicious_raw": result.p_malicious_raw,
+            "p_calibrated": result.p_calibrated,
+            "model_version": result.model_version,
+            "feature_schema_version": result.feature_schema_version,
+            "partial": result.partial,
+            "errors": list(result.errors),
+        },
+        # A prediction from no model is not evidence, and must not be recorded as
+        # though it were: absence of a model is why gamma falls.
+        confidence=0.0 if result.model_version == "none" else 0.8,
+    )
+    return result.model_copy(update={"ledger_refs": (node.id,)})
+
+
 def _stub_ml(ctx: Context, static: StaticReport) -> MLPrediction:
     node = ctx.ledger.append(
         type=EvidenceType.ML_PREDICTION,
@@ -539,7 +562,7 @@ def run_pipeline(
             ctx.record("static", static)
 
         with stage(run, ctx, JobStage.ML):
-            ctx.record("ml", _stub_ml(ctx, static))
+            ctx.record("ml", _ml(ctx, static))
 
         with stage(run, ctx, JobStage.GENAI_STATIC):
             ctx.record("genai", _genai(ctx, static, job.sha256, JobStage.GENAI_STATIC))
