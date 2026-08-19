@@ -101,3 +101,13 @@ v1-reference/**/build/
 
 # Local agent worktrees. Never commit their contents.
 .worktrees/
+
+# LaTeX build spill. `docs/figures/` holds generated figures only; the paper's
+# class file and architecture renders live in REPORT/ and were copied here by a
+# pdflatex run from the wrong working directory.
+docs/figures.zip
+docs/figures/*.cls
+docs/figures/sys_*.png
+REPORT/*.aux
+REPORT/*.log
+REPORT/*.out
