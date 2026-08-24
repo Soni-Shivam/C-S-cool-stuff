@@ -4,10 +4,10 @@
 Update it after **every** task: task → DONE, hour, commit sha, test count.
 Protocol: `docs/00_GUIDING_MAP.md` §13.
 
-- **Started:** 2026-08-13 · **Last reconciled:** 2026-08-17
+- **Started:** 2026-08-13 · **Last reconciled:** 2026-08-25
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
-- **Phase:** P0 mostly done · P1/P2 **skeletons landed, below their DoD** (see Gaps)
-- **Tests:** **408 contract+unit, all passing** (measured 2026-08-17; the earlier 347 predated the M4 client/controller landing)
+- **Phase:** Presentation hardening · GUI/reverse-engineering depth landed; live lab and model evaluation remain blocked
+- **Tests:** **493 contract+unit + 15 e2e, all passing** (measured 2026-08-25 at `7fce6f0`)
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
 
@@ -33,6 +33,31 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 | v1 corpus list | `v1-reference/backend/samples.csv`, 6,000 rows, 3000/3000 balanced — **split contaminated**: 1,235 rows (20.6%) dated 1980/81 all in train, 23 rows dated 2039–2107 all in test; only 62 rows from 2024, 55 from 2025 |
 | Test baseline | **Measured 2026-08-17 at `615a803`: 300 contract+unit, 14 e2e, 314 total, all passing.** ruff clean, mypy clean over 41 source files. v1's claimed 124 remains unverified — do not quote it |
 
+## Presentation hardening — 2026-08-25
+
+- **GUI:** reverse-engineering workspace, persistent seven-view navigation, URL-deep-linked
+  jobs/evidence/methods, decompiled-code inspection, verified strings, tool-call audit, score
+  rail, and responsive desktop/mobile layouts landed in `7fce6f0`. Production Vite build
+  passed; desktop and 390x844 browser screenshots were inspected.
+- **Reverse engineering:** bounded DAD decompilation is restricted to methods on reachable
+  sink paths. The model can request only six allowlisted, Pydantic-validated, read-only
+  analysis tools; every call is budgeted, bounded, and written to the evidence ledger.
+- **Detonation:** the VM harness now requires a signed, short-lived containment manifest,
+  the immutable runtime marker, and `/dev/kvm` before snapshot restore or `adb install`.
+  Frida collection, install refusal handling, and post-run snapshot restore are covered by
+  faked unit tests. **No live GCP detonation has been performed or claimed.**
+- **Scoring honesty:** unavailable ML/reputation placeholders, mock GenAI, and synthetic
+  traces no longer inflate `S`, `gamma`, or `C`; limitations are derived from provenance.
+- **Verification:** 493 contract+unit tests and 15 e2e tests passed; ruff, shell syntax,
+  `git diff --check`, and the production UI build passed. `make e2e` could not access the
+  sandboxed global uv cache, so its exact pytest target ran via `.venv/bin/pytest`.
+- **Live blockers:** the active account `vedant.jeecompass@gmail.com` cannot list Compute
+  instances in `cybershield-505518` or `internship-505513`. No GCP resource was started in
+  this session; whether a pre-existing resource is running could not be independently
+  established. Better-model evaluation is specified in `docs/RE_MODEL_EVALUATION.md` but
+  remains unrun because no MLflow tracking target/experiment or live model credential was
+  available. No metric has been invented.
+
 ---
 
 ## P0 — FOUNDATIONS (H00→H06)
@@ -49,7 +74,7 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
       built against the frozen T0.6 surface. Verified in a real browser against a live
       API on the canary: upload -> SCORE_PRELIM -> factor -> evidence chip -> ledger
       node, and "Verify chain" returning 29 nodes intact. Python tests unchanged at 408.
-- [~] T0.9  Sandbox VM groundwork                  WIP   H09  canary compiled (SHA-256 `9854900c…`); sealed image/VM pending
+- [~] T0.9  Sandbox VM groundwork                  WIP   2026-08-25  7fce6f0 · immutable image/runtime admission code ready; live build blocked by IAM
 - [x] T0.10 Ingest module M1, for real             DONE  H07  guards+split+intel
 - [x] P0.11 Ledger concurrency hardening           DONE  2026-08-17  615a803 · tests: 314/314
 
@@ -62,7 +87,7 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - [x] T1.1 Manifest & permission analysis          DONE  2026-08-17 · 14 combo rules, DoD enforced by test
 - [ ] T1.2 Certificate analysis                    TODO
 - [~] T1.3 Strings, constants, packing signals     WIP   H10  URLs/packages/crypto, entropy and native-lib signals
-- [~] T1.4 Call-graph + backward sink walk         WIP   2026-08-17 · 29-sink taxonomy in sinks.py; BFS bounded
+- [~] T1.4 Call-graph + backward sink walk         WIP   2026-08-25  7fce6f0 · 29 sinks, bounded BFS + path-scoped DAD decompilation
 - [ ] T1.5 Over-privilege & drift                  TODO
 - [~] T1.6 Hypothesis derivation                   WIP   H10  evidence-cited static→dynamic bridge (six kinds)
 - [ ] T1.7 MobSF enrichment (optional)             TODO
@@ -80,29 +105,29 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - [ ] T2.4 Calibration                             TODO
 - [ ] T2.5 Anomaly detector                        TODO
 - [ ] T2.6 SHAP explanations                       TODO
-- [~] T2.7 The scorer                              WIP   #8 · noisy-OR + override + bands; determinism 100x + purity asserted
+- [~] T2.7 The scorer                              WIP   2026-08-25  7fce6f0 · noisy-OR + override + bands; unavailable signals excluded from confidence
 - [ ] T2.8 Bands and proposed actions              TODO
 - [ ] T2.9 Scorer test suite                       TODO
 
 ## P3 — GENAI CORE (H16→H36)
 
-- [ ] T3.1 LLM client                              TODO
+- [~] T3.1 LLM client                              WIP   2026-08-25  7fce6f0 · bounded OpenRouter tool loop; live provider validation pending
 - [ ] T3.2 Prompt-injection defence                TODO
 - [ ] T3.3 Controller                              TODO
-- [ ] T3.4 Code Interpreter agent                  TODO
+- [~] T3.4 Code Interpreter agent                  WIP   2026-08-25  7fce6f0 · grounded method interpreter + allowlisted tools; model eval pending
 - [ ] T3.5 RAG grounding                           TODO
 - [ ] T3.6 Behavioural risk B, bounded             TODO
 - [ ] T3.7 Technique Mapper                        TODO
 - [ ] T3.8 Social Engineering Analyst              TODO
 - [ ] T3.9 Vision impersonation                    TODO
-- [ ] T3.10 Verifier integration + summariser      TODO
+- [~] T3.10 Verifier integration + summariser      WIP   2026-08-25  7fce6f0 · evidence/tool verification integrated; broader eval pending
 - [ ] T3.11 Disagreement meta-check                TODO
-- [ ] T3.12 Structured output contract             TODO
+- [x] T3.12 Structured output contract             DONE  2026-08-25  7fce6f0 · tool calls, verified strings, interpretations round-trip tested
 
 ## P4 — DYNAMIC SANDBOX (H24→H48)
 
-- [ ] T4.1 Emulator control                        TODO
-- [ ] T4.2 Frida runner                            TODO
+- [~] T4.1 Emulator control                        WIP   2026-08-25  7fce6f0 · snapshot/admission flow unit-tested; live lab pending
+- [~] T4.2 Frida runner                            WIP   2026-08-25  7fce6f0 · observational harness implemented; live lab pending
 - [ ] T4.3 Crash recovery & self-repair            TODO
 - [ ] T4.4 TLS interception & network capture      TODO  ← v1 gap H4, see CARRIED_FINDINGS
 - [ ] T4.5 Evasion observation detection           TODO
@@ -125,7 +150,7 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 - [ ] T6.1 YARA generation                         TODO
 - [ ] T6.2 STIX 2.1 export                         TODO
 - [ ] T6.3 HTML report                             TODO
-- [~] T6.4 Dashboard completion                    WIP   2026-08-17 · seven tabs render live
+- [~] T6.4 Dashboard completion                    WIP   2026-08-25  7fce6f0 · seven views + reverse-engineering workspace render live
       Every panel is wired to a real endpoint and renders only what the API sent. What
       remains is depth that depends on unbuilt modules (report embed T6.3, YARA T6.1,
       STIX T6.2 all render their 501s today) plus the dev-only **tamper demo**, which is
@@ -140,8 +165,8 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 
 - [x] known_bad_hashes.txt LIFT -> data/kb/                 DONE  H07
 - [x] Lab infra LIFT (`infra/m3/**` → `infra/gcp/`)        DONE  H08  + auto_delete and snapshot-policy fixes
-- [ ] Containment verification LIFT                        TODO
-- [ ] M3 harness + hook catalogue LIFT                     TODO
+- [~] Containment verification LIFT                        WIP   2026-08-25  7fce6f0 · signed fail-closed admission; live lab pending
+- [~] M3 harness + hook catalogue LIFT                     WIP   2026-08-25  7fce6f0 · spawn-gated harness unit-tested; live lab pending
 - [x] canary/ source written to §4 spec                    DONE  H09  compile-only builder + `dist/canary.apk`; 341 tests
 - [x] ~~Rescue v1 lab data off VM disks → GCS~~            **LOST**  2026-08-17
 
@@ -264,6 +289,19 @@ not caught by any test or gate, only by reading `git log`. Single agent from her
   git cannot re-include a file whose parent directory is excluded, so a `!` allowlist
   inside an ignored `build/` directory can never fire. `tests/contract/test_repo_invariants.py`
   caught this and now guards both directions.
+- **Contract version bumped 1.2.0 -> 1.3.0** (additive) for bounded decompiled methods,
+  tool-call audit records, verified strings, code interpretations, and signed containment
+  manifests. The documentation and Pydantic models landed together in `7fce6f0`.
+- **HTTPS system-CA installation is no longer on the M3 critical path.** The immutable
+  image retains proxy support, but plaintext `Cipher.doFinal` observation is sufficient
+  for the initial lab gate and avoids the verified `-writable-system` failure mode.
+- **Better-model evaluation is specified, not simulated.** The requested comparison
+  requires real labelled examples, an MLflow tracking target, and callable provider
+  credentials. `docs/RE_MODEL_EVALUATION.md` records the evaluation and promotion gate;
+  no substitute metric was generated from fixtures.
+- **Packer source paths and fixtures were corrected.** Image inputs now reference the
+  current `drishti/` and `infra/` layout, exclude historical banking APK fixtures, and
+  permit only the project-authored inert canary. The runtime fake endpoint has no upstream.
 
 ## Open risks
 
@@ -280,8 +318,11 @@ not caught by any test or gate, only by reading `git log`. Single agent from her
   which is **in the list but unverified**, because a depleted-credit 429 masks a 404. T3.1
   must call the configured model once at startup rather than trust the catalogue.
 - **Both API keys were pasted into a chat transcript.** Rotate after the demo.
-- **The lab is still mostly unbuilt.** Buckets, APIs and budget alerts exist as of
-  2026-08-17; **no VPC, no firewall, no Packer image, no detonator, no corpus.**
+- **The live lab is not verified.** Immutable-image, containment-admission, and harness
+  code exists as of `7fce6f0`, but the active account cannot list Compute instances in
+  either relevant project. No image build, VM start, or detonation was performed in the
+  2026-08-25 session. Treat VPC, image, VM, and corpus runtime state as unknown until IAM
+  access is restored and `make lab-status` succeeds.
 - **GitHub Actions has never run on this repo** — 0 workflows registered, 0 runs ever,
   despite valid YAML on the default branch, `enabled: true`, and a non-fork repo. The API
   returns 200 with `total_count: 0`, so it is not a token-scope problem. **PRs are being
