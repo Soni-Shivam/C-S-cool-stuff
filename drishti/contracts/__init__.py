@@ -5,12 +5,13 @@ field that is not there, add it to the doc first, bump the contract version, the
 implement — in that order. A model that exists only in code is a model the other
 two tracks do not know about.
 
-Contract version: 1.1.0 (1.0.0 plus the eight models listed in the doc's addendum).
+Contract version: 1.3.0 (additive containment admission contracts).
 """
 
 from __future__ import annotations
 
 from drishti.contracts.base import AnalyserResult, DrishtiModel
+from drishti.contracts.containment import ContainmentChecks, ContainmentManifest
 from drishti.contracts.corpus import (
     MALWARE_MIN_VT,
     TIME_BANDS,
@@ -41,9 +42,12 @@ from drishti.contracts.evidence import (
 )
 from drishti.contracts.frontier import Morph, MorphKind, MorphPlan, SandboxPlan
 from drishti.contracts.genai_verdict import (
+    CodeInterpretation,
     GenAIVerdict,
     GroundedClaim,
     TechniqueMapping,
+    ToolCallRecord,
+    VerifiedString,
     VerifierStatus,
     VictimProfile,
     VisionMatch,
@@ -64,6 +68,7 @@ from drishti.contracts.static_report import (
     CertificateInfo,
     Component,
     ComponentKind,
+    DecompiledMethod,
     FileMeta,
     Hypothesis,
     HypothesisKind,
@@ -73,7 +78,7 @@ from drishti.contracts.static_report import (
     ThreatIntel,
 )
 
-CONTRACT_VERSION = "1.1.0"
+CONTRACT_VERSION = "1.3.0"
 
 __all__ = [
     "BAND_FLOOR",
@@ -88,10 +93,14 @@ __all__ = [
     "CallPath",
     "CertificateInfo",
     "ChainVerification",
+    "CodeInterpretation",
     "Component",
     "ComponentKind",
     "CompositeScore",
+    "ContainmentChecks",
+    "ContainmentManifest",
     "CorpusSample",
+    "DecompiledMethod",
     "DecryptedBlob",
     "DexLoadEvent",
     "DrishtiModel",
@@ -130,7 +139,9 @@ __all__ = [
     "StrictWireModel",
     "TechniqueMapping",
     "ThreatIntel",
+    "ToolCallRecord",
     "TraceSourceKind",
+    "VerifiedString",
     "VerifierStatus",
     "VictimProfile",
     "VisionMatch",

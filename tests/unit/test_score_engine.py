@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from drishti.contracts.dynamic_trace import DynamicTrace, TraceSourceKind
 from drishti.contracts.genai_verdict import GenAIVerdict
 from drishti.contracts.score import MLPrediction, SeverityBand
 from drishti.contracts.static_report import CertificateInfo, StaticReport, ThreatIntel
@@ -44,7 +45,12 @@ def _ml(*, probability: float = 0.7, anomaly: bool = False) -> MLPrediction:
 
 def test_noisy_or_fusion() -> None:
     """Two partially-correlated detectors at 0.7 fuse to ~0.91, not 1.4 clipped to 1.0."""
-    genai = GenAIVerdict(sha256="a" * 64, behavioural_risk_B=0.7, ledger_refs=("ev_ai",))
+    genai = GenAIVerdict(
+        sha256="a" * 64,
+        behavioural_risk_B=0.7,
+        provider="openrouter",
+        ledger_refs=("ev_ai",),
+    )
     result = score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None)
     factor = next(item for item in result.factors if item.symbol == "F_AI")
     assert factor.raw == 0.91
@@ -59,7 +65,12 @@ def test_scorer_is_deterministic() -> None:
     Running it twice would pass even if a dict iteration order or a set had leaked in;
     100 runs is what makes an ordering bug actually surface.
     """
-    genai = GenAIVerdict(sha256="a" * 64, behavioural_risk_B=0.7, ledger_refs=("ev_ai",))
+    genai = GenAIVerdict(
+        sha256="a" * 64,
+        behavioural_risk_B=0.7,
+        provider="openrouter",
+        ledger_refs=("ev_ai",),
+    )
     baseline = score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None)
     for _ in range(100):
         assert score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None) == baseline
@@ -123,3 +134,92 @@ def test_static_drift_contributes_without_dynamic_data() -> None:
     clean = score(static=_static(), ml=None, genai=None, dynamic=None, intel=None)
     drift = score(static=_static(drift=True), ml=None, genai=None, dynamic=None, intel=None)
     assert drift.S > clean.S
+
+
+def test_limitations_follow_dynamic_provenance_flags() -> None:
+    """A non-None placeholder trace must not make the final score claim live analysis."""
+    unavailable = DynamicTrace(
+        run_id="run_unavailable",
+        source=TraceSourceKind.UNAVAILABLE,
+        outcome="inconclusive",
+        partial=True,
+        synthetic=True,
+    )
+    result = score(static=_static(), ml=_ml(), genai=None, dynamic=unavailable, intel=None)
+    assert "dynamic analysis unavailable" in result.limitations
+    assert "dynamic trace is synthetic" in result.limitations
+    assert "containment was not verified for the dynamic trace" in result.limitations
+
+
+def test_replayed_trace_is_disclosed_even_when_captured_and_complete() -> None:
+    replay = DynamicTrace(
+        run_id="run_replay",
+        source=TraceSourceKind.REPLAY,
+        outcome="completed",
+        containment_verified=True,
+        synthetic=False,
+    )
+    result = score(static=_static(), ml=_ml(), genai=None, dynamic=replay, intel=None)
+    assert "dynamic trace was replayed, not live" in result.limitations
+
+
+def test_unavailable_placeholders_do_not_inflate_score_or_confidence() -> None:
+    """Pipeline placeholders disclose absence and contribute no detector signal."""
+    unavailable_ml = MLPrediction(
+        p_malicious_raw=0.9,
+        p_calibrated=0.9,
+        model_version="none",
+        feature_schema_version="1",
+        partial=True,
+    )
+    mock_genai = GenAIVerdict(
+        sha256="a" * 64,
+        behavioural_risk_B=0.8,
+        provider="mock",
+    )
+    unavailable_dynamic = DynamicTrace(
+        run_id="run_unavailable",
+        source=TraceSourceKind.UNAVAILABLE,
+        outcome="inconclusive",
+        detonated=True,
+        synthetic=True,
+        partial=True,
+    )
+    unavailable_intel = ThreatIntel(sha256="a" * 64, source="none")
+
+    result = score(
+        static=_static(),
+        ml=unavailable_ml,
+        genai=mock_genai,
+        dynamic=unavailable_dynamic,
+        intel=unavailable_intel,
+    )
+
+    assert result.S == 0
+    assert result.gamma == 0.4
+    assert result.C == 0.2
+    assert "ML prediction unavailable" in result.limitations
+    assert "behavioural analysis unavailable" in result.limitations
+
+
+def test_partial_model_outputs_do_not_reach_fused_score() -> None:
+    """A failed external analyser may return data, but partial data cannot score."""
+    partial_ml = _ml(probability=0.9).model_copy(update={"partial": True})
+    partial_genai = GenAIVerdict(
+        sha256="a" * 64,
+        behavioural_risk_B=0.8,
+        provider="openrouter",
+        partial=True,
+    )
+
+    result = score(
+        static=_static(),
+        ml=partial_ml,
+        genai=partial_genai,
+        dynamic=None,
+        intel=None,
+    )
+
+    factor = next(item for item in result.factors if item.symbol == "F_AI")
+    assert factor.raw == 0.0
+    assert result.gamma == 0.4

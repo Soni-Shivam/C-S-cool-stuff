@@ -46,6 +46,41 @@ class GroundedClaim(DrishtiModel):
     verifier_status: VerifierStatus
 
 
+class ToolCallRecord(DrishtiModel):
+    """One validated, read-only model-requested analysis operation."""
+
+    id: str
+    name: str
+    arguments: dict = Field(default_factory=dict)
+    status: Literal["ok", "rejected", "error"]
+    result_summary: str = ""
+    evidence_refs: tuple[str, ...] = ()
+    duration_ms: int = 0
+
+
+class VerifiedString(DrishtiModel):
+    """A model-proposed transform with the deterministic verifier's verdict."""
+
+    ciphertext: str
+    transform: str
+    plaintext: str = ""
+    verified: bool
+    reason: str
+    evidence_refs: tuple[str, ...] = ()
+
+
+class CodeInterpretation(DrishtiModel):
+    """Grounded explanation of one decompiled method; never a classification score."""
+
+    method_signature: str
+    summary: str
+    claims: tuple[GroundedClaim, ...] = ()
+    renamed_symbols: dict[str, str] = Field(default_factory=dict)
+    confidence: Literal["high", "medium", "low"] = "low"
+    insufficient_evidence: bool = False
+    cited_lines: tuple[int, ...] = ()
+
+
 class TechniqueMapping(DrishtiModel):
     """A MITRE ATT&CK Mobile mapping.
 
@@ -109,6 +144,9 @@ class GenAIVerdict(AnalyserResult):
     techniques: tuple[TechniqueMapping, ...] = ()
     victim: VictimProfile | None = None
     impersonation: VisionMatch | None = None
+    interpretations: tuple[CodeInterpretation, ...] = ()
+    tool_calls: tuple[ToolCallRecord, ...] = ()
+    verified_strings: tuple[VerifiedString, ...] = ()
     elicitation_deployed: tuple[str, ...] = ()
     disagreement_flag: bool = False
     disagreement_note: str | None = None

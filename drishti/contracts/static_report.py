@@ -91,6 +91,18 @@ class CallPath(DrishtiModel):
     reachable_from_lifecycle: bool
 
 
+class DecompiledMethod(DrishtiModel):
+    """Bounded source recovered for a method on a dangerous sink path."""
+
+    signature: str
+    body: str
+    line_start: int = 1
+    line_end: int = 1
+    call_path_indexes: tuple[int, ...] = ()
+    evidence_ref: str
+    truncated: bool = False
+
+
 class HypothesisKind(StrEnum):
     SECONDARY_PAYLOAD = "secondary_payload"
     OTP_EXFIL = "otp_exfil"
@@ -191,6 +203,7 @@ class StaticReport(AnalyserResult):
     urls: tuple[str, ...] = ()
     crypto_constants: tuple[str, ...] = ()
     call_paths: tuple[CallPath, ...] = ()
+    decompiled_methods: tuple[DecompiledMethod, ...] = ()
     sink_hits: tuple[str, ...] = ()
     hypotheses: tuple[Hypothesis, ...] = ()
     ledger_refs: tuple[str, ...] = ()

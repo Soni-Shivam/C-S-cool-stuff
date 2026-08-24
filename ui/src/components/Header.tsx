@@ -6,6 +6,7 @@
  * already dragged from the desktop.
  */
 
+import { Upload } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { submitApk } from '../api/client'
 import type { Job } from '../api/types'
@@ -43,11 +44,11 @@ export function Header({
   )
 
   return (
-    <header className="flex shrink-0 items-center gap-4 border-b border-line bg-panel px-5 py-3">
-      <div className="flex items-baseline gap-2">
+    <header className="flex min-w-0 shrink-0 items-center gap-2 border-b border-line bg-panel px-3 py-3 sm:gap-4 sm:px-5">
+      <div className="flex shrink-0 items-baseline gap-2">
         <span className="text-lg font-bold tracking-[0.2em] text-fg">DRISHTI</span>
-        <span className="text-xs text-muted">APK triage</span>
-        {version && <span className="font-mono text-[11px] text-dim">v{version}</span>}
+        <span className="hidden text-xs text-muted sm:inline">APK triage</span>
+        {version && <span className="hidden font-mono text-[11px] text-dim lg:inline">v{version}</span>}
       </div>
 
       <div
@@ -62,13 +63,17 @@ export function Header({
           void upload(e.dataTransfer.files[0])
         }}
         onClick={() => input.current?.click()}
-        className={`flex-1 cursor-pointer rounded border border-dashed px-4 py-2 text-center text-sm transition-colors ${
+        className={`flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded border border-dashed px-2 py-2 text-center text-sm transition-colors sm:px-4 ${
           dragging
             ? 'border-accent bg-accent-soft text-accent'
             : 'border-line hover:border-accent/60 text-muted'
         }`}
       >
-        {busy ? 'uploading…' : 'drop APK here, or click to choose'}
+        <Upload size={15} className="shrink-0" />
+        <span className="sm:hidden">{busy ? 'Uploading' : 'APK'}</span>
+        <span className="hidden truncate sm:inline">
+          {busy ? 'uploading…' : 'drop APK here, or click to choose'}
+        </span>
         <input
           ref={input}
           type="file"
@@ -81,8 +86,8 @@ export function Header({
       {error && <span className="max-w-64 truncate text-xs text-bad">{error}</span>}
 
       {job && (
-        <div className="flex items-center gap-3">
-          <div className="text-right">
+        <div className="flex min-w-0 shrink-0 items-center gap-3">
+          <div className="hidden text-right md:block">
             <div className="font-mono text-xs text-fg">{job.id}</div>
             <div className="max-w-56 truncate font-mono text-[11px] text-muted" title={job.filename}>
               {job.filename}

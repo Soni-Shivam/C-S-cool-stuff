@@ -102,7 +102,7 @@ export function DegradedNotice({ result }: { result: AnalyserResult }) {
       </span>
       <ul className="mt-1 space-y-0.5 text-muted">
         {result.errors.map((error, i) => (
-          <li key={i} className="font-mono">
+          <li key={i} className="max-w-full break-all font-mono">
             {error}
           </li>
         ))}

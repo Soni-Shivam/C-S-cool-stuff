@@ -313,3 +313,17 @@ class ObservationArtifact(StrictWireModel):
     #: Distinct MITRE technique ids seen in this run — a summary of `observations`,
     #: emitted by the harness so a batch report does not have to re-derive it.
     mitre_observed: tuple[str, ...] = Field(default=(), strict=False)
+
+    @property
+    def safe_for_ingestion(self) -> bool:
+        """True only for a contained run with clean state before and after."""
+        return bool(
+            self.outcome in {"completed", "inconclusive"}
+            and self.package
+            and self.metadata.containment_verified
+            and self.metadata.containment_manifest_sha256
+            and self.snapshot is not None
+            and self.snapshot.before_restore == "passed"
+            and self.snapshot.after_restore == "passed"
+            and self.snapshot.package_absent_after
+        )

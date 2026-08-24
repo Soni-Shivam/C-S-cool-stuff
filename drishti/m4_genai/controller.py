@@ -128,6 +128,10 @@ def _describe(node: Any) -> str | None:
         return f"age_days={content.get('age_days')} debug={content.get('debug_cert')}"
     if kind == "string_const":
         return "extracted string constant"
+    if kind == "decompiled_method":
+        return f"bounded source for {str(content.get('signature', 'method'))[-80:]}"
+    if kind == "ai_tool_call":
+        return f"validated tool call {content.get('name')} status={content.get('status')}"
     if kind == "threat_intel":
         return f"verdict {content.get('verdict')}"
     return None
@@ -250,15 +254,20 @@ def analyse(
     # ── agents ───────────────────────────────────────────────────────────────
     # Two agents, per 00_GUIDING_MAP 10 item 6, which pre-agreed collapsing six to
     # interpreter + mapper when time is short. Two that work beat six that are stubs.
-    from drishti.m4_genai.agents.code_interpreter import explain_paths
+    from drishti.m4_genai.agents.code_interpreter import interpret_methods
     from drishti.m4_genai.agents.technique_mapper import map_techniques
 
     techniques = map_techniques(static, ledger, job_id)
 
-    for explanation in explain_paths(static, ledger, job_id, llm):
-        claims.append(
-            explanation.model_copy(update={"verifier_status": verifier.check_claim(explanation)})
+    interpretations, tool_calls, verified_strings = interpret_methods(static, ledger, job_id, llm)
+    verified_interpretations = []
+    for interpretation in interpretations:
+        checked = tuple(
+            claim.model_copy(update={"verifier_status": verifier.check_claim(claim)})
+            for claim in interpretation.claims
         )
+        claims.extend(checked)
+        verified_interpretations.append(interpretation.model_copy(update={"claims": checked}))
 
     verified = [c for c in claims if c.verifier_status is VerifierStatus.PASS]
     log.info(
@@ -294,6 +303,9 @@ def analyse(
         summary=response.summary[:2000],
         claims=tuple(claims),
         techniques=techniques,
+        interpretations=tuple(verified_interpretations),
+        tool_calls=tool_calls,
+        verified_strings=verified_strings,
         behavioural_risk_B=b_value,
         B_rationale=(
             f"{len(contributing)} enumerated behaviours asserted: {', '.join(contributing)}"

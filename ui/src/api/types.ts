@@ -174,6 +174,8 @@ export type EvidenceTypeName =
   | 'certificate'
   | 'string_const'
   | 'code_method'
+  | 'decompiled_method'
+  | 'deobfuscated_string'
   | 'call_path'
   | 'sink_hit'
   | 'overprivilege'
@@ -191,6 +193,7 @@ export type EvidenceTypeName =
   | 'ai_hypothesis'
   | 'technique_map'
   | 'vision_match'
+  | 'ai_tool_call'
   | 'report_generated'
   | 'ml_prediction'
   | 'anomaly_signal'
@@ -263,6 +266,16 @@ export interface CallPath {
   entrypoint: string
   entrypoint_kind: string
   reachable_from_lifecycle: boolean
+}
+
+export interface DecompiledMethod {
+  signature: string
+  body: string
+  line_start: number
+  line_end: number
+  call_path_indexes: number[]
+  evidence_ref: string
+  truncated: boolean
 }
 
 export type HypothesisKind =
@@ -340,6 +353,7 @@ export interface StaticReport extends AnalyserResult {
   urls: string[]
   crypto_constants: string[]
   call_paths: CallPath[]
+  decompiled_methods: DecompiledMethod[]
   sink_hits: string[]
   hypotheses: Hypothesis[]
   ledger_refs: string[]
@@ -441,13 +455,46 @@ export interface DynamicTrace extends AnalyserResult {
 
 // ─── §4 GenAI verdict ────────────────────────────────────────────────────────
 
-export type VerifierStatus = 'pass' | 'rejected' | 'unverified'
+export type VerifierStatus =
+  | 'PASS'
+  | 'REJECTED_NO_EVIDENCE'
+  | 'REJECTED_BAD_REF'
+  | 'REJECTED_TYPE_MISMATCH'
 
 export interface GroundedClaim {
   text: string
   evidence_refs: string[]
   agent: string
   verifier_status: VerifierStatus
+}
+
+export interface CodeInterpretation {
+  method_signature: string
+  summary: string
+  claims: GroundedClaim[]
+  renamed_symbols: Record<string, string>
+  confidence: 'high' | 'medium' | 'low'
+  insufficient_evidence: boolean
+  cited_lines: number[]
+}
+
+export interface ToolCallRecord {
+  id: string
+  name: string
+  arguments: Record<string, unknown>
+  status: 'ok' | 'rejected' | 'error'
+  result_summary: string
+  evidence_refs: string[]
+  duration_ms: number
+}
+
+export interface VerifiedString {
+  ciphertext: string
+  transform: string
+  plaintext: string
+  verified: boolean
+  reason: string
+  evidence_refs: string[]
 }
 
 export interface TechniqueMapping {
@@ -486,6 +533,9 @@ export interface GenAIVerdict extends AnalyserResult {
   techniques: TechniqueMapping[]
   victim: VictimProfile | null
   impersonation: VisionMatch | null
+  interpretations: CodeInterpretation[]
+  tool_calls: ToolCallRecord[]
+  verified_strings: VerifiedString[]
   elicitation_deployed: string[]
   disagreement_flag: boolean
   disagreement_note: string | null

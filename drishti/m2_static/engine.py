@@ -113,6 +113,13 @@ def analyse(apk_path: Path, ledger: LedgerStore) -> StaticReport:
                 parents=tuple(refs[-1:]),
             )
             refs.append(node.id)
+        from drishti.m2_static.decompile import decompile_sink_methods
+
+        decompiled_methods, decompile_errors = decompile_sink_methods(
+            dalvik, analysis, paths, ledger
+        )
+        errors.extend(decompile_errors)
+        refs.extend(method.evidence_ref for method in decompiled_methods)
         entropy_mean, packer_hints, native_libs, dex_count = _archive_signals(apk_path)
         certificate = _certificate(apk, label, package, errors)
         cert_node = ledger.append(
@@ -159,6 +166,7 @@ def analyse(apk_path: Path, ledger: LedgerStore) -> StaticReport:
             urls=urls,
             crypto_constants=crypto,
             call_paths=paths,
+            decompiled_methods=decompiled_methods,
             sink_hits=tuple(sorted(sink_hits)),
             hypotheses=hypotheses,
             ledger_refs=tuple(refs),

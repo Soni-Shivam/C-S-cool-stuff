@@ -33,6 +33,8 @@ class EvidenceType(StrEnum):
     CERTIFICATE = "certificate"
     STRING_CONST = "string_const"
     CODE_METHOD = "code_method"
+    DECOMPILED_METHOD = "decompiled_method"
+    DEOBFUSCATED_STRING = "deobfuscated_string"
     CALL_PATH = "call_path"
     SINK_HIT = "sink_hit"
     OVERPRIVILEGE = "overprivilege"
@@ -56,6 +58,7 @@ class EvidenceType(StrEnum):
     AI_HYPOTHESIS = "ai_hypothesis"
     TECHNIQUE_MAP = "technique_map"
     VISION_MATCH = "vision_match"
+    AI_TOOL_CALL = "ai_tool_call"
 
     # M7
     #: Attests that a report was rendered from a given chain at a given time. Added in

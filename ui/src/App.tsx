@@ -13,6 +13,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  Activity,
+  BookOpenCheck,
+  Boxes,
+  FileText,
+  FlaskConical,
+  LayoutDashboard,
+  Network,
+} from 'lucide-react'
+import {
   getDynamic,
   getGenai,
   getHealth,
@@ -30,21 +39,35 @@ import { EvidenceNavContext } from './components/Evidence'
 import { Panel } from './components/primitives'
 import { useArtefact } from './hooks/useArtefact'
 import { useJob } from './hooks/useJob'
-import { AiTab } from './tabs/AiTab'
 import { FrontierTab } from './tabs/FrontierTab'
 import { LedgerTab } from './tabs/LedgerTab'
 import { OverviewTab } from './tabs/OverviewTab'
 import { ReportTab } from './tabs/ReportTab'
+import { ReverseEngineeringTab } from './tabs/ReverseEngineeringTab'
 import { SandboxTab } from './tabs/SandboxTab'
 import { StaticTab } from './tabs/StaticTab'
 
-const TABS = ['Overview', 'Static', 'AI', 'Sandbox', 'Frontier', 'Ledger', 'Report'] as const
-type Tab = (typeof TABS)[number]
+const TABS = [
+  { name: 'Overview', slug: 'overview', icon: LayoutDashboard },
+  { name: 'Reverse Engineering', slug: 'reverse-engineering', icon: BookOpenCheck },
+  { name: 'Static', slug: 'static', icon: Boxes },
+  { name: 'Sandbox', slug: 'sandbox', icon: Activity },
+  { name: 'Frontier', slug: 'frontier', icon: FlaskConical },
+  { name: 'Ledger', slug: 'ledger', icon: Network },
+  { name: 'Report', slug: 'report', icon: FileText },
+] as const
+type Tab = (typeof TABS)[number]['name']
+
+function initialTab(): Tab {
+  const slug = new URLSearchParams(window.location.search).get('view')
+  return TABS.find((item) => item.slug === slug)?.name ?? 'Overview'
+}
 
 export default function App() {
-  const [jobId, setJobId] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('Overview')
-  const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const params = new URLSearchParams(window.location.search)
+  const [jobId, setJobId] = useState<string | null>(params.get('job'))
+  const [tab, setTab] = useState<Tab>(initialTab)
+  const [selectedNode, setSelectedNode] = useState<string | null>(params.get('node'))
   const [version, setVersion] = useState<string | null>(null)
 
   const { job, events, streaming, error, revision } = useJob(jobId)
@@ -69,6 +92,42 @@ export default function App() {
   const showEvidence = useCallback((nodeId: string) => {
     setSelectedNode(nodeId)
     setTab('Ledger')
+    const url = new URL(window.location.href)
+    url.searchParams.set('view', 'ledger')
+    url.searchParams.set('node', nodeId)
+    window.history.pushState({}, '', url)
+  }, [])
+
+  const selectTab = useCallback((name: Tab) => {
+    setTab(name)
+    const item = TABS.find((candidate) => candidate.name === name)
+    const url = new URL(window.location.href)
+    if (item) url.searchParams.set('view', item.slug)
+    if (name !== 'Ledger') url.searchParams.delete('node')
+    window.history.pushState({}, '', url)
+  }, [])
+
+  const selectJob = useCallback((id: string) => {
+    setJobId(id)
+    setTab('Overview')
+    setSelectedNode(null)
+    const url = new URL(window.location.href)
+    url.searchParams.set('job', id)
+    url.searchParams.set('view', 'overview')
+    url.searchParams.delete('node')
+    url.searchParams.delete('method')
+    window.history.pushState({}, '', url)
+  }, [])
+
+  useEffect(() => {
+    const restore = () => {
+      const query = new URLSearchParams(window.location.search)
+      setJobId(query.get('job'))
+      setTab(initialTab())
+      setSelectedNode(query.get('node'))
+    }
+    window.addEventListener('popstate', restore)
+    return () => window.removeEventListener('popstate', restore)
   }, [])
 
   const nav = useMemo(() => ({ showEvidence, knownIds }), [showEvidence, knownIds])
@@ -78,38 +137,39 @@ export default function App() {
 
   return (
     <EvidenceNavContext.Provider value={nav}>
-      <div className="flex h-full flex-col bg-ink">
-        <Header job={job} streaming={streaming} onJobCreated={setJobId} version={version} />
+      <div className="flex h-full min-w-0 flex-col overflow-hidden bg-ink">
+        <Header job={job} streaming={streaming} onJobCreated={selectJob} version={version} />
         {job && <StageStrip events={events} current={job.stage} />}
 
         <main className="flex min-h-0 flex-1">
-          <aside className="w-64 shrink-0 overflow-y-auto border-r border-line bg-panel p-4">
-            {currentScore ? (
-              <ScoreRail score={currentScore} isFinal={isFinal} />
-            ) : (
-              <p className="text-sm text-muted">
-                {jobId ? 'Waiting for the preliminary verdict…' : 'No job yet. Drop an APK above.'}
-              </p>
-            )}
-          </aside>
-
-          <section className="flex min-w-0 flex-1 flex-col">
-            <nav className="flex shrink-0 gap-1 border-b border-line bg-panel px-4">
-              {TABS.map((name) => (
+          <aside className="w-16 shrink-0 overflow-y-auto border-r border-line bg-panel px-2 py-3 lg:w-52">
+            <nav className="space-y-1" aria-label="Investigation views">
+              {TABS.map(({ name, icon: Icon }) => (
                 <button
                   key={name}
                   type="button"
-                  onClick={() => setTab(name)}
-                  className={`border-b-2 px-3 py-2 text-sm transition-colors ${
+                  onClick={() => selectTab(name)}
+                  title={name}
+                  className={`flex h-10 w-full items-center gap-3 border-l-2 px-3 text-sm transition-colors ${
                     tab === name
-                      ? 'border-accent text-accent'
-                      : 'border-transparent text-muted hover:text-fg'
+                      ? 'border-accent bg-accent-soft text-accent'
+                      : 'border-transparent text-muted hover:bg-panel-2 hover:text-fg'
                   }`}
                 >
-                  {name}
+                  <Icon size={17} strokeWidth={1.8} className="shrink-0" />
+                  <span className="hidden truncate lg:block">{name}</span>
                 </button>
               ))}
             </nav>
+          </aside>
+
+          <section className="flex min-w-0 flex-1 flex-col">
+            <div className="flex h-10 shrink-0 items-center gap-2 border-b border-line bg-panel px-4 text-xs">
+              <span className="text-muted">Investigation</span>
+              <span className="text-dim">/</span>
+              <span className="font-medium text-fg">{tab}</span>
+              {job && <span className="ml-auto hidden font-mono text-dim md:block">{job.sha256.slice(0, 16)}…</span>}
+            </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
               {error && (
@@ -142,7 +202,9 @@ export default function App() {
                     />
                   )}
                   {tab === 'Static' && <StaticTab report={staticReport} />}
-                  {tab === 'AI' && <AiTab genai={genai} ml={ml} />}
+                  {tab === 'Reverse Engineering' && (
+                    <ReverseEngineeringTab report={staticReport} genai={genai} ml={ml} />
+                  )}
                   {tab === 'Sandbox' && <SandboxTab dynamic={dynamic} />}
                   {tab === 'Frontier' && <FrontierTab nodes={nodes} dynamic={dynamic} />}
                   {tab === 'Ledger' && (
@@ -158,6 +220,16 @@ export default function App() {
               )}
             </div>
           </section>
+
+          <aside className="hidden w-60 shrink-0 overflow-y-auto border-l border-line bg-panel p-4 xl:block">
+            {currentScore ? (
+              <ScoreRail score={currentScore} isFinal={isFinal} />
+            ) : (
+              <p className="text-sm text-muted">
+                {jobId ? 'Waiting for the preliminary verdict…' : 'No investigation loaded.'}
+              </p>
+            )}
+          </aside>
         </main>
 
         <LiveLog />

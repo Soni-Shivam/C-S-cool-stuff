@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Read immutable instance metadata before the host firewall removes metadata access.
+# The emulator never sees this endpoint; only the host startup process can reach it.
+METADATA="http://metadata.google.internal/computeMetadata/v1"
+runtime_image="$(curl --fail --silent -H 'Metadata-Flavor: Google' \
+  "$METADATA/instance/attributes/drishti-runtime-image")"
+instance_id="$(curl --fail --silent -H 'Metadata-Flavor: Google' \
+  "$METADATA/instance/id")"
+test -n "$runtime_image"
+test -n "$instance_id"
+printf '%s\n' "$runtime_image" >/opt/drishti/RUNTIME_IMAGE
+printf '%s\n' "$instance_id" >/opt/drishti/INSTANCE_ID
+chmod 0444 /opt/drishti/RUNTIME_IMAGE /opt/drishti/INSTANCE_ID
+
 install -d -m 0700 /var/lib/drishti /opt/drishti/results /opt/drishti/samples
 if ! test -f /etc/drishti/containment-signing.key; then
   install -d -m 0700 /etc/drishti

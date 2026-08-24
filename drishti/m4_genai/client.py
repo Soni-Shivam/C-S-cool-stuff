@@ -23,6 +23,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -194,6 +195,77 @@ class LLMClient:
             log.error("llm_output_invalid_after_repair", model=self._model)
         return repaired
 
+    def complete_with_tools_as(
+        self,
+        *,
+        system: str,
+        user: str,
+        tools: list[dict[str, Any]],
+        execute: Callable[[str, str | dict[str, Any]], dict[str, Any]],
+        schema: type[ModelT],
+        max_rounds: int = 3,
+        max_output_tokens: int = 3000,
+    ) -> ModelT | None:
+        """Run a bounded OpenRouter tool loop and validate its final JSON response.
+
+        Other providers retain the ordinary structured completion path until their
+        native adapters are implemented. The analysis tools themselves remain useful
+        and tested independently; provider availability never fails the pipeline.
+        """
+        if self._provider != "openrouter":
+            return self.complete_as(
+                system=system,
+                user=user,
+                schema=schema,
+                max_output_tokens=max_output_tokens,
+            )
+
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ]
+        for round_index in range(max_rounds + 1):
+            prompt = json.dumps(messages, ensure_ascii=True)
+            self._check_budgets(prompt)
+            try:
+                message = self._openrouter_exchange(
+                    messages=messages,
+                    tools=tools,
+                    max_output_tokens=max_output_tokens,
+                )
+            except Exception as exc:
+                log.error("llm_tool_round_failed", round=round_index, error=str(exc))
+                return None
+            self.calls_made += 1
+            tool_calls = message.get("tool_calls") or []
+            if tool_calls:
+                if round_index >= max_rounds:
+                    log.error("llm_tool_round_budget_exhausted", rounds=max_rounds)
+                    return None
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": message.get("content") or "",
+                        "tool_calls": tool_calls,
+                    }
+                )
+                for call in tool_calls:
+                    function = call.get("function") or {}
+                    name = str(function.get("name") or "")
+                    arguments = function.get("arguments") or "{}"
+                    result = execute(name, arguments)
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": str(call.get("id") or "missing"),
+                            "name": name,
+                            "content": json.dumps(result, ensure_ascii=True),
+                        }
+                    )
+                continue
+            return parse_and_validate(str(message.get("content") or ""), schema)
+        return None
+
     # ── providers ────────────────────────────────────────────────────────────
     def _dispatch(
         self, system: str, user: str, max_output_tokens: int, json_mode: bool = False
@@ -253,18 +325,57 @@ class LLMClient:
             return None
         return str(choices[0]["message"].get("content") or "")
 
+    def _openrouter_exchange(
+        self,
+        *,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        max_output_tokens: int,
+    ) -> dict[str, Any]:
+        """One OpenRouter message exchange for the bounded tool loop."""
+        key = self._settings.openrouter_api_key
+        if key is None:
+            raise LLMError("openrouter selected but DRISHTI_OPENROUTER_API_KEY is unset")
+        response = httpx.post(
+            OPENROUTER_URL,
+            headers={
+                "Authorization": f"Bearer {key.get_secret_value()}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": self._model,
+                "messages": messages,
+                "tools": tools,
+                "tool_choice": "auto",
+                "reasoning": {"enabled": False},
+                "response_format": {"type": "json_object"},
+                "max_tokens": max_output_tokens,
+            },
+            timeout=120.0,
+        )
+        response.raise_for_status()
+        payload: dict[str, Any] = response.json()
+        if "error" in payload:
+            raise LLMError(str(payload["error"])[:200])
+        choices = payload.get("choices") or []
+        if not choices:
+            raise LLMError("provider returned no choices")
+        message = choices[0].get("message") or {}
+        if not isinstance(message, dict):
+            raise LLMError("provider returned an invalid message")
+        return message
+
     def _mock(self, system: str, user: str) -> str:
         """Deterministic offline stand-in.
 
-        Derives its answer from a hash of the prompt, so it is stable across runs and
-        the same input always yields the same verdict — which is what makes it usable in
-        tests and in an offline demo without pretending to be a model.
+        It asserts no behaviours. Mock mode exists to exercise contracts and UI states,
+        not to generate plausible-looking risk signals that could be mistaken for a
+        model result during an offline presentation.
         """
-        seed = int(hashlib.sha256((system + user).encode()).hexdigest()[:8], 16)
         from drishti.m4_genai.safety import BEHAVIOUR_WEIGHTS
 
         names = sorted(BEHAVIOUR_WEIGHTS)
-        behaviours = {name: bool((seed >> index) & 1) for index, name in enumerate(names)}
+        behaviours = dict.fromkeys(names, False)
         return json.dumps(
             {
                 "behaviours": behaviours,

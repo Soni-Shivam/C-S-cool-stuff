@@ -18,6 +18,7 @@ Two things are being asserted, and the second is the one that earns its keep:
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -68,6 +69,31 @@ def _observation_event() -> C.ObservationEvent:
 
 #: One minimal-but-valid instance per concrete contract model.
 FACTORIES: dict[str, Any] = {
+    # ── containment ──
+    "ContainmentChecks": lambda: C.ContainmentChecks(
+        probe_trustworthy=True,
+        emulator_internet_blocked=True,
+        emulator_metadata_blocked=True,
+        emulator_vpc_blocked=True,
+        nested_kvm_functional=True,
+        host_firewall_default_drop=True,
+    ),
+    "ContainmentManifest": lambda: C.ContainmentManifest(
+        instance_id="drishti-detonator-1",
+        runtime_image="drishti-emulator-v3",
+        issued_at=datetime.now(UTC).isoformat(),
+        expires_at=(datetime.now(UTC) + timedelta(minutes=10)).isoformat(),
+        checks=C.ContainmentChecks(
+            probe_trustworthy=True,
+            emulator_internet_blocked=True,
+            emulator_metadata_blocked=True,
+            emulator_vpc_blocked=True,
+            nested_kvm_functional=True,
+            host_firewall_default_drop=True,
+        ),
+        public_key="b" * 64,
+        signature="c" * 128,
+    ),
     # ── corpus ──
     "CorpusSample": lambda: C.CorpusSample(
         sha256="a" * 64,
@@ -117,6 +143,14 @@ FACTORIES: dict[str, Any] = {
         entrypoint="Lc/a/d;->onReceive(...)V",
         entrypoint_kind="broadcast_receiver",
         reachable_from_lifecycle=True,
+    ),
+    "DecompiledMethod": lambda: C.DecompiledMethod(
+        signature="Lc/a/d;->onCreate(Landroid/os/Bundle;)V",
+        body="public void onCreate(Bundle state) { checkTargets(); }",
+        line_start=1,
+        line_end=1,
+        call_path_indexes=(0,),
+        evidence_ref="ev_01932ab8f4c1",
     ),
     "Hypothesis": lambda: C.Hypothesis(
         id="hyp_0193",
@@ -207,6 +241,38 @@ FACTORIES: dict[str, Any] = {
         evidence_refs=("ev_01932ab8f4c1",),
         agent="code_interpreter",
         verifier_status=C.VerifierStatus.PASS,
+    ),
+    "CodeInterpretation": lambda: C.CodeInterpretation(
+        method_signature="Lc/a/d;->onCreate(Landroid/os/Bundle;)V",
+        summary="Checks the installed application set from a lifecycle entrypoint.",
+        claims=(
+            C.GroundedClaim(
+                text="Checks installed applications.",
+                evidence_refs=("ev_01932ab8f4c1",),
+                agent="code_interpreter",
+                verifier_status=C.VerifierStatus.PASS,
+            ),
+        ),
+        renamed_symbols={"Lc/a/d;->a()Z": "hasTargetApplication"},
+        confidence="high",
+        cited_lines=(1,),
+    ),
+    "ToolCallRecord": lambda: C.ToolCallRecord(
+        id="tool_01932ab90e2f",
+        name="read_method",
+        arguments={"signature": "Lc/a/d;->onCreate(Landroid/os/Bundle;)V"},
+        status="ok",
+        result_summary="1 source line returned",
+        evidence_refs=("ev_01932ab8f4c1",),
+        duration_ms=2,
+    ),
+    "VerifiedString": lambda: C.VerifiedString(
+        ciphertext="aGVsbG8=",
+        transform="base64",
+        plaintext="hello",
+        verified=True,
+        reason="decoded by the fixed base64 evaluator",
+        evidence_refs=("ev_01932ab8f4c1",),
     ),
     "TechniqueMapping": lambda: C.TechniqueMapping(
         technique_id="T1582", name="SMS Control", tactic="Impact", layer="both"

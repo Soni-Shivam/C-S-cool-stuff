@@ -4,8 +4,8 @@
 > If you need a field that isn't here, add it here first, update the version stamp,
 > then implement. All models live in `drishti/contracts/` as pydantic v2 models.
 >
-> Contract version: `1.1.0` — bump minor for additive, major for breaking.
-> See the Addendum at the end of this file for what 1.1.0 added.
+> Contract version: `1.3.0` — bump minor for additive, major for breaking.
+> See the Addendum at the end of this file for versioned additions.
 
 ---
 
@@ -811,3 +811,40 @@ label and time band**. This is what makes a metered download interruptible: stop
 row count it still yields a balanced, time-spanning corpus with a valid time split. Bucket
 order would yield thousands of malware rows and no test set. Enforced by
 `tests/unit/test_sample_list.py::test_any_prefix_is_balanced`, not by convention.
+
+### A10. Contract version 1.2.0 — reverse-engineering workspace and bounded tool calls (T3.4 / T6.4)
+
+The Code Interpreter must receive code, not only graph labels. `StaticReport` therefore
+adds `decompiled_methods: tuple[DecompiledMethod, ...]`. Each method is selected from a
+sink-reachable `CallPath`, capped by the static analyser, and cites the immutable
+`DECOMPILED_METHOD` ledger node that contains its exact text and line map.
+
+| Model | Field | Meaning |
+|---|---|---|
+| `DecompiledMethod` | `signature`, `body`, `line_start`, `line_end`, `call_path_indexes`, `evidence_ref`, `truncated` | Bounded source text and its provenance. The body is sample-derived and is always treated as an untrusted artefact. |
+| `CodeInterpretation` | `method_signature`, `summary`, `claims`, `renamed_symbols`, `confidence`, `insufficient_evidence`, `cited_lines` | One model interpretation tied to an exact method and evidence node. It carries no score. |
+| `ToolCallRecord` | `id`, `name`, `arguments`, `status`, `result_summary`, `evidence_refs`, `duration_ms` | Auditable record of a validated, read-only analysis tool call. |
+| `VerifiedString` | `ciphertext`, `transform`, `plaintext`, `verified`, `reason`, `evidence_refs` | A proposed decoding retained only with the deterministic verifier result visible. |
+
+`GenAIVerdict` adds `interpretations`, `tool_calls`, and `verified_strings`. These fields
+travel through the existing `/genai` route; no new analysis endpoint is introduced.
+
+`EvidenceType.DECOMPILED_METHOD`, `DEOBFUSCATED_STRING`, and `AI_TOOL_CALL` distinguish
+source recovered by M2, deterministic transform output, and model-requested reads. Tool
+calls never expose shell, filesystem, network, adb, Frida, or arbitrary-code execution.
+All arguments are schema-validated, results are capped, and every returned artefact id
+must resolve in the job ledger.
+
+### A11. Signed containment admission for live detonation (T4.1 / T4.2)
+
+The live harness accepts work only on the immutable detonator image and only while a
+short-lived `ContainmentManifest` is valid. The manifest records the VM instance id,
+image id, issue/expiry times, the fail-closed guest reachability results, the public key,
+and an Ed25519 signature over canonical JSON. `ObservationArtifact.metadata` carries the
+SHA-256 of that exact manifest. A missing, expired, incorrectly signed, or failed
+manifest aborts before snapshot restore, installation, Frida, or stimulus.
+
+The CLI refuses to run unless `/opt/drishti/RUNTIME_IMAGE`, `/dev/kvm`, and the
+`DRISHTI_SEALED_RUNTIME=1` marker are present. This is a second boundary behind the GCP
+firewall: neither a local Android SDK nor an attached developer emulator makes the live
+harness admissible on a laptop.

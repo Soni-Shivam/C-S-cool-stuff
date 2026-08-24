@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Literal, cast
 
-from drishti.contracts.dynamic_trace import DynamicTrace
+from drishti.contracts.dynamic_trace import DynamicTrace, TraceSourceKind
 from drishti.contracts.genai_verdict import GenAIVerdict
 from drishti.contracts.score import (
     CompositeScore,
@@ -30,8 +30,17 @@ def score(
     yara_severity: float = 0.0,
 ) -> CompositeScore:
     """Fuse available evidence using the pinned formula without side effects."""
-    probability = ml.p_calibrated if ml else None
-    behavioural = genai.behavioural_risk_B if genai else None
+    has_ml = bool(ml and ml.model_version not in {"none", "stub"} and not ml.partial)
+    has_behavioural = bool(genai and genai.provider != "mock" and not genai.partial)
+    has_dynamic = bool(
+        dynamic
+        and dynamic.detonated
+        and dynamic.source is not TraceSourceKind.UNAVAILABLE
+        and not dynamic.synthetic
+    )
+    has_intel = bool(intel and intel.source not in {"none", "unavailable"} and not intel.partial)
+    probability = ml.p_calibrated if ml and has_ml else None
+    behavioural = genai.behavioural_risk_B if genai and has_behavioural else None
     fused = _noisy_or(probability, behavioural)
     reputation = 1.0 if intel and intel.known_bad_hash else 0.0
     drift = _drift(static, dynamic)
@@ -76,12 +85,7 @@ def score(
     )
     raw_score = sum(factor.contribution for factor in factors)
     value = round(100 * min(1.0, raw_score))
-    gamma = (
-        0.4 * bool(static)
-        + 0.3 * bool(dynamic and dynamic.detonated)
-        + 0.2 * bool(ml)
-        + 0.1 * bool(intel)
-    )
+    gamma = 0.4 * bool(static) + 0.3 * has_dynamic + 0.2 * has_ml + 0.1 * has_intel
     confidence = (
         gamma * (1 - abs(probability - behavioural))
         if probability is not None and behavioural is not None
@@ -95,19 +99,11 @@ def score(
     else:
         override = None
     band = _band(value)
-    anomaly = bool(ml and ml.anomaly_escalate)
+    anomaly = bool(ml and has_ml and ml.anomaly_escalate)
     if anomaly and band is SeverityBand.LOW:
         band = SeverityBand.HIGH
     review = anomaly or disagreement or confidence < 0.5
-    limitations = tuple(
-        item
-        for item in (
-            "dynamic analysis unavailable" if dynamic is None else None,
-            "ML prediction unavailable" if ml is None else None,
-            "behavioural analysis unavailable" if genai is None else None,
-        )
-        if item
-    )
+    limitations = _limitations(static=static, ml=ml, genai=genai, dynamic=dynamic)
     return CompositeScore(
         S=value,
         band=band,
@@ -130,6 +126,45 @@ def _noisy_or(probability: float | None, behavioural: float | None) -> float:
     if behavioural is None:
         return _clamp(probability)
     return round(_clamp(probability + behavioural - probability * behavioural), 6)
+
+
+def _limitations(
+    *,
+    static: StaticReport | None,
+    ml: MLPrediction | None,
+    genai: GenAIVerdict | None,
+    dynamic: DynamicTrace | None,
+) -> tuple[str, ...]:
+    """Derive disclosures from result provenance, never from presentation config."""
+    items: list[str] = []
+    if static is None:
+        items.append("static analysis unavailable")
+    elif static.partial:
+        items.append("static analysis is partial")
+
+    if ml is None or ml.model_version in {"none", "stub"}:
+        items.append("ML prediction unavailable")
+    elif ml.partial:
+        items.append("ML prediction is partial")
+
+    if genai is None or genai.provider == "mock":
+        items.append("behavioural analysis unavailable")
+    elif genai.partial:
+        items.append("behavioural analysis is partial")
+
+    if dynamic is None or dynamic.source is TraceSourceKind.UNAVAILABLE:
+        items.append("dynamic analysis unavailable")
+    else:
+        if dynamic.source is TraceSourceKind.REPLAY:
+            items.append("dynamic trace was replayed, not live")
+        if dynamic.partial:
+            items.append("dynamic analysis is partial")
+    if dynamic is not None:
+        if dynamic.synthetic:
+            items.append("dynamic trace is synthetic")
+        if not dynamic.containment_verified:
+            items.append("containment was not verified for the dynamic trace")
+    return tuple(dict.fromkeys(items))
 
 
 def _drift(static: StaticReport | None, dynamic: DynamicTrace | None) -> float:
