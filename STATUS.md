@@ -48,6 +48,9 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
   faked unit tests. **No live GCP detonation has been performed or claimed.**
 - **Scoring honesty:** unavailable ML/reputation placeholders, mock GenAI, and synthetic
   traces no longer inflate `S`, `gamma`, or `C`; limitations are derived from provenance.
+- **Authored canary check:** local static parsing only (no install or execution) completed
+  as `job_35d6a108e96a`: `S=0`, `C=0.2`, `gamma=0.4`, with unavailable and containment
+  limitations visible. Real APK detonation remains VM-only.
 - **Verification:** 493 contract+unit tests and 15 e2e tests passed; ruff, shell syntax,
   `git diff --check`, and the production UI build passed. `make e2e` could not access the
   sandboxed global uv cache, so its exact pytest target ran via `.venv/bin/pytest`.
