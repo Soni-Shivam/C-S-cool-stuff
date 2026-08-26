@@ -7,7 +7,13 @@ Protocol: `docs/00_GUIDING_MAP.md` §13.
 - **Started:** 2026-08-13 · **Last reconciled:** 2026-08-26
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
 - **Phase:** Finale build · the frontier loop closes, 115 live detonations, all seven modules built. Remaining gaps are recorded under *Measured negative results* and *Still unproven*, not hidden.
-- **Tests:** **1,232 contract+unit + 15 e2e, all passing** (measured 2026-08-26 at `20a76cf`)
+- **Tests:** **1,812 contract+unit + 16 e2e, all passing** (measured 2026-08-27 at `47b9d14`,
+  `pytest tests/contract tests/unit -q` → exit 0; `pytest tests/e2e -q` → exit 0; `make lint` clean).
+  **Correction, not a refresh:** the previous line here claimed "15 e2e, all passing" at `20a76cf`.
+  That was false — two e2e tests were already failing at this branch's base commit `a4f013e`, and
+  two more were latent, all four resting on a fabricated evasion observation in `_stub_trace`.
+  They are fixed at `47b9d14`; the number above is the first e2e claim in this file that has been
+  verified by running it.
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
 
