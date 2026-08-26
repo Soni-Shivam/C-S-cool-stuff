@@ -256,6 +256,42 @@ class DynamicHarness:
         return artifact
 
 
+def _quietly(action: Callable[[], Any]) -> None:
+    """Run a teardown step that is allowed to fail.
+
+    MEASURED, 2026-08-26 first live run: a real sample crashed mid-detonation, so
+    `script.unload()` raised `InvalidOperationError: script is destroyed` from the
+    `finally` block. That exception propagated out of the collector, the harness
+    classified the run `internal_error`, and **every observation collected before the
+    crash was thrown away**. A sample killing itself is a normal outcome, not a
+    harness failure; teardown must never be able to discard evidence.
+    """
+    try:
+        action()
+    except Exception:  # teardown noise must never reach the artifact
+        return
+
+
+def _warm_up(package: str, serial: str) -> None:
+    """Launch and stop the app once before the timed spawn.
+
+    MEASURED, 2026-08-26: `device.spawn()` raised `TimedOutError: unexpectedly timed
+    out while waiting for app to launch` on a headless swiftshader emulator, because
+    frida's launch deadline is shorter than a cold first start (ART has to compile the
+    dex). One throwaway launch pays that cost outside the deadline. The app is then
+    force-stopped, so the spawn that instrumentation actually uses is still a cold
+    process and startup behaviour is not missed.
+    """
+    run_command(
+        ["adb", "-s", serial, "shell", "monkey", "-p", package, "-c",
+         "android.intent.category.LAUNCHER", "1"],
+        timeout=90,
+    )
+    time.sleep(6)
+    run_command(["adb", "-s", serial, "shell", "am", "force-stop", package], timeout=60)
+    time.sleep(2)
+
+
 def collect_frida(
     package: str, duration_s: int, hooks: Path, serial: str
 ) -> tuple[list[dict[str, Any]], list[str]]:
@@ -265,9 +301,24 @@ def collect_frida(
     events: list[dict[str, Any]] = []
     errors: list[str] = []
     device = frida.get_usb_device(timeout=30)
-    pid = device.spawn([package])
-    session = device.attach(pid)
-    script = session.create_script(hooks.read_text(encoding="utf-8"))
+    _warm_up(package, serial)
+    try:
+        pid = device.spawn([package])
+    except Exception as first:  # a cold-start timeout is worth exactly one retry
+        errors.append(redact_text(f"spawn retry after: {type(first).__name__}: {first}"))
+        _warm_up(package, serial)
+        pid = device.spawn([package])
+    try:
+        session = device.attach(pid)
+        script = session.create_script(hooks.read_text(encoding="utf-8"))
+    except Exception as exc:
+        # MEASURED, 2026-08-26: a real sample exited between spawn and attach, giving
+        # `NotSupportedError: unable to write to process memory: No such process`.
+        # That is the target dying, not a harness defect, and the contract has a code
+        # for it — calling it `internal_error` would have pointed debugging at us.
+        raise HarnessError(
+            "frida_failed", "instrumentation", f"{type(exc).__name__}: {exc}"
+        ) from exc
 
     def on_message(message: dict[str, Any], _data: bytes | None) -> None:
         payload = message.get("payload", {}) if message.get("type") == "send" else {}
@@ -302,8 +353,9 @@ def collect_frida(
     try:
         time.sleep(duration_s)
     finally:
-        monkey.terminate()
-        script.unload()
-        session.detach()
-        device.kill(pid)
+        # Every step is best-effort: the target may already be gone. See _quietly.
+        _quietly(monkey.terminate)
+        _quietly(script.unload)
+        _quietly(session.detach)
+        _quietly(lambda: device.kill(pid))
     return events, errors
