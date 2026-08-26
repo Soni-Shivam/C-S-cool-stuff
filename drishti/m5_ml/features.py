@@ -29,6 +29,30 @@ from drishti.contracts.static_report import CertificateInfo, ComponentKind, Stat
 #: this, so a silent bump would turn the R3 tripwire into a rubber stamp.
 FEATURE_SCHEMA_VERSION = "1.2.0"
 
+#: Feature names a previous schema emitted and this one does not, mapped to the version
+#: that retired them. A vocabulary listing one of these was frozen by an older extractor:
+#: the column can never be populated at inference, so the model carries a real weight for
+#: a value that is always zero. Nothing raises on its own, because a *missing* feature is
+#: legitimately zero-filled — which is precisely why this needs an explicit guard.
+#: `dataset.assert_no_retired_features` is that guard.
+RETIRED_FEATURES: dict[str, str] = {
+    # Both were constant across every sample (the certificate dates were never parsed),
+    # and the fixed `age_days` is wall-clock dependent — the same APK would produce a
+    # different vector tomorrow. Replaced by the time-invariant `cert:validity_*`.
+    "cert:age_days": "1.2.0",
+    "cert:is_fresh": "1.2.0",
+}
+
+#: Marker feature -> the extractor version that emits it, most recent first. A corpus row
+#: carries no schema stamp, so the version that wrote it is recovered from which of these
+#: mutually exclusive markers it contains. Used to detect a corpus extracted by more than
+#: one extractor version, which is the shape a long batch takes when the code is fixed
+#: mid-run.
+SCHEMA_EPOCH_MARKERS: tuple[tuple[str, str], ...] = (
+    ("cert:validity_days", "1.2.0"),
+    ("cert:age_days", "1.1.0"),
+)
+
 #: Substrings that mark a suspicious API surface. Kept explicit and small rather than
 #: learned: this list is read by humans during triage and cited in the report.
 SUSPICIOUS_API_TOKENS: tuple[str, ...] = (

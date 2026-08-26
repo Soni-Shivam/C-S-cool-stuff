@@ -274,8 +274,17 @@ def main() -> int:
         )
         print(f"\nREPARTITIONED THE HELD-OUT BANDS: {json.dumps(repartition, indent=2)}")
 
+    # A batch that runs for days gets its extractor fixed underneath it. Any feature only
+    # one schema version emits is absent from the other's rows, and `matrix` would
+    # zero-fill it — encoding *when the row was extracted*, which extraction order makes a
+    # proxy for the label. Drop those columns from both vocabularies and disclose it.
+    epochs = dataset.epoch_divergent_features(corpus.samples)
+    if epochs["mixed"]:
+        print(f"\nMIXED-SCHEMA CORPUS: {json.dumps(epochs, indent=2)}")
+
     summary = dataset.summarise(corpus)
     summary["repartition"] = repartition
+    summary["schema_epochs"] = epochs
     print(json.dumps(summary, indent=2))
     args.figures.mkdir(parents=True, exist_ok=True)
     figures.corpus_composition(
@@ -322,10 +331,13 @@ def main() -> int:
     # vendor permissions, per-app schemes). Dropping singletons once the corpus is large
     # enough for the rule to be safe keeps the matrix honest and the fit tractable.
     min_feature_count = args.min_feature_count or (2 if len(train_samples) >= 500 else 1)
-    vocabulary = dataset.freeze_vocabulary(train_samples, min_count=min_feature_count)
+    vocabulary = dataset.freeze_vocabulary(
+        train_samples, min_count=min_feature_count, exclude=epochs["divergent"]
+    )
     print(
         f"\nfroze {len(vocabulary)} feature names from {len(train_samples)} training rows "
-        f"(names seen in fewer than {min_feature_count} training samples dropped)"
+        f"(names seen in fewer than {min_feature_count} training samples dropped; "
+        f"{len(epochs['divergent'])} dropped as schema-epoch divergent)"
     )
 
     x_train, y_train = dataset.matrix(train_samples, vocabulary)
@@ -337,7 +349,9 @@ def main() -> int:
     y_all = np.asarray([s.label for s in all_samples], dtype=int)
     r_train_idx, r_calib_idx, r_test_idx = _three_way_random(y_all, dataset.SEED)
     r_train_samples = [all_samples[i] for i in r_train_idx]
-    r_vocabulary = dataset.freeze_vocabulary(r_train_samples, min_count=min_feature_count)
+    r_vocabulary = dataset.freeze_vocabulary(
+        r_train_samples, min_count=min_feature_count, exclude=epochs["divergent"]
+    )
     xr_train, yr_train = dataset.matrix(r_train_samples, r_vocabulary)
     xr_calib, yr_calib = dataset.matrix([all_samples[i] for i in r_calib_idx], r_vocabulary)
     xr_test, yr_test = dataset.matrix([all_samples[i] for i in r_test_idx], r_vocabulary)
@@ -791,6 +805,27 @@ def _write_results(
         lines.append(f"| {split} | {row['n']} | {row['malware']} | {row['benign']} |")
     lines.append("")
     lines.append(f"Time-split integrity: {corpus['time_split_detail']}\n")
+
+    epochs = corpus.get("schema_epochs", {})
+    if epochs.get("mixed"):
+        rows = ", ".join(
+            f"**{version}** {stats['n']} rows ({stats['malware_rate']:.0%} malware)"
+            for version, stats in epochs["epochs"].items()
+        )
+        dropped = ", ".join(f"`{name}`" for name in epochs["divergent"])
+        lines.append(
+            "**This corpus was written by two extractor versions, and four features were "
+            "dropped because of it.** Extraction ran for days and the extractor was fixed "
+            f"mid-batch, so the rows divide by schema epoch: {rows}. A feature only one "
+            "version emits is absent from the other version's rows, and projection would "
+            "zero-fill it — which encodes *when the row was extracted*, not anything about "
+            "the sample. That is not neutral here: the epochs have very different malware "
+            "rates, so the zero-fill would have been a proxy for the label and every "
+            f"ranking metric would have rewarded it. Dropped from both vocabularies: "
+            f"{dropped}. `dataset.epoch_divergent_features` finds these by measuring "
+            "per-epoch presence rates; nothing is dropped by hand.\n"
+        )
+
     repartition = corpus.get("repartition", {})
     if repartition.get("applied"):
         lines.append(
@@ -955,8 +990,32 @@ def _write_results(
             "The benign rate is the analyst cost this flag creates and belongs next to the "
             "claim it supports."
         )
+        # The two rates are the whole value of the flag. When they converge the escalator
+        # is escalating at random, and saying so is the difference between a measurement
+        # and a decoration. Stated from the measured gap, never assumed.
+        benign_rate = float(anomaly_summary["benign_escalation_rate"])
+        malware_rate = float(anomaly_summary["malware_escalation_rate"])
+        lift = malware_rate - benign_rate
+        if lift < 0.1:
+            lines.append(
+                f"\n**This escalator does not discriminate on this corpus.** It fires on "
+                f"{_fmt(malware_rate)} of malware and {_fmt(benign_rate)} of benign samples "
+                f"— a lift of {lift:+.4f}, which is close enough to zero that escalation "
+                "carries almost no information about the label. It is reported here rather "
+                "than tuned until it looks good: a novelty flag fitted on "
+                f"{anomaly_summary['n_fit_benign']} benign rows is measuring how unusual a "
+                "sample is against a *small and narrow* notion of normal, and on this "
+                "corpus that is not the same question as whether it is malicious. Treat the "
+                "flag as an unproven analyst prompt, not as evidence, until the benign "
+                "training population is large and diverse enough for it to mean something.\n"
+            )
+        else:
+            lines.append(
+                f"\nMalware escalates {lift:+.4f} more often than benign — that gap, not the "
+                "escalation rate on its own, is what the flag is worth.\n"
+            )
         lines.append(
-            "\nIt is an **escalator, not an additive term**: it forces the band to at least "
+            "It is an **escalator, not an additive term**: it forces the band to at least "
             "HIGH and requires human review, and it never moves `S`.\n"
         )
         lines.append("![Anomaly](figures/ml_anomaly.png)\n")
@@ -1036,6 +1095,24 @@ def _write_results(
         limitations.append(
             "This run is marked **PILOT**: at least one class in train/test fell under the "
             "reporting gate. Treat every figure as provisional."
+        )
+    if anomaly_summary.get("performed"):
+        _lift = float(anomaly_summary["malware_escalation_rate"]) - float(
+            anomaly_summary["benign_escalation_rate"]
+        )
+        if _lift < 0.1:
+            limitations.append(
+                f"The novelty escalator (§6) separates the classes by {_lift:+.4f} on this "
+                "corpus and is therefore not currently carrying weight. It is shipped "
+                "because it is an escalator that never moves `S`, but no claim of novelty "
+                "detection should be made from this run."
+            )
+    if corpus.get("schema_epochs", {}).get("mixed"):
+        limitations.append(
+            "The corpus was extracted by two schema versions, so the four certificate "
+            "features that differ between them (§1) are absent from every model here. The "
+            "certificate-validity signal is therefore **untested**, not disproven — it needs "
+            "a corpus re-extracted end to end by a single extractor version."
         )
     limitations.append(
         "Binary maliciousness only. The corpus carries no family labels that are not "

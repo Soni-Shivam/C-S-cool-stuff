@@ -30,7 +30,13 @@ from typing import Any
 
 import numpy as np
 
-from drishti.m5_ml.features import FEATURE_SCHEMA_VERSION, FeatureVector, project
+from drishti.m5_ml.features import (
+    FEATURE_SCHEMA_VERSION,
+    RETIRED_FEATURES,
+    SCHEMA_EPOCH_MARKERS,
+    FeatureVector,
+    project,
+)
 
 #: One seed for every model, every split, every bootstrap. Comparisons across models are
 #: only meaningful when the only thing that changed is the model.
@@ -55,6 +61,10 @@ SPLITS: tuple[str, ...] = ("train", "calib", "test")
 
 class LabelLeakError(ValueError):
     """A label-derived feature reached the feature matrix."""
+
+
+class RetiredFeatureError(ValueError):
+    """A vocabulary lists a feature the current extractor can no longer emit."""
 
 
 @dataclass(frozen=True)
@@ -130,6 +140,90 @@ def assert_no_label_leak(names: list[str]) -> None:
         )
 
 
+def assert_no_retired_features(names: list[str]) -> None:
+    """Refuse a vocabulary containing a feature this extractor version cannot produce.
+
+    The failure this prevents is silent by construction: `project` zero-fills a missing
+    feature, so a stale vocabulary produces a full-width vector, the model runs, and
+    every prediction is made with a learned weight applied to a permanent zero. No
+    exception, no shape mismatch, just a quietly worse model.
+    """
+    offenders = [name for name in names if name in RETIRED_FEATURES]
+    if offenders:
+        detail = ", ".join(f"{name} (retired at {RETIRED_FEATURES[name]})" for name in offenders)
+        raise RetiredFeatureError(
+            f"vocabulary lists features the {FEATURE_SCHEMA_VERSION} extractor no longer "
+            f"emits: {detail}. This vocabulary was frozen by an older extractor — "
+            "regenerate it from freshly extracted rows rather than suppressing this check."
+        )
+
+
+def detect_schema_epoch(sample: Sample) -> str:
+    """Which extractor version wrote this row, recovered from its marker features.
+
+    Corpus rows carry no schema stamp, so the version is inferred from mutually
+    exclusive marker features. Returns `"unknown"` when no marker is present.
+    """
+    for marker, version in SCHEMA_EPOCH_MARKERS:
+        if marker in sample.features:
+            return version
+    return "unknown"
+
+
+def epoch_divergent_features(
+    samples: list[Sample], *, presence_gap: float = 0.5, min_rows_per_epoch: int = 10
+) -> dict[str, Any]:
+    """Find features whose presence tracks the *extractor version*, not the sample.
+
+    A batch that runs for days gets its extractor fixed underneath it, and the result is
+    one corpus written by two schema versions. Any feature only one version emits is
+    then absent from the other version's rows — and `matrix` will dutifully zero-fill it.
+
+    That zero-fill is not neutral. It encodes *when the row was extracted*, and
+    extraction order is never independent of the label (a batch ordered test-first, or a
+    malware feed that ran before a benign one, makes epoch a proxy for class). The model
+    then learns the proxy, which is a leak that every ranking metric rewards.
+
+    Returns the divergent names plus the per-epoch malware rate, so a reader can see how
+    much of the label the discarded columns would have carried. Epochs with fewer than
+    `min_rows_per_epoch` rows are ignored — a handful of stragglers must not cost the
+    vocabulary a real feature.
+    """
+    by_epoch: dict[str, list[Sample]] = {}
+    for sample in samples:
+        by_epoch.setdefault(detect_schema_epoch(sample), []).append(sample)
+
+    epochs = {
+        version: {
+            "n": len(rows),
+            "malware": sum(s.label for s in rows),
+            "malware_rate": round(sum(s.label for s in rows) / len(rows), 4) if rows else 0.0,
+        }
+        for version, rows in sorted(by_epoch.items())
+    }
+
+    considered = {v: rows for v, rows in by_epoch.items() if len(rows) >= min_rows_per_epoch}
+    divergent: list[str] = []
+    detail: list[dict[str, Any]] = []
+    if len(considered) > 1:
+        every_name = {name for rows in considered.values() for s in rows for name in s.features}
+        for name in sorted(every_name):
+            rates = {
+                version: sum(1 for s in rows if name in s.features) / len(rows)
+                for version, rows in considered.items()
+            }
+            if max(rates.values()) - min(rates.values()) > presence_gap:
+                divergent.append(name)
+                detail.append({"feature": name, "presence_by_epoch": rates})
+    return {
+        "epochs": epochs,
+        "mixed": len(considered) > 1,
+        "presence_gap": presence_gap,
+        "divergent": divergent,
+        "detail": detail,
+    }
+
+
 def load_jsonl(paths: list[Path] | Path) -> Corpus:
     """Read one or more corpus-extraction JSONL files.
 
@@ -184,18 +278,25 @@ def load_jsonl(paths: list[Path] | Path) -> Corpus:
     return Corpus(samples=samples, sources=sources, skipped_failed=failed, skipped_empty=empty)
 
 
-def freeze_vocabulary(train: list[Sample], *, min_count: int = 1) -> list[str]:
+def freeze_vocabulary(
+    train: list[Sample], *, min_count: int = 1, exclude: list[str] | tuple[str, ...] = ()
+) -> list[str]:
     """Build the frozen vocabulary from TRAINING rows only, sorted.
 
     Sorted so column *i* means the same thing on every machine and every run. `min_count`
     drops names seen in fewer than N training samples — a feature present once is a
-    memorised sample id, not a signal.
+    memorised sample id, not a signal. `exclude` drops named columns outright; the caller
+    passes `epoch_divergent_features` output there, and must disclose what it dropped.
     """
     counts: Counter[str] = Counter()
     for sample in train:
         counts.update(sample.features.keys())
-    names = sorted(name for name, count in counts.items() if count >= min_count)
+    banned = set(exclude)
+    names = sorted(
+        name for name, count in counts.items() if count >= min_count and name not in banned
+    )
     assert_no_label_leak(names)
+    assert_no_retired_features(names)
     return names
 
 

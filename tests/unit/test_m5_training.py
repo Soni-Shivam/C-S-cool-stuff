@@ -51,6 +51,97 @@ def test_ordinary_features_pass_the_leak_guard() -> None:
     dataset.assert_no_label_leak(["perm:SEND_SMS", "sink:sms.send", "cert:age_days"])
 
 
+# ── retired features and mixed-schema corpora ────────────────────────────────
+def test_retired_feature_is_refused_in_a_vocabulary() -> None:
+    """A vocabulary the current extractor cannot populate is the R3 failure, shipped.
+
+    `cert:age_days` was removed at schema 1.2.0. A model trained on a vocabulary that
+    still lists it learns a real weight for a column that is zero on every inference
+    call — and nothing raises, because a missing feature is legitimately zero-filled.
+    """
+    with pytest.raises(dataset.RetiredFeatureError, match="cert:age_days"):
+        dataset.assert_no_retired_features(["perm:INTERNET", "cert:age_days"])
+
+
+def test_current_features_pass_the_retired_guard() -> None:
+    dataset.assert_no_retired_features(["perm:INTERNET", "cert:validity_days"])
+
+
+def test_freeze_vocabulary_refuses_a_retired_feature() -> None:
+    """The guard must sit on the path training actually takes, not beside it."""
+    train = [_sample("a" * 64, 0, "train", "<=2017", **{"cert:age_days": 3.0})]
+    with pytest.raises(dataset.RetiredFeatureError):
+        dataset.freeze_vocabulary(train)
+
+
+def test_schema_epoch_is_detected_from_marker_features() -> None:
+    old = _sample("a" * 64, 0, "train", "<=2017", **{"cert:age_days": 0.0})
+    new = _sample("b" * 64, 0, "train", "<=2017", **{"cert:validity_days": 9000.0})
+    assert dataset.detect_schema_epoch(old) == "1.1.0"
+    assert dataset.detect_schema_epoch(new) == "1.2.0"
+
+
+def test_epoch_divergent_feature_is_found_and_the_label_skew_is_reported() -> None:
+    """A feature present only in rows written by one extractor version is not a signal.
+
+    Zero-filling it would encode *when the row was extracted*. Here every 1.1.0 row is
+    malware and every 1.2.0 row is benign, so that encoding would be the label itself.
+    """
+    samples = [
+        _sample(f"{i:064x}", 1, "train", "<=2017", **{"cert:age_days": 1.0, "perm:INTERNET": 1.0})
+        for i in range(30)
+    ] + [
+        _sample(
+            f"{i + 100:064x}",
+            0,
+            "train",
+            "<=2017",
+            **{"cert:validity_days": 9000.0, "perm:INTERNET": 1.0},
+        )
+        for i in range(30)
+    ]
+    report = dataset.epoch_divergent_features(samples)
+    assert set(report["divergent"]) == {"cert:age_days", "cert:validity_days"}
+    assert "perm:INTERNET" not in report["divergent"], "a stable feature must survive"
+    assert report["epochs"]["1.1.0"]["malware_rate"] == 1.0
+    assert report["epochs"]["1.2.0"]["malware_rate"] == 0.0
+
+
+def test_a_feature_present_in_both_epochs_is_not_divergent() -> None:
+    samples = [
+        _sample(f"{i:064x}", 1, "train", "<=2017", **{"cert:age_days": 1.0, "perm:SEND_SMS": 1.0})
+        for i in range(30)
+    ] + [
+        _sample(
+            f"{i + 100:064x}",
+            0,
+            "train",
+            "<=2017",
+            **{"cert:validity_days": 9000.0, "perm:SEND_SMS": 1.0},
+        )
+        for i in range(30)
+    ]
+    assert "perm:SEND_SMS" not in dataset.epoch_divergent_features(samples)["divergent"]
+
+
+def test_a_single_epoch_corpus_has_nothing_divergent() -> None:
+    """The common case must not lose columns to a guard aimed at a mixed corpus."""
+    samples = [
+        _sample(f"{i:064x}", i % 2, "train", "<=2017", **{"cert:validity_days": 9000.0})
+        for i in range(40)
+    ]
+    report = dataset.epoch_divergent_features(samples)
+    assert report["divergent"] == []
+
+
+def test_freeze_vocabulary_honours_an_exclusion_list() -> None:
+    train = [
+        _sample("a" * 64, 0, "train", "<=2017", **{"perm:INTERNET": 1.0, "cert:validity_days": 1.0})
+    ]
+    vocabulary = dataset.freeze_vocabulary(train, exclude=["cert:validity_days"])
+    assert vocabulary == ["perm:INTERNET"]
+
+
 # ── vocabulary and projection ────────────────────────────────────────────────
 def test_vocabulary_is_frozen_from_training_rows_only() -> None:
     """A test-only feature name in the vocabulary is a leak no exception would announce."""
