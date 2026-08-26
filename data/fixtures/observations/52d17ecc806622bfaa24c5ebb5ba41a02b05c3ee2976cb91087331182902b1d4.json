@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "sha256": "52d17ecc806622bfaa24c5ebb5ba41a02b05c3ee2976cb91087331182902b1d4",
+  "package": "com.shanp.wodeshebao",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.shanp.wodeshebao",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:28:04.957571+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "8a6ec6a08031cf777361a8eb1ff5a78fbdca95e6965f3fbe899fa16686920799",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T03:27:28.548531+00:00"
+  },
+  "started_at": "2026-08-26T03:27:38.870510+00:00",
+  "finished_at": "2026-08-26T03:29:07.179013+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339"
+  ],
+  "mitre_observed": [
+    "T1418"
+  ]
+}

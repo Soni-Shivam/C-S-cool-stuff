@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0",
+  "sha256": "2c84f08b8c39b9cea8e921c4faacc03632c0325c36bced50fc3e0e29c231402b",
+  "package": "com.horoscopes.astrologytools.clickastro.kan",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getDeviceId -> <null>",
+      "source_hook": "TelephonyManager.getDeviceId",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:47:08.118996+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.horoscopes.astrologytools.clickastro.kan",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:47:08.119144+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.horoscopes.astrologytools.clickastro.kan",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:47:08.204134+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:47:08.257398+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:47:11.257089+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:47:13.316082+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "0bd00f3c55b3a126d6c6879c4ffc4420c0bd16dbcb8bf70e7071fd5b40920804",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T03:46:34.656892+00:00"
+  },
+  "started_at": "2026-08-26T03:46:45.032709+00:00",
+  "finished_at": "2026-08-26T03:48:10.893833+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339"
+  ],
+  "mitre_observed": [
+    "T1417",
+    "T1418",
+    "T1426"
+  ]
+}
