@@ -39,11 +39,11 @@ function stateFor(
 }
 
 const TONE: Record<StageState, string> = {
-  done: 'border-good/50 bg-good/10 text-good',
-  active: 'border-accent bg-accent-soft text-accent',
-  failed: 'border-bad/60 bg-bad/10 text-bad',
-  skipped: 'border-dashed border-line text-dim',
-  waiting: 'border-line text-dim',
+  done: 'border-good/45 bg-good/10 text-good',
+  active: 'border-transparent text-white [background-image:var(--grad-violet)] shadow-[0_0_26px_-6px_rgba(168,85,247,0.9)]',
+  failed: 'border-bad/55 bg-bad/10 text-bad',
+  skipped: 'border-dashed border-line-bright text-dim',
+  waiting: 'border-line bg-ground-2/60 text-dim',
 }
 
 export function StageStrip({ events, current }: { events: StageEvent[]; current: JobStage | undefined }) {
@@ -53,7 +53,7 @@ export function StageStrip({ events, current }: { events: StageEvent[]; current:
   }
 
   return (
-    <div className="flex shrink-0 items-stretch gap-1 overflow-x-auto border-b border-line bg-panel px-5 py-2">
+    <div className="glass flex shrink-0 items-stretch gap-1.5 overflow-x-auto border-b border-line px-5 py-2.5">
       {PIPELINE_ORDER.map((stage) => {
         const state = stateFor(stage, byStage, current)
         const duration = (byStage.get(stage) ?? []).find((e) => e.duration_ms != null)?.duration_ms
@@ -62,7 +62,7 @@ export function StageStrip({ events, current }: { events: StageEvent[]; current:
           <div key={stage} className="flex items-center gap-1">
             <div
               title={state === 'skipped' ? 'conditional stage — not needed for this run' : state}
-              className={`min-w-fit rounded border px-2 py-1 text-[11px] leading-tight whitespace-nowrap transition-colors ${TONE[state]}`}
+              className={`min-w-fit rounded-xl border px-3 py-1.5 text-[11px] leading-tight whitespace-nowrap transition-all duration-300 ${TONE[state]}`}
             >
               <div className="font-medium">{STAGE_LABELS[stage]}</div>
               <div className="font-mono text-[10px] opacity-70">
@@ -71,7 +71,7 @@ export function StageStrip({ events, current }: { events: StageEvent[]; current:
             </div>
             {isVerdict && (
               <span
-                className="mx-1 self-center border-l border-dashed border-accent/50 pl-1 text-[10px] tracking-wider text-accent/80"
+                className="mx-1.5 self-center border-l border-dashed border-v500/50 pl-2 text-[10px] tracking-wider text-v400"
                 title="Everything to the right runs asynchronously, after the analyst already has a verdict"
               >
                 VERDICT ▸ async

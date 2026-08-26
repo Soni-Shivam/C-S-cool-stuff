@@ -102,7 +102,7 @@ export function LookalikePanel({ lookalike }: { lookalike: LookalikeAssessment }
     >
       <div className="space-y-4">
         {lookalike.shared_permissions.length > 0 && (
-          <div className="rounded border border-line-soft bg-panel-2 p-3">
+          <div className="rounded border border-line-soft bg-ground-2 p-3">
             <p className="text-sm text-fg">
               Holds{' '}
               <span className="font-semibold">{lookalike.shared_permissions.length}</span>{' '}
@@ -118,7 +118,7 @@ export function LookalikePanel({ lookalike }: { lookalike: LookalikeAssessment }
                 <span
                   key={permission}
                   title={permission}
-                  className="rounded bg-ink px-1.5 py-0.5 font-mono text-[10px] text-muted"
+                  className="rounded bg-ground px-1.5 py-0.5 font-mono text-[10px] text-muted"
                 >
                   {permission.split('.').pop()}
                 </span>
@@ -140,7 +140,7 @@ export function LookalikePanel({ lookalike }: { lookalike: LookalikeAssessment }
             </p>
             <div className="mt-2 flex flex-wrap gap-1">
               {lookalike.targeted_financial_packages.map((pkg) => (
-                <span key={pkg} className="rounded bg-ink px-1.5 py-0.5 font-mono text-[10px] text-bad">
+                <span key={pkg} className="rounded bg-ground px-1.5 py-0.5 font-mono text-[10px] text-bad">
                   {pkg}
                 </span>
               ))}

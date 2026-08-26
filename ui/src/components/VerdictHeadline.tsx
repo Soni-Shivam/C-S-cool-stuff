@@ -55,7 +55,7 @@ function Field({
 }) {
   return (
     <div>
-      <div className="text-[10px] tracking-widest text-dim uppercase">{label}</div>
+      <div className="eyebrow">{label}</div>
       {value ? (
         <div className="mt-0.5 text-sm text-fg">{value}</div>
       ) : (
@@ -75,24 +75,34 @@ export function VerdictHeadline({ verdict }: { verdict: Verdict }) {
   const loudButThin = verdict.threat_score >= 40 && verdict.confidence < 0.5
 
   return (
-    <div className="rounded-xl border border-line bg-panel p-5">
-      <div className="flex flex-wrap items-start gap-x-8 gap-y-5">
+    <div className="shadow-lift relative overflow-hidden rounded-[var(--radius-card)] border border-line bg-ground-1/85 p-6 backdrop-blur-sm sm:p-7">
+      {/* A violet wash across the top edge, so the card reads as the primary
+          surface of the view without tinting the colour-coded values inside it. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-32"
+        style={{
+          background:
+            'radial-gradient(36rem 10rem at 22% -40%, rgba(139,61,238,0.36), transparent 70%)',
+        }}
+      />
+      <div className="relative flex flex-wrap items-start gap-x-8 gap-y-5">
         {/* score + confidence, side by side, one never without the other */}
         <div className="flex items-end gap-5">
           <div>
-            <div className="text-[10px] tracking-widest text-dim uppercase">Threat score</div>
+            <div className="eyebrow">Threat score</div>
             <div className="flex items-baseline gap-2">
-              <span className={`text-6xl font-bold tabular-nums ${BAND_CLASS[verdict.severity_band]}`}>
+              <span className={`display text-[clamp(3rem,5vw,4.2rem)] tabular-nums ${BAND_CLASS[verdict.severity_band]}`}>
                 {verdict.threat_score}
               </span>
-              <span className={`text-lg font-semibold tracking-widest ${BAND_CLASS[verdict.severity_band]}`}>
+              <span className={`display text-xl tracking-[0.18em] ${BAND_CLASS[verdict.severity_band]}`}>
                 {verdict.severity_band}
               </span>
             </div>
           </div>
 
           <div className="min-w-[9rem] pb-2">
-            <div className="text-[10px] tracking-widest text-dim uppercase">Confidence</div>
+            <div className="eyebrow">Confidence</div>
             <div className="font-mono text-2xl tabular-nums text-fg">
               {verdict.confidence.toFixed(2)}
             </div>
@@ -107,7 +117,7 @@ export function VerdictHeadline({ verdict }: { verdict: Verdict }) {
 
         <div className="space-y-2">
           <VerdictProvenanceBadge provenance={verdict.provenance} />
-          <div className={`inline-flex flex-col rounded-md border px-3 py-1.5 ${action.tone}`}>
+          <div className={`inline-flex flex-col rounded-xl border px-3.5 py-2 ${action.tone}`}>
             <span className="text-sm font-semibold tracking-wide">
               {verdict.recommended_action}
             </span>
@@ -117,14 +127,14 @@ export function VerdictHeadline({ verdict }: { verdict: Verdict }) {
       </div>
 
       {loudButThin && (
-        <p className="mt-4 rounded-md border border-warn/40 bg-warn/5 px-3 py-2 text-sm text-warn">
+        <p className="mt-5 rounded-[var(--radius-tile)] border border-warn/40 bg-warn/[0.07] px-4 py-3 text-sm leading-relaxed text-warn">
           <strong>{verdict.severity_band}</strong> at confidence{' '}
           <strong>{verdict.confidence.toFixed(2)}</strong> — an actionable band resting on thin
           evidence. Treat it as a lead to investigate, not a finding to act on.
         </p>
       )}
 
-      <p className="mt-4 border-l-2 border-accent-strong pl-3 text-base leading-relaxed text-fg">
+      <p className="mt-6 border-l-2 border-v500 pl-4 text-[clamp(1rem,1.5vw,1.2rem)] leading-relaxed text-fg">
         {verdict.consumer_summary}
       </p>
       <p className="mt-1 pl-3 text-[11px] text-dim">
@@ -149,7 +159,7 @@ export function VerdictHeadline({ verdict }: { verdict: Verdict }) {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div>
-          <div className="text-[10px] tracking-widest text-dim uppercase">Behaviours detected</div>
+          <div className="eyebrow">Behaviours detected</div>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {verdict.behaviors_detected.length === 0 ? (
               <span className="text-sm text-muted italic">
@@ -165,7 +175,7 @@ export function VerdictHeadline({ verdict }: { verdict: Verdict }) {
           </div>
         </div>
         <div>
-          <div className="text-[10px] tracking-widest text-dim uppercase">ATT&amp;CK techniques</div>
+          <div className="eyebrow">ATT&amp;CK techniques</div>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {verdict.attack_techniques.length === 0 ? (
               <span className="text-sm text-muted italic">none mapped</span>
@@ -181,15 +191,15 @@ export function VerdictHeadline({ verdict }: { verdict: Verdict }) {
       </div>
 
       <div className="mt-4 border-t border-line-soft pt-3">
-        <div className="mb-1.5 text-[10px] tracking-widest text-dim uppercase">
+        <div className="eyebrow mb-2">
           Evidence behind this verdict
         </div>
         <EvidenceChips refs={verdict.evidence_refs} max={8} />
       </div>
 
       {verdict.limitations.length > 0 && (
-        <div className="mt-4 rounded-md border border-warn/25 bg-warn/5 px-3 py-2.5">
-          <div className="text-[10px] tracking-widest text-warn uppercase">
+        <div className="mt-5 rounded-[var(--radius-tile)] border border-warn/25 bg-warn/[0.07] px-4 py-3">
+          <div className="eyebrow text-warn">
             What this analysis could not do
           </div>
           <ul className="mt-1.5 space-y-1 text-xs text-muted">

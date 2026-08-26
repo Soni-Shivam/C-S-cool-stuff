@@ -1,47 +1,97 @@
 @import 'tailwindcss';
+@import './fonts/fonts.css';
 
 /**
- * Dark, high-contrast, generous type.
+ * DRISHTI design system.
  *
- * PHASE_6 T6.4 states the constraint plainly: "assume a washed-out projector and
- * a judge three metres away". Every colour below is chosen for contrast on a bad
- * beamer, not for elegance on a retina display. Base type is 15px, not 13px, and
- * the severity colours stay distinguishable when the projector eats saturation.
+ * Two constraints pull against each other and both are honoured here.
+ *
+ * The first is the brand: a near-black indigo ground with a violet bloom,
+ * gradient-violet / lilac-wash / white card tiers, wide radii, and a display
+ * face set very large against small muted body copy.
+ *
+ * The second is PHASE_6 T6.4 — "assume a washed-out projector and a judge three
+ * metres away" — and the fact that an analyst reads this for hours. So the light
+ * card tiers are reserved for high-signal summary surfaces, while code, tables,
+ * the graph and the log stay on the dark ground. Severity colours are chosen to
+ * survive a beamer eating saturation AND to stay separable from the violet
+ * accent, which is why `high` is orange rather than magenta.
  */
 
 @theme {
-  --color-ink: #0a0a12;
-  --color-panel: #12121f;
-  --color-panel-2: #191927;
-  --color-line: #2a2a3f;
-  --color-line-soft: #1f1f30;
-  --color-fg: #eceaf6;
-  --color-muted: #9b98b8;
-  --color-dim: #6d6a90;
+  /* ─── ground ─────────────────────────────────────────────────────────── */
+  --color-ground: #08050f;
+  --color-ground-1: #0e0a1b;
+  --color-ground-2: #150f28;
+  --color-ground-3: #1e1638;
+  --color-ground-4: #2a1f4d;
 
-  /* One accent, violet, and two tokens for it rather than one.
-     #7c3aed is the brand violet from the deck and is used for fills, strokes and
-     rings — but at 3.4:1 on #0a0a12 it fails contrast as small text, and T6.4's
-     constraint is a washed-out projector three metres away. So `accent` is the
-     legible tint used for type, `accent-strong` is the brand violet used for
-     everything that is a shape rather than a word. Same hue, one accent. */
-  --color-accent: #a78bfa;
-  --color-accent-strong: #7c3aed;
-  --color-accent-soft: #241a3f;
+  --color-line: #2c2150;
+  --color-line-soft: #1f1739;
+  --color-line-bright: #3d2d6b;
 
-  /* Severity stays on its own scale. It is semantic, not decorative — folding it
-     into the violet accent would make CRITICAL and "this is a link" the same
-     colour, which is the one confusion a triage screen cannot afford. */
-  --color-critical: #ff4d5e;
-  --color-high: #ff9838;
-  --color-medium: #ffd23f;
-  --color-low: #38d9a9;
+  /* ─── violet ramp ────────────────────────────────────────────────────── */
+  --color-v50: #faf5ff;
+  --color-v100: #f3e8ff;
+  --color-v200: #e9d5ff;
+  --color-v300: #d8b4fe;
+  --color-v400: #c084fc;
+  --color-v500: #a855f7;
+  --color-v600: #8b3dee;
+  --color-v700: #7b3fe4;
+  --color-v800: #5b21b6;
+  --color-magenta: #e23fd8;
 
-  --color-good: #38d9a9;
-  --color-bad: #ff4d5e;
-  --color-warn: #ffd23f;
+  /* Two tokens for one accent, a distinction carried over from the detection
+     branch and worth keeping: the brand violet fails contrast as small type on
+     this ground, so `accent` is the legible tint used for words and
+     `accent-strong` is the brand violet used for anything that is a shape. */
+  --color-accent: #c084fc;
+  --color-accent-2: #a855f7;
+  --color-accent-strong: #8b3dee;
+  --color-accent-soft: #241a42;
 
+  /* ─── text ───────────────────────────────────────────────────────────── */
+  --color-fg: #f4f1ff;
+  --color-muted: #a99fc8;
+  --color-dim: #6f6591;
+
+  /* on the light card tiers */
+  --color-ink: #17102b;
+  --color-ink-muted: #4d4270;
+
+  /* ─── severity ───────────────────────────────────────────────────────── */
+  --color-critical: #ff4d6d;
+  --color-high: #ff9e45;
+  --color-medium: #ffd84d;
+  --color-low: #3ddc97;
+
+  --color-good: #3ddc97;
+  --color-bad: #ff4d6d;
+  --color-warn: #ffd84d;
+
+  /* ─── type ───────────────────────────────────────────────────────────── */
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+
+  --radius-card: 22px;
+  --radius-tile: 14px;
+
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Gradients and shadows are plain custom properties: they are applied through
+   `background-image` / `box-shadow`, not through a Tailwind colour utility. */
+:root {
+  --grad-violet: linear-gradient(135deg, #7b3fe4 0%, #a855f7 52%, #c084fc 100%);
+  --grad-violet-deep: linear-gradient(135deg, #4c1d95 0%, #7b3fe4 55%, #a855f7 100%);
+  --grad-wash: linear-gradient(155deg, #f3e8ff 0%, #ffffff 78%);
+  --grad-arc: radial-gradient(closest-side, #a855f7 0%, #7b3fe4 55%, rgba(91, 33, 182, 0) 100%);
+
+  --shadow-card: 0 24px 60px -24px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(168, 85, 247, 0.12);
+  --shadow-lift: 0 32px 70px -26px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(192, 132, 252, 0.25);
+  --glow: 0 0 44px -10px rgba(168, 85, 247, 0.6);
 }
 
 html,
@@ -52,37 +102,236 @@ body,
 
 body {
   margin: 0;
-  background: var(--color-ink);
   color: var(--color-fg);
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
   font-size: 15px;
+  background-color: var(--color-ground);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Slim scrollbars: the ledger table and the API timeline both scroll, and the
-   default chrome bars eat real estate on a 1280px projector. */
+/* The bloom from the deck: a violet light source off the bottom-right, plus a
+   cooler one top-left. Fixed rather than scrolled — it is the room, not the
+   content. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(60rem 60rem at 108% 118%, rgba(139, 61, 238, 0.3), transparent 62%),
+    radial-gradient(46rem 46rem at -10% -14%, rgba(91, 33, 182, 0.26), transparent 60%);
+}
+
+/* The magenta hairline that runs down the left edge of every slide. */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  z-index: 60;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(226, 63, 216, 0) 0%,
+    rgba(226, 63, 216, 0.9) 18%,
+    rgba(168, 85, 247, 0.9) 82%,
+    rgba(168, 85, 247, 0) 100%
+  );
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background: rgba(168, 85, 247, 0.4);
+  color: #fff;
+}
+
+/* Slim scrollbars: the ledger table, the graph pane and the API timeline all
+   scroll, and default chrome bars eat real estate on a 1280px projector. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-line) transparent;
+  scrollbar-color: var(--color-line-bright) transparent;
 }
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
 }
 *::-webkit-scrollbar-thumb {
-  background: var(--color-line);
-  border-radius: 4px;
+  background: var(--color-line-bright);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-v600);
 }
 
+/* ─── utility layer ────────────────────────────────────────────────────── */
+
+@utility grad-violet {
+  background-image: var(--grad-violet);
+}
+@utility grad-violet-deep {
+  background-image: var(--grad-violet-deep);
+}
+@utility grad-wash {
+  background-image: var(--grad-wash);
+}
+@utility shadow-card {
+  box-shadow: var(--shadow-card);
+}
+@utility shadow-lift {
+  box-shadow: var(--shadow-lift);
+}
+@utility glow {
+  box-shadow: var(--glow);
+}
+
+/** Display headings: the deck sets these very large and very tight. */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+
+/** The small all-caps rubric above a panel. */
+@utility eyebrow {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-dim);
+}
+
+/** Frosted panel over the bloom, so the ground shows through the chrome. */
+@utility glass {
+  background: color-mix(in oklab, var(--color-ground-1) 82%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+/* ─── motion ───────────────────────────────────────────────────────────── */
+
+/* The logo is the app's single loading indicator. It floats, breathes and
+   carries a sweeping ring; the three are separate so a 16px inline spinner can
+   use the float alone without the ring overwhelming a line of text. */
+@keyframes drishti-float {
+  0%,
+  100% {
+    transform: translateY(-6%) rotate(-2.2deg);
+  }
+  50% {
+    transform: translateY(6%) rotate(2.2deg);
+  }
+}
+@keyframes drishti-breathe {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: scale(0.86);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.12);
+  }
+}
+@keyframes drishti-sweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
 @keyframes drishti-pulse {
   0%,
   100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.35;
+    opacity: 0.3;
   }
+}
+@keyframes drishti-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes drishti-iris {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+    filter: blur(14px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+@keyframes drishti-ring-out {
+  from {
+    opacity: 0.85;
+    transform: scale(0.25);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+@keyframes drishti-track {
+  from {
+    stroke-dashoffset: var(--dash);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes drishti-dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.anim-float {
+  animation: drishti-float 3.4s ease-in-out infinite;
+}
+.anim-breathe {
+  animation: drishti-breathe 3.4s ease-in-out infinite;
+}
+.anim-sweep {
+  animation: drishti-sweep 2.6s linear infinite;
 }
 .pulse {
   animation: drishti-pulse 1.4s ease-in-out infinite;
+}
+.anim-rise {
+  animation: drishti-rise 0.5s var(--ease-out-soft) both;
+}
+.anim-dash-flow {
+  animation: drishti-dash-flow 1s linear infinite;
+}
+
+/* Honour the OS setting. Everything above is decoration; nothing in this app
+   conveys state through motion alone. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
