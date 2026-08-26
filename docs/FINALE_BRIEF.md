@@ -99,3 +99,39 @@ manufacture a gap; `CLAUDE.md` forbids it and the negative result above is publi
 - **Two `tests/e2e/test_pipeline_walk.py` tests fail** and predate this entire branch
   (verified at the base commit `a4f013e`). `STATUS.md`'s header claim of "15 e2e, all
   passing" is stale and should be corrected rather than refreshed.
+
+## The trust invariants — all three verified working 2026-08-27
+
+Each runs in well under a minute and needs no network. These are the strongest
+material in the deck, because they demonstrate a *refusal* rather than a capability.
+
+```bash
+make demo-reject      # an AI claim citing no resolvable evidence is REFUSED
+make demo-tamper      # one edited byte is located at the exact node
+make demo-containment # the containment gate accepts only a trustworthy probe
+```
+
+**`make demo-reject`** — two ungrounded claims are refused, and the surviving sequence
+is contiguous: `chain ok=True nodes=2 seqs=[0, 1]`. Grounding is checked *inside* the
+write transaction, so a rejected node never consumes a sequence number and never leaves
+a hole an auditor would have to ask about. Closing line: *the model does not get to
+decide what counts as evidence.*
+
+**`make demo-tamper`** — after editing one field: `first_bad_seq: 3`, reason
+`node_hash does not match the node's content (tampered)`, 5 nodes walked. The auditor
+gets the precise node, not "the ledger is broken somewhere". Forging evidence undetected
+means forging an Ed25519 signature for every node from 3 to the end.
+
+**`make demo-containment`** — replays the v1 defect: toybox `nc` has no `-z` flag, so
+every probe returned the flag error and `blocked()` was unconditionally true. The gate
+now reads `probe_trustworthy = False` and refuses to make any containment claim, because
+the positive control reported UNREACHABLE while a listener was running. A probe that
+cannot see an open network is not evidence of a closed one.
+
+## Verification state at `006baa7`
+
+- **contract + unit suite: EXIT 0** (`.venv/bin/python -m pytest tests/contract tests/unit -q`)
+- **`make lint`: clean.** `ruff format --check`: 199 files already formatted.
+- Two `tests/e2e/test_pipeline_walk.py` failures predate this branch — verified at the
+  base commit `a4f013e`. They assert `EXPECTED_NODES_PER_RUN == 18` against 17 and are
+  unrelated to any change here.

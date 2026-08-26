@@ -147,6 +147,21 @@ def test_static_drift_contributes_without_dynamic_data() -> None:
     assert drift.S > clean.S
 
 
+def test_evidence_refs_count_distinct_nodes_not_citations() -> None:
+    """`ev_static` backs several terms. It is still one piece of evidence.
+
+    The verdict card renders a chip per entry and its "+N more" count from the length
+    of this tuple, so concatenating the factors' ref lists made an 18-node case read as
+    a 44-node one and drew visibly identical chips beside each other.
+    """
+    result = score(static=_static(drift=True), ml=_ml(), genai=None, dynamic=None, intel=None)
+
+    assert len(result.ledger_refs) == len(set(result.ledger_refs))
+    assert "ev_static" in result.ledger_refs
+    for factor in result.factors:
+        assert len(factor.evidence_refs) == len(set(factor.evidence_refs))
+
+
 def test_limitations_follow_dynamic_provenance_flags() -> None:
     """A non-None placeholder trace must not make the final score claim live analysis."""
     unavailable = DynamicTrace(
