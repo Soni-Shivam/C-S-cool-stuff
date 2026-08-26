@@ -7,7 +7,7 @@ Protocol: `docs/00_GUIDING_MAP.md` §13.
 - **Started:** 2026-08-13 · **Last reconciled:** 2026-08-26
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
 - **Phase:** 24-hour demo build · corpus extracting, M7 exports landed, live LLM verified; detonation and trained model still unproven
-- **Tests:** **493 contract+unit + 15 e2e, all passing** (measured 2026-08-25 at `7fce6f0`)
+- **Tests:** **594 contract+unit + 15 e2e, all passing** (measured 2026-08-26 at `8c5d3ec`)
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
 
@@ -225,10 +225,47 @@ Throwaway DB and key, safe to run live and repeatedly.
       MalwareBazaar backfill is now required. List archived to the corpus bucket.
       Stratified sample-list builder + contract A9 + 20 tests. The real AndroZoo index
       has not been fetched; every number so far is from a synthetic 60k-row index.
-- [ ] T2.3 Train the classifier                    TODO
-- [ ] T2.4 Calibration                             TODO
-- [ ] T2.5 Anomaly detector                        TODO
-- [ ] T2.6 SHAP explanations                       TODO
+- [x] T2.3 Train the classifier                    DONE  2026-08-26  b432c31 · tests: 594 contract+unit (48 new in m5, measured by collection)
+      **Five models compared**, not one: logistic regression, linear SVM, random forest,
+      XGBoost, MLP — identical features, identical splits, seed 20260826. Winner
+      **`random_forest`**, chosen by 5-fold CV PR-AUC **inside the training split**
+      (0.983 ± 0.007); the test split played no part in selection.
+      **Time-split PR-AUC 0.9580 [0.9228, 0.9825] on n=107 (57 malware, 50 benign).**
+      Random-split 0.9863 [0.9646, 0.9997] on n=111 (62 malware). **Gap 0.0283, and every
+      one of the five loses ground on the time split** — that is the drift finding.
+      **Trained on 396 samples. Never quote the PR-AUC without the n.**
+      Intervals are 2000-resample bootstraps. Full table, every model x split x metric
+      with n, in `docs/ML_RESULTS.md`. Corpus extraction was still running.
+- [x] T2.4 Calibration                             DONE  2026-08-26  b432c31
+      Isotonic and Platt fitted on the **held-out calib split**, method chosen by
+      cross-validated Brier **within** calib — choosing it by test Brier is the same leak
+      as calibrating on test. Shipped: sigmoid on n=50 (24 malware).
+      **Brier on test 0.1494 → 0.1064**, expected calibration error **0.2049 → 0.0885**.
+      `docs/figures/ml_reliability.png`, markers sized by bin count.
+      `PHASE_2` T2.4's bucket check is computed but **reports "not informative"**: only 5
+      test samples landed in [0.75, 0.85] after calibration. It is recorded as not
+      informative rather than as a pass, and it will become meaningful as test grows.
+      **Hard floor: below 10 positives no calibrator ships at all** — measured, Platt on
+      a calib split with one malware row moved test Brier 0.130 → 0.595, making the
+      probability confidently worse. See Deviations for the calib/test re-cut.
+- [x] T2.5 Anomaly detector                        DONE  2026-08-26  b432c31
+      **No longer the dead branch this file recorded.** IsolationForest, 200 trees, fitted
+      on benign training rows only, published as a percentile against the frozen benign
+      distribution so the 0.85 threshold means the same thing across retrainings.
+      `infer.predict()` now sets `anomaly_score` and `anomaly_escalate`, and
+      `tests/unit/test_m5_bundle_inference.py` asserts train → persist → load → predict
+      rather than the contract in isolation.
+      Measured on the test split: **28.0% of benign samples escalate** against 78.9% of
+      malware. That benign rate is the analyst cost this flag creates and is reported
+      next to the claim; it is high, and it is high because train benign are older than
+      test benign — drift shows up in the novelty detector too.
+- [x] T2.6 SHAP explanations                       DONE  2026-08-26  b432c31
+      `shap.TreeExplainer` on the shipped model; signed per-sample contributions with
+      readable names (`perm:READ_SMS`, not `f_0142`). Verified on the canary through the
+      real bundle. **When SHAP is unavailable `top_features` is left EMPTY** and the
+      reason lands in `errors` — never global importance captioned as SHAP.
+      Global ranking is permutation importance measured on the test split, shortlisted to
+      the model's top 60 columns first and saying so in the method string.
 - [~] T2.7 The scorer                              WIP   2026-08-25  7fce6f0 · noisy-OR + override + bands; unavailable signals excluded from confidence
 - [ ] T2.8 Bands and proposed actions              TODO
 - [ ] T2.9 Scorer test suite                       TODO
@@ -315,8 +352,10 @@ The single most-demoed artefact: an Android emulator on the demo laptop running
 
 | Measurement | Value |
 |---|---|
-| `demo_up.sh --fresh`, cold to ready | 35 s |
-| File landing → verdict on screen, 5 runs | 7.9 / 8.3 / 10.1 / 12.6 / 13.1 s (median 10.1) |
+| `demo_up.sh --fresh`, cold to ready | 35 s, 37 s (two runs) |
+| File landing → verdict on screen, 5 runs (mock LLM) | 7.9 / 8.3 / 10.1 / 12.6 / 13.1 s (median 10.1) |
+| Same, live LLM cache miss | 10.7 s |
+| Same, final rehearsal (cache warm) | 6.5 s |
 | — of which M2 static | 8.6–9.7 s (from `stage_history`) |
 | — of which Shield itself | < 0.3 s |
 | Layer 4 detection after install | < 1 s |
@@ -330,13 +369,38 @@ driving the system package installer at the APK hands off to
 exempt from the restriction; that is what Layer 4 exists for, and it caught it
 (`package_added` → `quarantine … suspended=true` → `failsafe_engaged`).
 
-**The composite score for the decoy is 0, and the phone says why.** `m6_score.engine`
-refuses to let an unavailable ML model or a mock LLM contribute to `S`, and this build
-has neither a trained model in `models/` nor an LLM key. So `S = 0` for every input.
-The Shield's `BlockDecision` therefore blocks on **M2 static evidence** — 1 critical +
-4 high permission combinations, each MITRE-mapped — and prints "BASIS FOR THIS
-DECISION · M2 static evidence" beside the zero, with the reason. No number was
-invented to make the demo look better.
+**Re-proved on the final full rehearsal (2026-08-26, `--fresh`, exit 0):** cold to
+ready 37 s → device owner provisioned on attempt 1 → verdict in 6506 ms with
+`veto=true` → forcing the system package installer landed on
+`com.android.settings/.enterprise.ActionDisabledByAdminDialog` with
+`Device policy restrictions: no_install_unknown_sources` and
+`Effective restrictions: no_install_unknown_sources_globally` → `adb install`
+(shell UID, exempt) succeeded and Layer 4 caught it with `quarantined=true`,
+`suspended=true`.
+
+**The composite score for the decoy is 0, and the phone says why.** The Shield's
+`BlockDecision` blocks on **M2 static evidence** — 1 critical + 4 high permission
+combinations, each MITRE-mapped — and prints "BASIS FOR THIS DECISION · M2 static
+evidence" beside the zero, with the reason. No number was invented to make the demo
+look better.
+
+**Re-verified 2026-08-26 after the LLM went live** (`DRISHTI_LLM_PROVIDER=openrouter`).
+`S` is still 0, and for a reason worth keeping:
+
+- The LLM ran and returned a real `behavioural_risk_B = 0.999352` with 7 behaviour
+  flags and 7 claims (job `job_3c*`, provider `openrouter`).
+- `m6_score.engine` **excluded it** — `has_behavioural` requires `not genai.partial`,
+  and the verdict is partial because the full pass reused the static verdict with no
+  dynamic evidence. With no trained model in `models/` either, `F_AI` has no admitted
+  inputs.
+- **The model was over-reading.** It asserted `reads_sms_content` and
+  `exfiltrates_over_network` for an APK that contains no SMS code and no networking
+  code at all — it inferred behaviour from the declared manifest surface. This is a
+  genuine finding about static-only LLM reasoning and is now a scripted answer in
+  `docs/DEMO_SCRIPT.md` §2.3, because it demonstrates *why* B is computed in Python
+  from enumerated booleans rather than taken as the model's number.
+
+No scorer code was changed to make the demo's number look better.
 
 ## Salvage from v1 (see `docs/SALVAGE.md`)
 
@@ -548,10 +612,29 @@ not caught by any test or gate, only by reading `git log`. Single agent from her
   size.** Size stability produced a wrong sha256 on the first run — the verdict was
   computed over bytes that were not the file, because emulated shared storage reports
   its final size before the tail is readable.
+- **`demo_up.sh` clears `global device_provisioned` and `secure user_setup_complete`
+  before `dpm set-device-owner`, then restores them.** Provisioning over adb is
+  refused once Android marks the user set up, and after `-wipe-data` that flag flips a
+  few seconds into the first boot — so success was a race the script sometimes lost.
+  Two consecutive rehearsals differing only in timing produced "provisioned" and
+  "NOT HELD". It now also retries 3× and **dies** rather than warning, because Layer 3
+  is the beat the demo turns on; `--allow-no-owner` is the deliberate escape hatch.
+- **The Shield's Report screen calls `GET /api/jobs/{id}/artifacts/dossier`** rather
+  than composing a complaint on the phone, and renders the backend's
+  `submission_is_manual`, `reportable`, `reason`, `portal_url` and `helpline` fields.
+  The button says "Prepare a report for cybercrime.gov.in", never anything implying
+  filing. `reportable == false` (LOW/MEDIUM) is shown with the backend's reason rather
+  than hidden. An on-device fallback exists for when the endpoint is unavailable and
+  the screen labels itself as such.
 
 ### Open risks — live demo
 
-- **Backend latency variance (7.9–13.1 s) is the largest on-stage uncertainty**, and
+- **The GenAI provider is a free OpenRouter endpoint that returns 502 under load**
+  (2 of 5 probe calls). `docs/DEMO_SCRIPT.md` §1 now instructs warming the LLM cache
+  with a throwaway delivery before the demo, and §5 names
+  `DRISHTI_LLM_PROVIDER=mock` as the fallback. The block decision does not depend on
+  the LLM, so a 502 degrades the demo rather than breaking it.
+- **Backend latency variance (6.5–13.1 s) is the largest on-stage uncertainty**, and
   it is entirely M2 static analysis. Shield contributes under 300 ms.
 - **No backup video exists yet** (T6.7). The terminal fallback in `DEMO_SCRIPT.md` §5
   is rehearsed but a recording is still the right insurance.

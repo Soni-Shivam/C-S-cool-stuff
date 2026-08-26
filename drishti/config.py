@@ -114,12 +114,21 @@ class Settings(BaseSettings):
         if self.llm_model:
             return self.llm_model
         return {
-            # Verified callable 2026-08-17: HTTP 200, cost 0, reasoning_details present.
-            # Reasoning models spend most of their completion budget thinking — that probe
-            # burned 172 reasoning tokens to answer in 10 characters — so the
-            # llm_max_prompt_tokens budget is about INPUT and the output cap must leave
-            # room for reasoning as well as the answer.
-            "openrouter": "nvidia/nemotron-3.5-lightning:free",
+            # Verified callable 2026-08-26 against the live API, not assumed: the id
+            # exists in the catalogue, context is 1M, `tools`/`tool_choice` are in
+            # supported_parameters (the RE workspace's bounded tool loop needs them),
+            # and pricing is 0. A full pipeline run produced 4 grounded claims.
+            #
+            # Reasoning models spend most of their completion budget thinking — a probe
+            # burned 18 of 20 completion tokens on reasoning and truncated the answer —
+            # so llm_max_prompt_tokens governs INPUT, and the output cap must leave room
+            # for reasoning as well as the answer.
+            #
+            # The `:free` endpoint is NOT reliable: 2 of 5 probe calls returned
+            # `502 Upstream error from Nvidia: Service temporarily overloaded`. Warm the
+            # LLM cache before a demo, or fall back to
+            # `nvidia/nemotron-3.5-lightning:free`, which is the smaller sibling.
+            "openrouter": "nvidia/nemotron-3-ultra-550b-a55b:free",
             # In the catalogue but UNVERIFIED: the project's credits are depleted, and a
             # 429 masks whatever a 404 would have said. Probe before trusting it (STATUS.md).
             "gemini": "gemini-3.1-pro-preview",
