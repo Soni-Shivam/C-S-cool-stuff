@@ -15,6 +15,7 @@ import pytest
 from drishti.contracts.dynamic_trace import CapturedFlow
 from drishti.m3_dynamic.proxy import capture_addon
 from drishti.m3_dynamic.proxy.capture_addon import (
+    MAX_PREVIEW,
     FlowCaptureAddon,
     build_flow_record,
     parse_flow_log,
@@ -303,3 +304,63 @@ def test_addon_previews_are_bounded_and_redacted(tmp_path: Path, body: str) -> N
     (flow,) = parse_flow_log(log.read_text(encoding="utf-8"))
     assert len(flow.req_body_preview) <= 512
     assert "hunter2" not in flow.req_body_preview
+
+
+# ── redaction ordering and the fields the gate does not cover ─────────────────
+
+
+def test_build_flow_record_redacts_the_path() -> None:
+    """`CapturedFlow` gates only the two body previews, and the path leaves the guest too.
+
+    `GET /log/password=hunter2/` is a credential in a URL, which is exactly the shape a
+    lazy exfil endpoint takes. Nothing downstream would catch it.
+    """
+    flow = build_flow_record(
+        t_ms_epoch=1,
+        method="GET",
+        scheme="http",
+        host="gate.evil.tk",
+        path="/log/password=hunter2/next",
+        status=200,
+    )
+    assert "hunter2" not in flow.path
+    assert "[REDACTED:CREDENTIAL]" in flow.path
+
+
+def test_build_flow_record_redacts_the_host() -> None:
+    """Same rule, no exception: every string that leaves the guest passes the gate."""
+    flow = build_flow_record(
+        t_ms_epoch=1, method="GET", scheme="http", host="pin=4321.evil.tk", path="/"
+    )
+    assert "4321" not in flow.host
+
+
+def test_build_flow_record_leaves_an_ordinary_path_alone() -> None:
+    flow = build_flow_record(
+        t_ms_epoch=1, method="GET", scheme="http", host="gate.evil.tk", path="/api/v2/checkin"
+    )
+    assert flow.path == "/api/v2/checkin"
+    assert flow.host == "gate.evil.tk"
+
+
+def test_addon_redacts_a_secret_straddling_the_preview_bound(tmp_path: Path) -> None:
+    """Truncating before redacting silently disarms the gate.
+
+    A JWT whose signature falls past the 512-char preview bound stops matching the JWT
+    rule once it is cut, so the header and payload — the half that carries the claims —
+    survive into the artifact unredacted. Redaction must see a wider window than the
+    preview it produces.
+    """
+    jwt = "eyJ" + "a" * 20 + "." + "b" * 20 + "." + "c" * 20
+    body = "x" * 459 + " " + jwt + " " + "z" * 199
+    assert body.index(jwt) < MAX_PREVIEW < body.index(jwt) + len(jwt)  # it really straddles
+
+    log_file = tmp_path / "flows.jsonl"
+    addon = FlowCaptureAddon(log_path=str(log_file))
+    request = _Message(body, timestamp_start=1.0, method="POST", scheme="http", host="h", path="/")
+    addon.response(_flow(request, _Message("", status_code=200, headers={})))
+
+    (flow,) = parse_flow_log(log_file.read_text(encoding="utf-8"))
+    assert "eyJ" not in flow.req_body_preview
+    assert "[REDACTED:JWT]" in flow.req_body_preview
+    assert len(flow.req_body_preview) <= MAX_PREVIEW

@@ -9,11 +9,15 @@ Two properties this file exists to hold:
 * **Nothing raises into mitmproxy's event loop.** The addon is called inline on the
   proxy's own coroutine; an exception there kills the capture, and with it the only
   record of what the sample talked to. An unreadable body yields an empty preview.
-* **Every string is redacted before it is written.** `redact_text` runs at the guest
-  boundary and `CapturedFlow` refuses to construct if a secret survived it. If that
-  ever fires, the preview is dropped and the flow is still recorded — the host and
-  path are the C2 evidence, and losing them to a redaction bug would be the worse
-  failure.
+* **Every string is redacted before it is written — host and path included, not just
+  the bodies.** `CapturedFlow` gates only the two previews, so a credential in a URL
+  (`GET /log/password=hunter2/`) is caught here or nowhere. Redaction always runs over
+  a window wider than the field's bound and truncation happens afterwards; the reverse
+  order chops a straddling secret into a fragment its rule no longer matches, which
+  disarms the gate without failing anything. See `_redacted`.
+* **A gate that still refuses costs the preview, not the flow.** If `CapturedFlow`
+  rejects a preview anyway, it is dropped and the flow is recorded without it — host
+  and path are the C2 evidence, and losing them to a redaction bug is the worse failure.
 """
 
 from __future__ import annotations
@@ -44,6 +48,12 @@ MAX_SCHEME = 8
 MAX_HOST = 253
 MAX_PATH = 512
 MAX_PREVIEW = 512
+
+#: How much wider than a field's bound the redaction pass looks. Redaction runs over
+#: `bound * FACTOR` characters and the result is truncated to `bound` afterwards, so a
+#: secret straddling the bound is still matched whole. 4x covers every rule's longest
+#: plausible match (a JWT) with room to spare, without regexing a whole body.
+REDACTION_WINDOW_FACTOR = 4
 
 DEFAULT_FLOW_LOG = "/opt/drishti/results/flows.jsonl"
 
@@ -90,19 +100,21 @@ def build_flow_record(
 ) -> CapturedFlow:
     """Build one validated `CapturedFlow` from raw proxy values.
 
-    Pure. Every input came from a process that just executed malware, so each field is
-    normalised to its contract bound before validation, the query string is dropped
-    (it is the likeliest place for exfiltrated data to sit), and both bodies are
-    redacted. If validation still refuses a preview, the preview is dropped rather
-    than the flow.
+    Pure. Every input came from a process that just executed malware, so every string
+    that will leave the guest — host and path included, not only the bodies — goes
+    through `redact_text`, and each field is normalised to its contract bound. The
+    query string is dropped (it is the likeliest place for exfiltrated data to sit).
+    If validation still refuses a preview, the preview is dropped rather than the flow.
     """
     synthesised, served_kind = provenance_from_headers(resp_headers)
     fields: dict[str, Any] = {
         "t_ms_epoch": int(t_ms_epoch),
         "method": str(method).strip()[:MAX_METHOD] or "UNKNOWN",
         "scheme": str(scheme).strip()[:MAX_SCHEME] or "unknown",
-        "host": str(host).strip()[:MAX_HOST],
-        "path": str(path).split("?", 1)[0][:MAX_PATH] or "/",
+        # `CapturedFlow` gates only the two body previews, so host and path are gated
+        # here or nowhere: `GET /log/password=hunter2/` is a credential in a URL.
+        "host": _redacted(str(host).strip(), MAX_HOST),
+        "path": _redacted(str(path).split("?", 1)[0], MAX_PATH) or "/",
         "status": int(status) if status is not None else None,
         "synthesised": synthesised,
         "served_kind": served_kind,
@@ -110,8 +122,8 @@ def build_flow_record(
     try:
         return CapturedFlow(
             **fields,
-            req_body_preview=redact_text(req_text, limit=MAX_PREVIEW),
-            resp_body_preview=redact_text(resp_text, limit=MAX_PREVIEW),
+            req_body_preview=_redacted(req_text, MAX_PREVIEW),
+            resp_body_preview=_redacted(resp_text, MAX_PREVIEW),
         )
     except ValueError:
         # Fail closed on the body, not on the evidence: host, path and status are what
@@ -154,12 +166,27 @@ class FlowCaptureAddon:
             log.warning("flow_capture_failed", error=str(exc))
 
 
+def _redacted(value: str, limit: int) -> str:
+    """Redact across a window wider than `limit`, then truncate to it.
+
+    Order matters and is the whole point. Truncating first silently disarms the gate:
+    a secret straddling the bound is chopped into a fragment its rule no longer
+    matches, so it passes both `redact_text` and `contains_sensitive_text` — a JWT cut
+    after its payload keeps every claim it carries. Redacting a wider window first
+    means anything *starting* inside the bound is matched whole. The window is finite
+    so a multi-megabyte body is not handed to the regex engine.
+    """
+    return redact_text(value[: limit * REDACTION_WINDOW_FACTOR], limit=limit)
+
+
 def _body_text(msg: Any) -> str:
     """Best-effort body text. An undecodable or absent body is an empty preview."""
     if msg is None:
         return ""
     try:
-        return (msg.get_text(strict=False) or "")[:MAX_PREVIEW]
+        # Wider than MAX_PREVIEW on purpose — see `_redacted`. Truncation is the last
+        # step, after redaction, never before it.
+        return (msg.get_text(strict=False) or "")[: MAX_PREVIEW * REDACTION_WINDOW_FACTOR]
     except Exception:  # binary, truncated or streamed bodies are common
         return ""
 
