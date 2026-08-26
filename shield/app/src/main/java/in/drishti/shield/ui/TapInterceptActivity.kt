@@ -71,7 +71,7 @@ class TapInterceptActivity : Activity() {
         // A tap is the moment an install begins, and the person doing it is a victim,
         // not an analyst. Which projection of the same analysis they land on is a
         // preference, not two analyses — see `Config.consumerScreen`.
-        val next = if (Config.consumerScreen(this)) {
+        val next = if (Config.consumerScreen()) {
             Intent(this, ConsumerVerdictActivity::class.java)
                 .putExtra(ConsumerVerdictActivity.EXTRA_SCAN_ID, scanId)
                 .putExtra(ConsumerVerdictActivity.EXTRA_APK_PATH, file.absolutePath)

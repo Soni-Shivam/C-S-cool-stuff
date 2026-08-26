@@ -1,6 +1,7 @@
 package `in`.drishti.shield
 
 import android.content.Context
+import java.io.File
 
 /** Everything that differs between the demo emulator and a real deployment. */
 object Config {
@@ -27,25 +28,31 @@ object Config {
 
     const val NCRP_URL: String = "https://cybercrime.gov.in/"
 
-    private const val KEY_CONSUMER_SCREEN = "consumer_screen"
+    /**
+     * Presence of this file routes a **tap** to the consumer screen instead of the
+     * analyst one. `scripts/demo_consumer.sh --tap-on` creates it.
+     */
+    const val CONSUMER_TAP_MARKER: String = "/sdcard/DrishtiStaging/consumer_tap.on"
 
     /**
      * Whether tapping an APK shows the **consumer** screen or the analyst one.
      *
-     * On by default: at tap time the person holding the phone is a victim, not an
-     * analyst, and the evidence-first screen in `VerdictActivity` is written for the
-     * second audience. Both screens read the same analysis — this only chooses which
-     * projection of it a tap lands on. `VerdictActivity` remains reachable from the
-     * Shield app itself, which is where an analyst would be looking anyway.
+     * **Off until the operator arms it**, and a file rather than a preference so that
+     * arming it is one `adb` command with no UI in the way.
+     *
+     * Off is the right default today for one specific reason. The consumer screen
+     * renders the contract-A15 `Verdict`, and the backend route that produces one
+     * (`/api/jobs/{id}/verdict`) does not exist yet — so a tapped file that has no A15
+     * verdict lands on the consumer screen's *undecided* state, which is correct and
+     * honest but is not the beat `scripts/demo_run.sh` narrates for the cleared app.
+     * When that route lands, arm this and the tap beat becomes the consumer beat with
+     * no other change.
+     *
+     * Both screens read the same analysis; this only chooses which projection of it a
+     * tap lands on. `VerdictActivity` remains reachable from the Shield app itself,
+     * which is where an analyst would be looking anyway.
      */
-    fun consumerScreen(context: Context): Boolean =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getBoolean(KEY_CONSUMER_SCREEN, true)
-
-    fun setConsumerScreen(context: Context, value: Boolean) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putBoolean(KEY_CONSUMER_SCREEN, value).apply()
-    }
+    fun consumerScreen(): Boolean = File(CONSUMER_TAP_MARKER).exists()
 
     fun backend(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

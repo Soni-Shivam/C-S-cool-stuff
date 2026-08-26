@@ -1,6 +1,7 @@
 package `in`.drishti.shield.ui
 
 import android.app.Activity
+import android.app.NotificationManager
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
@@ -21,6 +22,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import `in`.drishti.shield.ConsumerVerdict
 import `in`.drishti.shield.ConsumerVerdictSource
+import `in`.drishti.shield.Notifications
 import `in`.drishti.shield.PackageAddedReceiver
 import `in`.drishti.shield.ScanBus
 import `in`.drishti.shield.ui.Ui.dp
@@ -71,7 +73,15 @@ class ConsumerVerdictActivity : Activity() {
          */
         const val EXTRA_SCAN_ID = "scan_id"
 
-        /** Which bundled fixture to fall back to: `block`, `review` or `monitor`. */
+        /**
+         * Which bundled fixture to fall back to: `block`, `review` or `monitor`.
+         *
+         * **Only a rehearsal launch sets this.** A tap on a real file never does, and
+         * that asymmetry is deliberate: a canned verdict standing in for a real file's
+         * analysis would put a red screen over an app that was actually cleared. When
+         * there is a real file and no verdict for it, the screen says it could not
+         * check — see [showUndecided].
+         */
         const val EXTRA_FIXTURE = "fixture"
 
         /** The APK on disk this verdict is about, so the block CTA can delete it. */
@@ -171,6 +181,22 @@ class ConsumerVerdictActivity : Activity() {
         resolveInBackground()
     }
 
+    /**
+     * Take the heads-up notification down while this screen is up.
+     *
+     * Layer 1's alert is posted on a HIGH-importance channel, which is what lets a
+     * verdict appear without a tap — and its banner then sits across the top of this
+     * screen, over the sentence the whole design exists to get read. Measured on the
+     * emulator: it covered the banner word for several seconds. `VerdictActivity`
+     * solves the same problem the same way; the record stays in the shade.
+     */
+    override fun onResume() {
+        super.onResume()
+        runCatching {
+            getSystemService(NotificationManager::class.java).cancel(Notifications.ID_ALERT)
+        }
+    }
+
     override fun onDestroy() {
         main.removeCallbacksAndMessages(null)
         super.onDestroy()
@@ -220,7 +246,10 @@ class ConsumerVerdictActivity : Activity() {
         val explicitJob = intent?.getStringExtra(EXTRA_JOB_ID)
         val scanId = intent?.getStringExtra(EXTRA_SCAN_ID)
         val fixture = intent?.getStringExtra(EXTRA_FIXTURE)
-            ?: ConsumerVerdictSource.FIXTURE_BLOCK
+
+        // A rehearsal names no file. It must not adopt an unrelated in-flight scan's
+        // job — a verdict about a different APK is worse than no verdict at all.
+        val rehearsal = explicitJob == null && scanId == null
 
         Thread {
             val fallbackAt = System.currentTimeMillis() + FALLBACK_AFTER_MS
@@ -228,17 +257,20 @@ class ConsumerVerdictActivity : Activity() {
             while (System.currentTimeMillis() < fallbackAt) {
                 // Re-read each tick: Layer 2 launches this screen before the upload
                 // has a job id, and the id appears on the bus a moment later.
-                val jobId = explicitJob
-                    ?: scanId?.let { ScanBus.find(it)?.jobId }
-                    ?: ScanBus.current?.jobId
+                val jobId = explicitJob ?: scanId?.let { ScanBus.find(it)?.jobId }
                 resolved = ConsumerVerdictSource.live(this, jobId)
                 if (resolved != null) break
-                // Nothing is in flight and nothing was pushed: this is a rehearsal,
-                // and waiting out the backend window would only stall the stage.
-                if (jobId == null) break
+                // Nothing real is in flight and nothing was pushed: waiting out the
+                // backend window would only stall the stage.
+                if (rehearsal) break
                 Thread.sleep(POLL_MS)
             }
-            if (resolved == null) resolved = ConsumerVerdictSource.fromAsset(this, fixture)
+            // Only a rehearsal falls back to a fixture. A real tap that produced no
+            // verdict goes to the undecided screen instead of borrowing someone
+            // else's answer.
+            if (resolved == null && fixture != null) {
+                resolved = ConsumerVerdictSource.fromAsset(this, fixture)
+            }
             val held = (shownAtMs + MIN_INTERSTITIAL_MS) - System.currentTimeMillis()
             main.postDelayed({ settle(resolved) }, maxOf(0L, held))
         }.apply { isDaemon = true }.start()

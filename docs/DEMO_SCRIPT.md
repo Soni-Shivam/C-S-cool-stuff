@@ -397,9 +397,30 @@ The app's own order is **backend → pushed file → bundled fixture**. Swapping
 them needs no UI change; the screen never learns where the object came from except for
 one line of text (below).
 
-It also appears by itself: **tapping the APK** routes Layer 2 here rather than to the
-analyst screen (`Config.consumerScreen`, on by default), so §2.4's "and even if you
-tap it" beat lands on the consumer screen with the real job behind it.
+### Making the tap land here
+
+```bash
+scripts/demo_consumer.sh --tap-on      # a tap on an APK opens the consumer screen
+scripts/demo_consumer.sh --tap-off     # back to the analyst screen (the default)
+```
+
+**Off by default, deliberately.** Armed, a tap routes Layer 2 to the consumer screen
+with the real job behind it — verified end to end on 2026-08-26: tap → job →
+`GET /api/jobs/{id}/verdict` → screen, `origin=BACKEND`, no fixture, no ribbon. Left
+off, §2 behaves exactly as rehearsed. Arming it is one command and changes nothing
+else.
+
+**Know this before you arm it for the decoy.** The A15 verdict maps `severity_band` to
+the action, and the decoy currently scores **S = 43, MEDIUM**, which is
+`REVIEW` — so the consumer screen says **BE CAREFUL**, in amber, while the analyst
+screen says **BLOCKED** on static evidence. Both are correct and they are reading
+different things (§2.3 explains why the score did not authorise that block), but do
+not put the two screens side by side without saying so. `--verdict` with a pinned
+object, or the `block` fixture, is the rehearsed way to show the red screen.
+
+A tapped file with **no** A15 verdict lands on *"we could not check this app"*, never
+on a fixture. A canned verdict must never stand in for a real file's analysis — that
+is how a cleared app ends up under a red screen.
 
 ### The one honesty line
 

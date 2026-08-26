@@ -64,9 +64,15 @@ millisecond counter, the basis card. `ui/ConsumerVerdictActivity.kt` is written 
 the person holding the phone — a breathing interstitial, then one sentence and one
 button. They read the same analysis; only the projection differs.
 
-A tap on an APK routes to the consumer screen by default (`Config.consumerScreen`),
-because at tap time the user is a victim, not an analyst. The analyst screen stays
-reachable from the Shield app itself.
+A tap on an APK routes to the consumer screen when the operator arms it
+(`scripts/demo_consumer.sh --tap-on`, which is `Config.CONSUMER_TAP_MARKER` — a file,
+so arming is one adb command and no UI). It is **off by default** so the rehearsed
+`demo_run.sh` beats are unaffected until someone chooses otherwise.
+
+A tapped file with no A15 verdict shows the *"we could not check this app"* state,
+never a fixture. A canned verdict standing in for a real file's analysis is how a
+cleared app ends up under a red screen, so only an explicit rehearsal launch
+(`EXTRA_FIXTURE`) can reach one.
 
 **The consumer screen shows no score, no confidence, no severity band, no MITRE ID
 and no evidence reference.** That is not a style preference: every extra element on a

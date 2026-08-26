@@ -8,6 +8,8 @@
 #   scripts/demo_consumer.sh --verdict FILE  # push your own contract-A15 verdict JSON
 #   scripts/demo_consumer.sh --live JOB_ID   # the real verdict for a real job
 #   scripts/demo_consumer.sh --clear         # remove a pushed verdict
+#   scripts/demo_consumer.sh --tap-on        # a TAP on an APK lands here, not on the
+#   scripts/demo_consumer.sh --tap-off       #   analyst screen (off by default)
 #
 # WHAT IT SHOWS
 #   1. The DRISHTI mark, breathing, on near-black, and one line: "Analysing… please
@@ -36,20 +38,25 @@ PKG="in.drishti.shield"
 ACTIVITY="$PKG/.ui.ConsumerVerdictActivity"
 # Must match ConsumerVerdictSource.OVERRIDE_PATH.
 OVERRIDE="/sdcard/DrishtiStaging/verdict.json"
+# Must match Config.CONSUMER_TAP_MARKER.
+TAP_MARKER="/sdcard/DrishtiStaging/consumer_tap.on"
 
 FIXTURE="block"
 VERDICT_FILE=""
 JOB_ID=""
 CLEAR=0
+TAP=""
 while (( $# )); do
   case "$1" in
+    --tap-on) TAP="on" ;;
+    --tap-off) TAP="off" ;;
     --block) FIXTURE="block" ;;
     --review) FIXTURE="review" ;;
     --monitor) FIXTURE="monitor" ;;
     --verdict) VERDICT_FILE="${2:?--verdict needs a path}"; shift ;;
     --live) JOB_ID="${2:?--live needs a job id}"; shift ;;
     --clear) CLEAR=1 ;;
-    -h|--help) sed -n '2,26p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n "2,28p" "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "unknown flag: $1" >&2; exit 2 ;;
   esac
   shift
@@ -62,6 +69,22 @@ die()  { printf '\n\033[1;31mFAILED: %s\033[0m\n' "$*" >&2; exit 1; }
 [[ -x "$ADB" ]] || die "adb not found at $ADB"
 "$ADB" get-state >/dev/null 2>&1 || die "no device — run scripts/demo_up.sh first"
 "$ADB" shell pm path "$PKG" >/dev/null 2>&1 || die "$PKG is not installed — run scripts/demo_up.sh"
+
+if [[ -n "$TAP" ]]; then
+  if [[ "$TAP" == "on" ]]; then
+    "$ADB" shell mkdir -p "$(dirname "$TAP_MARKER")" >/dev/null 2>&1 || true
+    "$ADB" shell touch "$TAP_MARKER" >/dev/null
+    ok "a tap on an APK now opens the consumer screen"
+    printf '      Note: until the backend exposes /api/jobs/{id}/verdict, a tapped\n'
+    printf '      file with no A15 verdict lands on the "we could not check this app"\n'
+    printf '      state. That is deliberate — a rehearsal fixture must never stand in\n'
+    printf '      for a real file. Use --tap-off to restore the analyst screen.\n'
+  else
+    "$ADB" shell rm -f "$TAP_MARKER" >/dev/null 2>&1 || true
+    ok "a tap on an APK opens the analyst verdict screen again"
+  fi
+  exit 0
+fi
 
 if (( CLEAR )); then
   "$ADB" shell rm -f "$OVERRIDE" >/dev/null 2>&1 || true
