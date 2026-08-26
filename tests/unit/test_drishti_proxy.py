@@ -96,14 +96,52 @@ def test_responder_serves_matching_entry() -> None:
     assert ctype == "application/json"
 
 
-def test_responder_serves_inert_dex_on_payload_path() -> None:
+def test_responder_serves_inert_dex_on_the_injected_payload_url() -> None:
+    """The DEX stub belongs on the URL we injected, not on the entry's beacon path.
+
+    The plan's original version of this test asserted DEX bytes on `/payload/x.dex`
+    because `is_payload_url` was read as "this path IS the download". It is not: it
+    means "this entry's BODY names a download URL". The URL actually handed to the
+    sample is whatever survived `assert_inert`, and that is the one path the stub may
+    answer on. See `test_payload_entry_serves_its_json_body_on_the_beacon_path`.
+    """
     r = proxy.BundleResponder(_bundle())
-    decided = r.decide("gate.evil.tk", "/payload/x.dex")
+    targets = r.payload_targets()
+    assert targets, "the payload-stub entry injected no URL to route"
+    host, path = next(iter(targets))
+    decided = r.decide(host, path)
     assert decided is not None
     _status, body, ctype = decided
     assert body[:8] == b"dex\n035\x00"
     assert len(body) == 0x70  # header only: a loader validates the magic and finds no code
     assert ctype == "application/octet-stream"
+
+
+def test_the_injected_payload_url_is_the_guest_loopback_and_so_unreachable() -> None:
+    """Pins the disclosed gap so nobody claims a second stage was ever downloaded.
+
+    `assert_inert` rewrites every URL to `generative_c2.SINKHOLE_URL`
+    (`http://127.0.0.1:9/inert`), which the GUEST resolves to itself. A sample that
+    follows the bait never crosses the emulated NIC, so this route exists but no request
+    can arrive on it. Changing `SINKHOLE_URL` to make it reachable would be rewriting
+    the inertness gate; if this test ever fails, that is what happened.
+    """
+    assert proxy.BundleResponder(_bundle()).payload_targets() == {("127.0.0.1", "/inert")}
+
+
+def test_payload_entry_serves_its_json_body_on_the_beacon_path() -> None:
+    """A dropper's beacon path must get JSON, not 0x70 bytes of DEX.
+
+    `path_prefix` is the sample's first observed beacon path and `served_body` is the
+    JSON that baits the second stage. Answering it with `application/octet-stream` and
+    DEX bytes breaks the sample's parser, so the bait is never delivered — on droppers,
+    which is exactly where `derive_hints` picks `INERT_PAYLOAD_STUB`.
+    """
+    r = proxy.BundleResponder(_bundle())
+    served = r.plan("gate.evil.tk", "/payload/x.dex")
+    assert served.content_type == "application/json"
+    assert b"dex\n035" not in served.body
+    assert json.loads(served.body)["url"] == "http://127.0.0.1:9/inert"
 
 
 def test_responder_passes_unknown_host_to_fallback() -> None:
@@ -147,7 +185,12 @@ def test_served_headers_declare_no_upstream() -> None:
 
 
 def test_served_kind_is_bounded_like_the_contract_field() -> None:
-    """`CapturedFlow.served_kind` caps at 32 chars; an absurd bundle must not break it."""
+    """`CapturedFlow.served_kind` caps at 32 chars; an absurd bundle must not break it.
+
+    Two halves. The responder resolves an unknown kind through `_kind_of` and stamps the
+    RESOLVED value, so the wire and the sanitiser agree about which shape was enforced;
+    and `ServedResponse` still bounds the header for any caller that supplies its own.
+    """
     bundle = C2Bundle(
         sha256="b" * 64,
         entries=(
@@ -161,7 +204,33 @@ def test_served_kind_is_bounded_like_the_contract_field() -> None:
         ),
     )
     served = proxy.BundleResponder(bundle).plan("h.tk", "/")
-    assert len(served.headers()[proxy.KIND_HEADER]) == 32
+    assert served.headers()[proxy.KIND_HEADER] == "connectivity_ok"
+    assert (
+        len(
+            proxy.ServedResponse(200, b"{}", "application/json", "k" * 4096).headers()[
+                proxy.KIND_HEADER
+            ]
+        )
+        == 32
+    )
+
+
+def test_an_unknown_kind_is_stamped_as_the_kind_the_sanitiser_actually_used() -> None:
+    """M2: `_kind_of` falls back, so the raw string would describe a shape never enforced."""
+    bundle = C2Bundle(
+        sha256="7" * 64,
+        entries=(
+            C2BundleEntry(
+                host="h.tk",
+                path_prefix="/",
+                response_kind="not_a_real_kind",
+                served_body='{"status": "ok"}',
+                derived_from=("ledger://z",),
+            ),
+        ),
+    )
+    served = proxy.BundleResponder(bundle).plan("h.tk", "/")
+    assert provenance_from_headers(served.headers()) == (True, "connectivity_ok")
 
 
 # ── item 5: inertness is re-verified at serve time, not trusted from the file ──
@@ -334,7 +403,13 @@ def test_request_hook_never_raises_on_a_hostile_flow() -> None:
 
 
 def test_request_hook_declines_when_the_response_factory_fails(monkeypatch: Any) -> None:
-    """A broken factory (no mitmproxy, a bad status) logs and declines. It never raises."""
+    """A broken factory logs and gives up quietly. It never raises.
+
+    This flow has no `kill()`, so even the fail-closed last resort is unavailable and
+    `flow.response` stays unset. What is asserted is only that the hook returns instead
+    of raising — an exception here would take the capture addon down with it. The
+    fail-closed behaviour itself is asserted below, on a flow that can be killed.
+    """
 
     def boom(_served: Any) -> Any:
         raise RuntimeError("mitmproxy unavailable")
@@ -358,3 +433,305 @@ def test_build_addons_puts_capture_first(tmp_path: pathlib.Path, monkeypatch: An
 
 def test_module_exposes_addons_for_mitmdump() -> None:
     assert len(proxy.addons) == 2
+
+
+# ── C1: the emulator's -http-proxy flag is resolved host-side ─────────────────
+
+_INFRA = pathlib.Path(__file__).resolve().parents[2] / "infra" / "gcp"
+
+
+def _http_proxy_flag_lines(script: str) -> list[str]:
+    """Every line of a launch script that actually passes `-http-proxy`.
+
+    Comment lines are excluded on purpose: the surrounding comments name 10.0.2.2 to
+    explain why it belongs in `settings put global http_proxy` and nowhere else.
+    """
+    text = (_INFRA / script).read_text(encoding="utf-8")
+    return [
+        stripped
+        for line in text.splitlines()
+        if (stripped := line.strip()).startswith("-http-proxy")
+    ]
+
+
+def test_emulator_launch_flag_targets_the_hosts_own_loopback() -> None:
+    """`-http-proxy` is a flag to the emulator PROCESS, which runs on the host.
+
+    10.0.2.2 is the guest-side alias for the host loopback and is correct only for
+    `settings put global http_proxy`, which the guest resolves. Passed to the host
+    process it is an ordinary RFC1918 address that the detonator's `-A OUTPUT -j DROP`
+    blackholes: the emulator boots healthy, detonation "succeeds", and flows.jsonl
+    stays empty — a zero-flow batch that reads as "the sample never beaconed".
+    """
+    for script in ("emulator_control.sh", "detonator_provision.sh"):
+        lines = _http_proxy_flag_lines(script)
+        assert lines, f"{script} no longer launches the emulator with -http-proxy"
+        for line in lines:
+            assert "127.0.0.1:8080" in line, line
+            assert "10.0.2.2" not in line, line
+
+
+# ── I1: mitmproxy's connection strategy is load-bearing for containment ───────
+
+
+def test_mitmdump_pins_the_eager_connection_strategy() -> None:
+    """`lazy` would answer the containment probe before any upstream was tried.
+
+    `containment.verify()` reads rc 0 from a connect to 169.254.169.254:80 as
+    REACHABLE. With guest TCP now terminating at our proxy, only `eager` — which
+    connects upstream before answering — keeps that probe honest; `lazy` turns every
+    FORBIDDEN probe into a false REACHABLE and aborts every batch.
+    """
+    text = (_INFRA / "runtime_prepare.sh").read_text(encoding="utf-8")
+    assert "--set connection_strategy=eager" in text
+
+
+# ── M5: the `clean` snapshot is live state, not a rebuildable artifact ────────
+
+
+def test_provision_guards_the_clean_snapshot() -> None:
+    """Re-running `detonator_provision.sh all` must not re-cut `clean`."""
+    text = (_INFRA / "detonator_provision.sh").read_text(encoding="utf-8")
+    body = text.split("step_snapshot() {", 1)[1].split("\n}", 1)[0]
+    assert "stamped snapshot" in body
+    assert "stamp snapshot" in body
+    assert "DRISHTI_FORCE_SNAPSHOT" in body
+
+
+# ── I2: a bundle answers for exactly one sample ───────────────────────────────
+
+
+def test_load_bundle_refuses_a_bundle_built_for_another_sample(
+    tmp_path: pathlib.Path, monkeypatch: Any
+) -> None:
+    """A stale bundle left at the staged path would fabricate the next sample's C2."""
+    path = tmp_path / "bundle.json"
+    path.write_text(_bundle().model_dump_json(), encoding="utf-8")  # sha256 = "a" * 64
+    monkeypatch.setenv(proxy.BUNDLE_ENV, str(path))
+    monkeypatch.setenv(proxy.SAMPLE_SHA_ENV, "f" * 64)
+    assert proxy.load_bundle() is None  # every host sinkholes instead
+
+
+def test_load_bundle_accepts_the_bundle_built_for_this_sample(
+    tmp_path: pathlib.Path, monkeypatch: Any
+) -> None:
+    path = tmp_path / "bundle.json"
+    path.write_text(_bundle().model_dump_json(), encoding="utf-8")
+    monkeypatch.setenv(proxy.BUNDLE_ENV, str(path))
+    monkeypatch.setenv(proxy.SAMPLE_SHA_ENV, "A" * 64)  # case is not a mismatch
+    loaded = proxy.load_bundle()
+    assert loaded is not None and loaded.sha256 == "a" * 64
+
+
+def test_load_bundle_keeps_current_behaviour_when_no_sample_sha_is_pinned(
+    tmp_path: pathlib.Path, monkeypatch: Any
+) -> None:
+    path = tmp_path / "bundle.json"
+    path.write_text(_bundle().model_dump_json(), encoding="utf-8")
+    monkeypatch.setenv(proxy.BUNDLE_ENV, str(path))
+    monkeypatch.delenv(proxy.SAMPLE_SHA_ENV, raising=False)
+    assert proxy.load_bundle() is not None
+
+
+# ── I3: status, content type and kind are untrusted too, not just the body ────
+
+
+def _entry_bundle(**overrides: Any) -> C2Bundle:
+    fields: dict[str, Any] = {
+        "host": "gate.evil.tk",
+        "path_prefix": "/reg",
+        "response_kind": "registration_ack",
+        "served_body": '{"status": "ok"}',
+        "derived_from": ("ledger://x",),
+    }
+    fields.update(overrides)
+    return C2Bundle(sha256="9" * 64, entries=(C2BundleEntry(**fields),))
+
+
+def test_absurd_served_status_is_clamped_rather_than_raising() -> None:
+    """`http.Response.make` raises outside 100..599, and a raise in the request hook
+    leaves `flow.response` unset — which makes mitmproxy forward the request UPSTREAM."""
+    served = proxy.BundleResponder(_entry_bundle(served_status=999999)).plan("gate.evil.tk", "/reg")
+    assert served.status == 200
+    assert proxy.MIN_STATUS <= served.status <= proxy.MAX_STATUS
+
+
+def test_a_plausible_served_status_is_preserved() -> None:
+    served = proxy.BundleResponder(_entry_bundle(served_status=404)).plan("gate.evil.tk", "/reg")
+    assert served.status == 404
+
+
+def test_served_content_type_is_allow_listed() -> None:
+    """A header-splitting content type must never reach `Content-Type` verbatim."""
+    hostile = "application/json\r\nX-Evil: 2"
+    served = proxy.BundleResponder(_entry_bundle(served_content_type=hostile)).plan(
+        "gate.evil.tk", "/reg"
+    )
+    assert served.content_type == "application/json"
+    assert served.headers()["Content-Type"] == "application/json"
+
+
+def test_header_values_carry_no_control_characters() -> None:
+    """A CRLF in `response_kind` survives truncation and round-trips out of capture."""
+    served = proxy.BundleResponder(
+        _entry_bundle(response_kind="config\r\nX-Evil: 2", served_content_type="text/html\r\nx: 1")
+    ).plan("gate.evil.tk", "/reg")
+    for name, value in served.headers().items():
+        assert not any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in value), (name, value)
+    read_back = provenance_from_headers(served.headers())
+    assert read_back[0] is True
+    assert "\r" not in (read_back[1] or "") and "\n" not in (read_back[1] or "")
+
+
+def test_direct_construction_is_normalised_too() -> None:
+    """The clamp lives on the value object, so no construction path can bypass it."""
+    served = proxy.ServedResponse(999999, b"{}", "text/html", "k\r\nx: 1")
+    assert served.status == 200
+    assert served.content_type == "application/json"
+    assert "\r" not in served.kind
+
+
+def test_the_inert_dex_content_type_stays_allowed() -> None:
+    """The allow-list must not narrow the one non-JSON response this system serves."""
+    served = proxy.BundleResponder(_bundle()).plan("127.0.0.1", "/inert")
+    assert served.content_type == "application/octet-stream"
+
+
+def test_a_json_body_is_never_labelled_with_the_entrys_own_content_type() -> None:
+    """M3: `served_body` is replaced by `assert_inert`'s output, so the label must be too.
+
+    The refusal path already normalises to JSON. The success path used to pass a staged
+    `text/html` straight through, which labelled compact JSON as HTML — the two paths
+    disagreeing about the same bytes.
+    """
+    bundle = C2Bundle(
+        sha256="8" * 64,
+        entries=(
+            C2BundleEntry(
+                host="h.tk",
+                path_prefix="/",
+                response_kind="config",
+                served_content_type="text/html",
+                served_body='{"status": "ok"}',
+                derived_from=("ledger://z",),
+            ),
+        ),
+    )
+    served = proxy.BundleResponder(bundle).plan("h.tk", "/")
+    assert served.body == b'{"status":"ok"}'  # the gate ran and produced JSON
+    assert served.content_type == "application/json"
+
+
+# ── I3 (4): the failure path fails closed, never upstream ─────────────────────
+
+
+class _KillableFlow(_FakeFlow):
+    def __init__(self, host: str, path: str) -> None:
+        super().__init__(host, path)
+        self.killed = False
+
+    def kill(self) -> None:
+        self.killed = True
+
+
+def test_request_hook_retries_with_a_canned_response_when_the_first_refuses() -> None:
+    """mitmproxy refusing one response must not leave the flow free to go upstream."""
+    refused: list[Any] = []
+
+    class _PickyResponder(proxy.BundleResponder):
+        """Refuses the first response offered, the way a bad status makes mitmproxy."""
+
+        @staticmethod
+        def _make_response(served: Any) -> Any:
+            if not refused:
+                refused.append(served)
+                raise ValueError("unacceptable response")
+            return (served.status, served.body, served.headers())
+
+    flow = _KillableFlow("gate.evil.tk", "/reg/1")
+    _PickyResponder(_bundle()).request(flow)
+    assert refused, "the test's first response was accepted — nothing was exercised"
+    assert flow.response is not None
+    _status, body, headers = flow.response
+    assert body == proxy.CANNED_OK_BODY
+    assert provenance_from_headers(headers)[0] is True
+    assert flow.killed is False
+
+
+def test_request_hook_kills_the_flow_when_no_response_can_be_built(monkeypatch: Any) -> None:
+    """With no usable response factory the only fail-closed move left is to kill it."""
+
+    def boom(_served: Any) -> Any:
+        raise RuntimeError("mitmproxy unavailable")
+
+    monkeypatch.setattr(proxy.BundleResponder, "_make_response", staticmethod(boom))
+    flow = _KillableFlow("gate.evil.tk", "/reg/1")
+    proxy.BundleResponder(_bundle()).request(flow)
+    assert flow.response is None
+    assert flow.killed is True  # never forwarded upstream
+
+
+def test_request_hook_fails_closed_when_the_flow_itself_explodes() -> None:
+    """Even an undecodable request gets an inert answer rather than a trip upstream."""
+
+    class _Exploding(_KillableFlow):
+        @property  # type: ignore[misc]
+        def request(self) -> Any:
+            raise RuntimeError("flow decode failed")
+
+    flow = _KillableFlow.__new__(_Exploding)
+    flow.response = None
+    flow.killed = False
+    _responder_cls = type("TestResponder", (_RecordingResponder, proxy.BundleResponder), {})
+    _responder_cls(_bundle()).request(flow)
+    assert flow.response is not None
+    _status, body, _headers = flow.response
+    assert body == proxy.CANNED_OK_BODY
+
+
+# ── M4: mitmdump loads this module under nohup, so an import-time raise is silent ──
+
+
+def test_build_addons_survives_an_unusable_flow_log_directory(monkeypatch: Any) -> None:
+    """`FlowCaptureAddon.__init__` mkdirs. A full or read-only disk must not exit mitmdump.
+
+    `addons = build_addons()` runs at module load, and runtime_prepare.sh starts mitmdump
+    with `nohup` — a raise here kills the process silently and surfaces hours later as an
+    empty flow log, the same class of failure as an unreachable proxy address. Losing
+    capture is bad; losing the whole proxy means the sample also talks to nothing.
+    """
+
+    def boom(*_args: Any, **_kwargs: Any) -> Any:
+        raise PermissionError("[Errno 13] mkdir: /opt/drishti/results")
+
+    monkeypatch.setattr(proxy, "FlowCaptureAddon", boom)
+    monkeypatch.delenv(proxy.BUNDLE_ENV, raising=False)
+    addons = proxy.build_addons()
+    assert len(addons) == 1
+    assert isinstance(addons[0], proxy.BundleResponder)
+
+
+# ── I1: a hostile payload-stub entry costs a route, never the proxy ───────────
+
+
+def test_an_unparseable_payload_entry_yields_no_route_and_still_answers() -> None:
+    bundle = C2Bundle(
+        sha256="6" * 64,
+        entries=(
+            C2BundleEntry(
+                host="gate.evil.tk",
+                path_prefix="/p",
+                response_kind="inert_payload_stub",
+                served_body="<html>not a control response</html>",
+                is_payload_url=True,
+                derived_from=("ledger://x",),
+            ),
+        ),
+    )
+    responder = proxy.BundleResponder(bundle)
+    assert responder.payload_targets() == frozenset()
+    assert responder.plan("gate.evil.tk", "/p").body == proxy.CANNED_OK_BODY
+
+
+def test_a_bundleless_responder_routes_no_payload_urls() -> None:
+    assert proxy.BundleResponder(None).payload_targets() == frozenset()

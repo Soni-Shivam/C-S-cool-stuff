@@ -29,10 +29,18 @@ case "${1:-}" in
     # the harness restores the `clean` snapshot before every sample — a restore reverts
     # it, so every detonation after the first would run unproxied while looking healthy
     # and reporting zero flows. Set at the QEMU level it survives every restore.
-    # 10.0.2.2 is the emulator's alias for the host loopback, where mitmdump listens.
+    # The address is the HOST's own loopback, not 10.0.2.2. -http-proxy is consumed by
+    # the emulator process, which runs on the host and resolves and connect()s in the
+    # host's network namespace; 10.0.2.2 is the GUEST-side alias for the host loopback
+    # and belongs only in `settings put global http_proxy`, which the guest resolves.
+    # Host-side it is an ordinary RFC1918 address that is not this machine, so
+    # detonator_lockdown.sh's `-A OUTPUT -j DROP` blackholes it: the emulator boots
+    # healthy, the batch reports success, and flows.jsonl stays empty — which reads as
+    # "the sample never beaconed". 127.0.0.1 is already allowed by the lockdown's
+    # `-o lo -j ACCEPT` and already served by mitmdump's --listen-host 0.0.0.0.
     emulator -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim \
       -no-snapshot-save -no-snapshot-load -accel on \
-      -http-proxy "${DRISHTI_EMULATOR_PROXY:-10.0.2.2:8080}" \
+      -http-proxy "${DRISHTI_EMULATOR_PROXY:-127.0.0.1:8080}" \
       -gpu swiftshader_indirect >/var/log/drishti-emulator.log 2>&1 &
     emulator_pid=$!
     printf '%s\n' "$emulator_pid" >"$PID_FILE"

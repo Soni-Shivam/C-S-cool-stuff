@@ -1136,7 +1136,7 @@ staged across to the detonator as one file, and read — never generated — at 
 | `served_status` | `int` | HTTP status to answer with, default `200`. |
 | `served_content_type` | `str` | Content type to answer with, default `application/json`. |
 | `served_body` | `str` | The body to serve. Already passed the inertness gate before it reached the bundle. |
-| `is_payload_url` | `bool` | `True` when this entry stands in for a second-stage download. Flagged because a stub served here is the one entry a reader must not mistake for real attacker content. |
+| `is_payload_url` | `bool` | `True` when this entry's **`served_body` names** a second-stage download URL — **not** when `path_prefix` *is* that download. `path_prefix` remains the sample's observed beacon path and `served_body` remains JSON, so a responder must serve the JSON here and reserve `inert_payload_bytes()` for the URL the body actually points at. Flagged because that stub is the one thing a reader must not mistake for real attacker content. |
 | `derived_from` | `tuple[str, ...]` | Evidence node ids justifying this response — the pass-1 flows and strings it was inferred from. |
 
 `C2Bundle` is a `DrishtiModel`:

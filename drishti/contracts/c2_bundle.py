@@ -32,8 +32,12 @@ class C2BundleEntry(DrishtiModel):
     served_content_type: str = "application/json"
     #: Already through the inertness gate before it reached the bundle.
     served_body: str = ""
-    #: True when this entry stands in for a second-stage download — the one entry a
-    #: reader must not mistake for real attacker content.
+    #: True when this entry's `served_body` NAMES a second-stage download URL — not when
+    #: `path_prefix` *is* that download. `path_prefix` stays the sample's observed beacon
+    #: path and `served_body` stays JSON; a responder that reads this flag as "serve the
+    #: payload bytes here" answers a JSON beacon with DEX and the bait never lands.
+    #: Flagged because the stub behind that URL is the one thing a reader must not
+    #: mistake for real attacker content.
     is_payload_url: bool = False
     #: Evidence node ids this response was inferred from. Empty is representable so
     #: the builder can construct-and-reject; empty is never emitted.

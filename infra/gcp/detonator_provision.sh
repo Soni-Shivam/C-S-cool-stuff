@@ -187,11 +187,16 @@ step_boot() {
   # -http-proxy at LAUNCH, never `settings put global http_proxy` in the guest: a
   # snapshot restore reverts guest state, so the guest-side setting would vanish before
   # the second sample and every later run would capture nothing. On an already-provisioned
-  # VM do NOT re-run this step to pick the flag up (it -wipe-data's the AVD and step_snapshot
-  # would re-cut `clean`) — restart via emulator_control.sh instead.
+  # VM do NOT re-run this step to pick the flag up (it -wipe-data's the AVD) — restart via
+  # emulator_control.sh instead.
+  # The address is the HOST loopback. This flag is read by the emulator process, which
+  # runs host-side and connects in the host's namespace; 10.0.2.2 is the GUEST-side
+  # alias for it and works only for `settings put global http_proxy`. Host-side, 10.0.2.2
+  # is a plain RFC1918 address the lockdown's `-A OUTPUT -j DROP` blackholes, producing a
+  # healthy boot and an empty flows.jsonl that looks like a silent sample.
   nohup emulator -avd "${AVD_NAME}" -no-window -no-audio -no-boot-anim \
     -gpu swiftshader_indirect -no-snapshot-load -wipe-data \
-    -http-proxy "${DRISHTI_EMULATOR_PROXY:-10.0.2.2:8080}" \
+    -http-proxy "${DRISHTI_EMULATOR_PROXY:-127.0.0.1:8080}" \
     -netdelay none -netspeed full \
     > "${DRISHTI_ROOT}/emulator.log" 2>&1 &
   log "waiting for device"
@@ -233,10 +238,22 @@ PY
 }
 
 step_snapshot() {
+  # Stamped like every other step, but for a stronger reason than saving time: `clean`
+  # is LIVE STATE. Every detonation restores from it, so re-cutting it replaces a
+  # known-good baseline that a long run of successful detonations depends on with
+  # whatever the guest happens to look like right now. `detonator_provision.sh all` is
+  # expected to be re-run to pick up a newly added step (step_proxy was), and without
+  # this guard that re-run silently destroys the baseline.
+  # DRISHTI_FORCE_SNAPSHOT=1 is the deliberate re-cut, e.g. after a frida-server bump.
+  if stamped snapshot && [[ "${DRISHTI_FORCE_SNAPSHOT:-0}" != "1" ]]; then
+    log "snapshot already cut — DRISHTI_FORCE_SNAPSHOT=1 to deliberately re-cut it"
+    return
+  fi
   # Cut the clean snapshot only once the guest is fully booted AND frida-server is
   # in place, so a restore lands on a guest that is ready to instrument.
   adb -s "${SERIAL}" emu avd snapshot save clean
   adb -s "${SERIAL}" emu avd snapshot list || true
+  stamp snapshot
 }
 
 case "${1:-all}" in
