@@ -120,15 +120,20 @@ PR-AUC was flattered by a thin test set.
   the certificate signal away. `scripts/reextract_schema.py` re-extracts the 1.1.0 rows
   from the **retained** corpus APKs (GCS, never AndroZoo — no rate limit touched; same
   parse-as-data / MAX_APK_MB / delete-immediately discipline as the extractor) and
-  re-runs the CURRENT extractor over them. Result: it identified exactly the **859**
-  affected rows and refreshed **631** of them, self-verifying a single epoch over its
-  output — *0 rows still carrying `cert:age_days`, 0 missing `cert:validity_days`*. The
-  228 not converted in that pass were **all** the >20MB size cap: **zero missing from
-  the bucket, zero analysis failures**; a second resumable pass at a 70MB cap is
-  finishing them. Output: `features/reextracted_cert.jsonl` on the extractor VM, keyed by
-  sha256 so the merge dedups. **Once merged, the four certificate features can re-enter
-  the vocabulary** — the ML owner should re-run `epoch_divergent_features` to confirm the
-  divergence is gone before re-admitting them, rather than assuming it.
+  re-runs the CURRENT extractor over them. **COMPLETE: it identified exactly the 859
+  affected rows and converted all 859** — 631 in a first pass at the 20MB cap, then the
+  remaining 228 in a resumable second pass at a 70MB cap. Both passes self-verify a
+  single epoch over the output: ***0 rows still carrying `cert:age_days`, 0 missing
+  `cert:validity_days`***. Final tally across both passes: **0 missing from the bucket,
+  0 skipped, 0 analysis failures** — every affected row was retained and re-extractable,
+  which is precisely what retaining the APKs (SALVAGE.md) bought.
+  Output: `features/reextracted_cert.jsonl` on the extractor VM (859 rows), keyed by
+  sha256 so the merge dedups against the existing shards.
+  **Action for the ML owner:** merge that file, then **re-run `epoch_divergent_features`
+  to confirm the divergence is actually gone before re-admitting the four certificate
+  features** — confirm it, do not assume it. Once confirmed, `cert:validity_days` and its
+  siblings can re-enter the vocabulary and the certificate signal is no longer thrown
+  away to survive the leak.
 - **Two new guards, tests first.** `assert_no_retired_features` refuses a vocabulary
   listing a name the current extractor cannot emit (the defect that forced this retrain,
   and silent by construction — `project` zero-fills a missing feature, so a stale vocab
