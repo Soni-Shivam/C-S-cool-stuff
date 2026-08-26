@@ -408,3 +408,18 @@ def test_bin_agreement_says_when_it_cannot_tell() -> None:
     assert empty["n"] == 0 and empty["within_tolerance"] is None
     tiny = calibrate.bin_agreement(np.array([1, 0]), np.array([0.8, 0.8]))
     assert tiny["n"] == 2 and "not informative" in tiny["note"]
+
+
+def test_fp_rate_at_recall_extends_across_ties() -> None:
+    """An operator sets a threshold, not a row count.
+
+    Three samples share the cut score, one of them benign. Stopping mid-tie would report
+    an FPR the deployed threshold could never achieve — and always an optimistic one.
+    """
+    labels = np.array([1, 1, 0, 1, 0, 0, 0, 0])
+    scores = np.array([0.9, 0.5, 0.5, 0.5, 0.4, 0.3, 0.2, 0.1])
+    fpr, precision, threshold = evaluate.fp_rate_at_recall(labels, scores, target=1.0)
+    assert threshold == pytest.approx(0.5)
+    # Everything at or above 0.5 is flagged: 3 malware and 1 benign, out of 5 benign.
+    assert fpr == pytest.approx(1 / 5, abs=1e-5)
+    assert precision == pytest.approx(3 / 4, abs=1e-5)

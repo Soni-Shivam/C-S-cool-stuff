@@ -134,13 +134,20 @@ def fp_rate_at_recall(
     if reached.size == 0:
         return (None, None, None)
     cut = int(reached[0])
+    # Extend across ties. An operator sets a THRESHOLD, not a row count: everything
+    # scoring at least that value is flagged, including rows the sort happened to place
+    # after the cut. Stopping mid-tie reports a false-positive rate the deployed
+    # threshold would never actually achieve — always an optimistic one.
+    threshold = float(sorted_probabilities[cut])
+    flagged = int(np.count_nonzero(sorted_probabilities >= threshold))
+    cut = max(cut, flagged - 1)
     fp_rate = float(false_positives[cut] / n_neg)
     predicted_positive = cut + 1
     precision = float(true_positives[cut] / predicted_positive)
     return (
         round(fp_rate, 6),
         round(precision, 6),
-        round(float(sorted_probabilities[cut]), 6),
+        round(threshold, 6),
     )
 
 
