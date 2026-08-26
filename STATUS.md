@@ -260,6 +260,16 @@ land. The bar for this hackathon is a working PoC per idea, not a finished produ
   matched). Containment was proven non-vacuous: the guest reached 8.8.8.8, 1.1.1.1 and
   the metadata server *before* lockdown and none of them *after*. This clears the
   paper's §17 "GenAI-synthesised sandbox — awaits the detonator" blocker.
+- **DETONATION CORPUS GREW TO 115 live runs (2026-08-26).** A 62-sample batch of
+  MalwareBazaar family-tagged **banking trojans** (Coper, SpyNote, Hydra, Ermac,
+  Cerberus, BankBot, Alien, Hook, Octo, TeaBot, Joker) was staged and detonated on the
+  sealed VM, every one `simulated:false`, per-sample containment re-verified. **50
+  completed with observations, 2018 total observations, 45 with ≥3 events.** Family
+  highlights: Joker 245 obs, Octo 39–51, BankBot up to 58, Ermac 26–31, Coper 19–29,
+  TeaBot/Hook 18–22. 63 failed (26 `install_unsupported` = ARM-only ABI, the known x86
+  tooling limit; 35 `internal_error` = sample self-exited/crashed under Frida; 2
+  `install_failed`). Containment gate is now also a standalone demo: `make
+  demo-containment` (`0422fb9`) accepts a sealed net and rejects the v1 `nc -z` probe.
 - **First reportable model comparison SHIPPED** (`b432c31`, `cbc781d`). Five models,
   both splits, every n stated; winner random_forest by CV, time-split PR-AUC 0.954 on
   n=107 (57 malware). Past the 25-per-class gate — no longer PILOT-only. `docs/ML_RESULTS.md`.
