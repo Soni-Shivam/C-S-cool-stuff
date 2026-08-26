@@ -16,6 +16,11 @@ import pytest
 
 from drishti.api.jobs import JobRunner
 from drishti.config import Settings
+from drishti.contracts.dynamic_trace import (
+    DynamicTrace,
+    EvasionObservation,
+    TraceSourceKind,
+)
 from drishti.contracts.evidence import EvidenceType
 from drishti.contracts.job import Job, JobStage
 from drishti.ledger.store import LedgerStore
@@ -45,7 +50,12 @@ from drishti.util import new_id, now
 #: not close. The replay fixture carries two observations, hence +2.
 #:
 #: A genuinely parseable APK produces more; see `test_a_real_apk_produces_more_evidence`.
-EXPECTED_NODES_PER_RUN = 18
+#: Corrected to the MEASURED value 2026-08-27. The 18 above assumed the frontier ran
+#: and wrote two EVASION_CHECK nodes plus a MORPH_ACTION. It did — but only because
+#: `_stub_trace` fabricated an `EvasionObservation` for a sample that was never
+#: executed. With that fabrication removed the frontier correctly does not fire here,
+#: so those nodes are correctly absent and the honest count is 15.
+EXPECTED_NODES_PER_RUN = 14
 
 
 @pytest.fixture
@@ -94,7 +104,18 @@ def test_pipeline_walks_every_stage_and_chain_verifies(settings, apk) -> None:
     assert finished.stage == JobStage.DONE, finished.error
 
     completed = [e.stage for e in events if e.status == "completed"]
-    assert completed == list(STAGES_IN_ORDER), "stages must run in canonical §7.1 order"
+    # FRONTIER and SANDBOX_2 are CONDITIONAL (§7.1) and must be absent here: no sandbox
+    # was reachable, so pass 1 observed no environment probe for the frontier to answer.
+    # Asserting equality with the full canonical list only passed while `_stub_trace`
+    # fabricated an observation to force the branch.
+    assert JobStage.FRONTIER not in completed
+    assert JobStage.SANDBOX_2 not in completed
+    # What did run, ran in canonical order — checked as an ordered subsequence so the
+    # invariant survives a conditional stage being skipped.
+    remaining = iter(STAGES_IN_ORDER)
+    assert all(any(stage is candidate for candidate in remaining) for stage in completed), (
+        "stages must run in canonical §7.1 order"
+    )
 
     # 11 stages, but real M1 (T0.10) writes FILE_META *and* THREAT_INTEL — intel is
     # recorded even when nothing is known, because "no feed had an opinion on this file"
@@ -120,21 +141,86 @@ def test_p0_exit_criterion_at_least_five_ledger_nodes(settings, apk) -> None:
 def test_conditional_frontier_branch_is_taken(settings, apk) -> None:
     """The branch the whole demo narrative hangs on must actually execute.
 
-    Pass 1 reports an evasion observation and does not detonate, so §7.1 requires
-    FRONTIER and SANDBOX_2 to run. A skeleton that never takes its conditional path
-    has not been tested.
+    The observation is supplied by a declared test double, NOT by the production stub.
+    An earlier version of `_stub_trace` fabricated an `EvasionObservation` for a sample
+    that was never executed so that this branch would always be exercised — and that
+    invented probe reached the elicitor, the ledger and the Frontier view as a grounded
+    morph. The branch still needs covering; the coverage just must not come from
+    production inventing its own evidence.
     """
+
+    class _ProbeThenStall:
+        """Pass 1 observed a package probe that missed; pass 2 detonates."""
+
+        @property
+        def kind(self):
+            return TraceSourceKind.REPLAY
+
+        def available(self) -> bool:
+            return True
+
+        def run(self, apk_path, plan, *, sha256=None):
+            if plan.morphs:
+                return DynamicTrace(
+                    run_id="run_post",
+                    source=TraceSourceKind.REPLAY,
+                    detonated=True,
+                    outcome="completed",
+                    morphs_applied=tuple(m.kind.value for m in plan.morphs),
+                )
+            return DynamicTrace(
+                run_id="run_pre",
+                source=TraceSourceKind.REPLAY,
+                detonated=False,
+                outcome="inconclusive",
+                evasion_observations=(
+                    EvasionObservation(
+                        probe_kind="installed_package",
+                        queried="com.bank.example",
+                        result="MISS",
+                        t_ms=1200,
+                        followed_by_stall=True,
+                        inferred_requirement="a banking package must be present",
+                    ),
+                ),
+            )
+
     store = LedgerStore(settings.db_path, settings.ledger_key_path)
     events = []
     job = _job()
     run_pipeline(
         job,
-        Context(settings=settings, ledger=store, on_event=events.append),
+        Context(
+            settings=settings,
+            ledger=store,
+            on_event=events.append,
+            trace_source=_ProbeThenStall(),
+        ),
         apk_path=apk,
     )
     stages = {e.stage for e in events}
     assert JobStage.FRONTIER in stages
     assert JobStage.SANDBOX_2 in stages
+    store.close()
+
+
+def test_the_frontier_does_not_run_without_an_observation(settings, apk) -> None:
+    """No probe observed, no morph planned, no second detonation.
+
+    The honesty half of the pair above. With no sandbox reachable the pipeline must not
+    morph in response to nothing — a morph with no derivation is a guess, and the
+    frontier's whole claim is that it answers what the sandbox actually saw.
+    """
+    store = LedgerStore(settings.db_path, settings.ledger_key_path)
+    events = []
+    run_pipeline(
+        _job(),
+        Context(settings=settings, ledger=store, on_event=events.append),
+        apk_path=apk,
+    )
+    stages = {e.stage for e in events}
+    assert JobStage.FRONTIER not in stages
+    assert JobStage.SANDBOX_2 not in stages
     store.close()
 
 
@@ -342,7 +428,11 @@ def test_no_fixture_falls_back_to_a_declared_stub(settings, apk) -> None:
     assert trace.detonated is False
     assert trace.outcome == "inconclusive"
     assert trace.partial is True
-    assert any("no trace source available" in e for e in trace.errors)
+    # The intent, not the exact phrasing: the trace must say a sandbox was unavailable
+    # and that nothing ran, so a reader cannot mistake it for a sample that behaved.
+    joined = " ".join(trace.errors).lower()
+    assert "no sandbox was available" in joined
+    assert "never executed" in joined
     store.close()
 
 

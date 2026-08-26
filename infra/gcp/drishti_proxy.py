@@ -84,7 +84,7 @@ log = get_logger(__name__)
 # *is* this module's globals, so the lookup resolves against the real namespace rather
 # than an empty stand-in. `setdefault`, so a loader that does register us (the provision
 # check in detonator_provision.sh does) keeps its own module object.
-class _SelfFacade:  # noqa: D101 - internal shim, documented above
+class _SelfFacade:
     pass
 
 
