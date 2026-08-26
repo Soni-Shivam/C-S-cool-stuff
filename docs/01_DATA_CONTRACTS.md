@@ -1131,7 +1131,7 @@ staged across to the detonator as one file, and read — never generated — at 
 | Field | Type | Meaning |
 |---|---|---|
 | `host` | `str` | Host this entry answers for. Matched exactly — a bundle built for one C2 must not silently answer for another. |
-| `path_prefix` | `str` | Path prefix this entry answers for, default `"/"`. A prefix rather than an exact path because a beacon's path usually carries a per-run id we cannot predict off-VM. |
+| `path_prefix` | `str` | Path prefix this entry answers for, default `"/"`. A prefix rather than an exact path because a beacon's path usually carries a per-run id we cannot predict off-VM. **Byte prefix, not path-segment prefix** — see below. |
 | `response_kind` | `str` | The response shape (`connectivity_ok`, `command_poll`, `registration_ack`, `config`, `inert_payload_stub`), carried through to `CapturedFlow.served_kind` so the provenance line in A17 survives. |
 | `served_status` | `int` | HTTP status to answer with, default `200`. |
 | `served_content_type` | `str` | Content type to answer with, default `application/json`. |
@@ -1148,8 +1148,19 @@ staged across to the detonator as one file, and read — never generated — at 
 | `built_at` | `str` | When the bundle was synthesised, so a stale bundle is visible rather than assumed fresh. |
 | `synthesis_client` | `str` | Which model/provider produced it, recorded for the report's provenance. Empty when unknown. |
 
-Three properties are load-bearing:
+Four properties are load-bearing:
 
+* **`path_prefix` is a byte prefix, not a path-segment prefix.** `matches()` is a plain
+  `path.startswith(entry.path_prefix)`, so an entry with `path_prefix="/api"` also
+  answers `/apiary/x` and `/api-v3` — paths the builder never reasoned about. This is
+  deliberate and it fails safe: every `served_body` has already been through the
+  inertness gate, so the worst case is an inert body answered to an endpoint we did not
+  anticipate, recorded in `CapturedFlow` as ours (A17) rather than attributed to the
+  attacker. It is stated here because "path prefix" reads as segment semantics to most
+  people, and the consequence of the difference is *served content*. A builder that
+  wants segment semantics gets them by writing the trailing slash itself (`"/api/"`).
+  `test_prefix_is_a_byte_prefix_not_a_path_segment` pins the behaviour, so changing it
+  is a deliberate act rather than a silent one.
 * **An entry with empty `derived_from` is never emitted by the builder.** Grounding is
   the product (`CLAUDE.md` rule 5): a response we cannot trace to observed evidence is
   a guess we would then attribute to the attacker's infrastructure. The *contract*

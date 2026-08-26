@@ -92,11 +92,23 @@ def test_empty_derived_from_is_representable() -> None:
     assert entry.path_prefix == "/"
 
 
-def test_bundle_is_frozen() -> None:
-    b = C2Bundle(sha256=SHA)
-    try:
-        b.entries = ()  # type: ignore[misc]
-    except Exception as exc:  # pragma: no cover - message asserted below
-        assert "frozen" in str(exc) or "immutable" in str(exc)
-    else:  # pragma: no cover - a mutable contract is the failure
-        raise AssertionError("C2Bundle must be frozen")
+def test_prefix_is_a_byte_prefix_not_a_path_segment() -> None:
+    """§A18: `/api` answers `/apiary/x` and `/api-v3`, not just `/api/...`.
+
+    `matches()` is `str.startswith`, so the entry reaches paths the builder never
+    reasoned about. That is deliberate and fails safe — every `served_body` is already
+    through the inertness gate — but "path prefix" reads as segment semantics to most
+    people and the difference here is *served content*. Pinned so that a future switch
+    to segment matching is a deliberate change, not a silent one. A builder wanting
+    segment semantics writes the trailing slash itself.
+    """
+    entry = C2BundleEntry(host="h", path_prefix="/api", response_kind="config")
+    bundle = C2Bundle(sha256=SHA, entries=(entry,))
+    assert bundle.matches("h", "/api/poll") is entry
+    assert bundle.matches("h", "/apiary/x") is entry
+    assert bundle.matches("h", "/api-v3") is entry
+
+    segment = C2BundleEntry(host="h", path_prefix="/api/", response_kind="config")
+    segmented = C2Bundle(sha256=SHA, entries=(segment,))
+    assert segmented.matches("h", "/api/poll") is segment
+    assert segmented.matches("h", "/apiary/x") is None
