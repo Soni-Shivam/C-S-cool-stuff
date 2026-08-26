@@ -91,19 +91,49 @@ def test_b_is_a_gradient_not_a_step_function() -> None:
     ordered = [k for k, w in sorted(BEHAVIOUR_WEIGHTS.items(), key=lambda kv: -kv[1]) if w > 0]
     previous = 0.0
     values = []
+    # Strict growth is asserted over the range a real sample occupies. Beyond it the
+    # sigmoid reaches 1.0 within float precision — a sample asserting a dozen distinct
+    # malicious behaviours at once is "everything is true", and saturating THERE is
+    # correct. The pathology this guards was saturation at FOUR, where benign apps sat.
+    REALISTIC = 8
     for i in range(1, len(ordered) + 1):
         b_value, _ = behavioural_risk(dict.fromkeys(ordered[:i], True))
-        assert b_value > previous, f"B saturated at {i} assertions"
+        if i <= REALISTIC:
+            assert b_value > previous, f"B saturated at {i} assertions, below {REALISTIC}"
+        else:
+            assert b_value >= previous, "B must never DECREASE with another assertion"
         previous = b_value
         values.append(b_value)
-    assert values[3] < 0.97, "four assertions must not pin B to the ceiling"
     assert values[-1] <= 1.0
+
+    # The pathology restated precisely. It was never "four assertions produce a high B" —
+    # four of the HEAVIEST (accessibility abuse, contacts harvesting, notification
+    # interception, overlay) is the banking-trojan signature, and B=0.998 for it is
+    # correct. What was wrong is that under the old table every weight was >= 0.40, so any
+    # four assertions pinned B above 0.97 — including the weak, common ones that benign
+    # apps assert, which is how benign out-scored malware. Four LOW-weight behaviours must
+    # therefore stay well off the ceiling.
+    weakest_four = [
+        k
+        for k, _ in sorted(BEHAVIOUR_WEIGHTS.items(), key=lambda kv: kv[1])
+        if BEHAVIOUR_WEIGHTS[k] > 0
+    ][:4]
+    weak_b, _ = behavioural_risk(dict.fromkeys(weakest_four, True))
+    assert weak_b < 0.75, f"four low-weight assertions pinned B to {weak_b} ({weakest_four})"
 
 
 def test_one_weak_behaviour_yields_small_b() -> None:
-    """A single low-lift assertion is a whisper, not half the risk scale."""
-    b_value, _ = behavioural_risk({"intercepts_notifications": True})
-    assert b_value < 0.25
+    """A single low-lift assertion is a whisper, not half the risk scale.
+
+    The behaviour is read OUT of the weight table rather than named. This test used to
+    hardcode `intercepts_notifications` as the weak one; the 2026-08-26 refit measured it
+    at 2.00 — among the heaviest — and the test failed for a reason that had nothing to do
+    with the property it guards. Weights are measurements and will move again; which
+    behaviour is weakest is not a fact a test may assume.
+    """
+    weakest = min((w, k) for k, w in BEHAVIOUR_WEIGHTS.items() if w > 0)[1]
+    b_value, _ = behavioural_risk({weakest: True})
+    assert b_value < 0.25, f"{weakest} (w={BEHAVIOUR_WEIGHTS[weakest]}) gave B={b_value}"
 
 
 def test_full_exculpation_drives_b_towards_zero() -> None:
@@ -129,7 +159,15 @@ def test_recomputable_from_verdict_shape() -> None:
 
 
 @pytest.mark.parametrize("base", [B_BASE])
-def test_base_offset_keeps_empty_neighbourhood_low(base: float) -> None:
-    """The sigmoid offset keeps a single mid-weight assertion below 0.5."""
-    b_value, _ = behavioural_risk({"overlays_other_apps": True})
-    assert b_value < 0.5
+def test_base_offset_keeps_a_below_median_assertion_under_half(base: float) -> None:
+    """One below-median behaviour must not reach half the risk scale on its own.
+
+    Deliberately NOT the heaviest. A single asserted accessibility abuse or overlay is a
+    strong signal and B=0.5 for it is correct; the property worth protecting is that an
+    ordinary assertion does not, which is what `B_BASE` buys.
+    """
+    positive = sorted(w for w in BEHAVIOUR_WEIGHTS.values() if w > 0)
+    median = positive[len(positive) // 2]
+    below = min((w, k) for k, w in BEHAVIOUR_WEIGHTS.items() if 0 < w <= median)[1]
+    b_value, _ = behavioural_risk({below: True})
+    assert b_value < 0.5, f"{below} (w={BEHAVIOUR_WEIGHTS[below]}) gave B={b_value}"

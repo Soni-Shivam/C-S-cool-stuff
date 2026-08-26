@@ -410,16 +410,24 @@ def analyse(
     )
     # The other silent-empty path: `interpret_methods` degrades to no interpretations
     # WITHOUT raising when the provider returns nothing valid (it logs
-    # `code_interpreter_unavailable`). Chains were selected, so emptiness here is a
-    # provider failure, not the model declining its tools — say so in `errors`.
+    # `code_interpreter_unavailable`). Chains were selected, so emptiness here needs
+    # reporting — but NOT with a cause we did not establish.
+    #
+    # The previous wording blamed the provider unconditionally. Measured on the analysis
+    # VM: round 0 returned `outcome: ok` with 1,073 completion tokens, the model
+    # interpreted three methods, and every one was discarded because it named them in a
+    # signature dialect the matcher did not yet accept. The reported reason sent the
+    # reader to the LLM endpoint while the bug was in our own lookup — the same class of
+    # mistake as the "no dynamic evidence" claim, in a different module.
     if (
         pack.chains
         and not interpretations
         and not any("code_interpreter" in e for e in degradations)
     ):
         degradations.append(
-            f"code_interpreter returned no interpretations for {len(pack.chains)} selected "
-            "chains: provider unavailable or response invalid after retry"
+            f"code_interpreter produced no usable interpretation for {len(pack.chains)} "
+            "selected chains: the provider returned nothing valid, or every method it "
+            "named was one this analysis did not recover (see interpretation_for_unknown_method)"
         )
 
     victim = _guarded(

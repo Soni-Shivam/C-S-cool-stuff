@@ -129,8 +129,14 @@ def canonical_signature(signature: str) -> str:
         return ""
     owner, _, rest = text.partition("->")
     owner = owner.strip()
-    if owner.startswith("L") and owner.endswith(";"):
-        owner = owner[1:-1]
+    # Strip the JVM wrapper's two halves INDEPENDENTLY. Requiring both together missed a
+    # fourth dialect seen live — `com.b.a.c.a;->a(...)`, dotted like Java but keeping the
+    # descriptor's trailing semicolon — and left the owner as `com.b.a.c.a;`, which
+    # matches nothing. Models mix these conventions freely; the normaliser has to be the
+    # forgiving end of that.
+    if owner.startswith("L"):
+        owner = owner[1:]
+    owner = owner.rstrip(";")
     owner = owner.replace("/", ".").strip(".")
     name = rest.strip().partition("(")[0].strip()
     if not owner or not name:
