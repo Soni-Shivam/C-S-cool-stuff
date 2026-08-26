@@ -46,10 +46,15 @@ import json, pathlib, sys
 bad = []
 for path in sorted(pathlib.Path(sys.argv[1]).glob("*.json")):
     data = json.loads(path.read_text())
-    if data.get("sha256") != path.stem or data.get("simulated") is not False:
+    # A pass-2 artifact is named `<sha>.morph.json`, so the hash is the first dotted
+    # component rather than the whole stem. Comparing against `.stem` would have
+    # rejected every morphed run as mislabelled.
+    claimed = path.name.split(".")[0]
+    if data.get("sha256") != claimed or data.get("simulated") is not False:
         bad.append(path.name)
-    print(f"{path.stem[:12]}  outcome={data['outcome']:12s} obs={len(data['observations']):3d} "
-          f"mitre={','.join(data.get('mitre_observed') or []) or '-'}")
+    note = next((d for d in (data.get("diagnostics") or []) if d.startswith("pass=")), "pass=1")
+    print(f"{claimed[:12]}  outcome={data['outcome']:12s} obs={len(data['observations']):3d} "
+          f"{note:28s} mitre={','.join(data.get('mitre_observed') or []) or '-'}")
 if bad:
     sys.exit(f"refusing to publish mislabelled or simulated artifacts: {bad}")
 PY

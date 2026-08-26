@@ -62,7 +62,13 @@ def require_vm(override: bool) -> None:
 
 
 def labelled_hashes() -> dict[str, int]:
-    """sha256 -> label, from whichever sample lists exist on this VM."""
+    """sha256 -> label, from whichever sample lists exist on this VM.
+
+    The family-sourced candidates count as label 1: they come from MalwareBazaar, which
+    holds malware only, and they are the population a *banking-trojan* discriminator has
+    to be measured on. Measuring it on a decade of AndroZoo adware answers a different
+    question and flatters nobody.
+    """
     out: dict[str, int] = {}
     for name in ("samples.csv", "mb_samples.csv", "mb_recent.csv", "data/corpus/samples.csv"):
         path = Path.home() / "CyberShield" / name
@@ -71,6 +77,8 @@ def labelled_hashes() -> dict[str, int]:
         with path.open(newline="") as fh:
             for row in csv.DictReader(fh):
                 out.setdefault(row["sha256"].lower(), int(row["label"]))
+    for sha in families():
+        out.setdefault(sha, 1)
     return out
 
 
@@ -249,9 +257,27 @@ def main() -> int:
         print(f"  {r['sha256'][:16]}  {r['family'] or '-':<12} score={r['trojan_score']:.3f} "
               f"targets={','.join(r['targets'][:3]) or '-'}")
 
+    print("\n── by family (malware only) ──")
+    fam: Counter[str] = Counter(r["family"] or "untagged" for r in mal)
+    for name, count in fam.most_common():
+        scores = [r["trojan_score"] for r in mal if (r["family"] or "untagged") == name]
+        hits = sum(1 for r in mal if (r["family"] or "untagged") == name and r["verdict"] == "trojan_shape")
+        print(f"  {name:<14} n={count:<4} mean={sum(scores) / len(scores):.3f}  trojan_shape={hits}")
+
+    # A signal that searches decompiled bodies cannot fire when there are none. Report
+    # the haystack size so a 0% firing rate can be told apart from a broken input.
     parsed = sum(1 for r in rows if r["cert_not_before"] not in ("unknown", "", None))
     print(f"\ncertificate not_before parsed on {parsed}/{len(rows)} samples")
     print(f"package_strings non-empty on {sum(1 for r in rows if r['package_strings'] > 0)}/{len(rows)}")
+    print(f"decompiled_methods non-empty on {sum(1 for r in rows if r['decompiled_methods'] > 0)}/{len(rows)}")
+    for label, group in ((1, mal), (0, ben)):
+        if group:
+            print(
+                f"  label={label} median package_strings="
+                f"{sorted(r['package_strings'] for r in group)[len(group) // 2]}  "
+                f"median decompiled_methods="
+                f"{sorted(r['decompiled_methods'] for r in group)[len(group) // 2]}"
+            )
 
     args.json_out.write_text(json.dumps(rows, indent=2))
     print(f"\nwrote {len(rows)} rows -> {args.json_out}")
