@@ -310,6 +310,43 @@ Record per run: sample sha256, image version, VM instance id, containment
 manifest. The UI's live-vs-replay badge is derived from those, read from the
 trace — never from a config flag.
 
+### 6.1 Morphing a stalled sample — and the control you MUST run
+
+The morph scripts live at `/opt/drishti/lib/drishti/m3_dynamic/scripts/morph/<kind>.js`
+(`build_props`, `sim_locale`, `install_packages`, `clock_skew`, `files_present`). Pass 2
+writes `results/<sha>.morph.json`, leaving pass 1 intact — the before/after pair *is* the
+artefact, which is why `morph` refuses to run without a pass-1 result.
+
+```bash
+/opt/drishti/bin/detonator_run.sh morph <sha> build_props,sim_locale,files_present 120
+```
+
+**MEASURED 2026-08-26, and it cost a false result to learn: a `failed` → `completed`
+flip across a morph is NOT evidence the morph woke the sample.**
+
+BankBot `8166dfba` went pass-1 `failed`/0 observations → pass-2 morphed
+`completed`/4 observations (T1417 overlay, T1418 package discovery). It looked exactly
+like the flagship morph-then-wake. It was not. Re-detonating the same sample
+**unmorphed, three times**, produced `completed`/4 observations every time. The pass-1
+failure was the frida cold-start spawn flake already documented in §0.0 finding 2 — not
+sandbox evasion, and not anything the morph unlocked.
+
+So: **before claiming any wake, re-run the sample UNMORPHED two or three times.** If an
+unmorphed retry also wakes it, the difference was spawn luck and there is no result.
+Only a sample that stays reliably silent unmorphed and reliably active morphed is a
+capture. The refutation artefacts for the case above are kept on the detonator at
+`/opt/drishti/moneyshot/` (`*.pass1.json`, `*.pass2.morph.json`, `*.control{1,2,3}.json`).
+
+Two other stall shapes that morphs do **not** address, both seen on real samples:
+
+* a sample querying **its own** package name — a repackaging/integrity check, not an
+  environment check; no environment synthesis answers it;
+* a sample that crashes inside frida instrumentation regardless of environment.
+
+Morph pass-2 artefacts are deliberately **excluded from `data/fixtures/observations/`**
+while the experiment is unresolved: a replayable `.morph.json` showing more events than
+its pass-1 pair would read as a wake that did not happen.
+
 ---
 
 ## 7. Shut down — every time
