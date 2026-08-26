@@ -227,3 +227,22 @@ def test_yara_drops_ubiquitous_android_strings(meta, score, static) -> None:
     )
     rule = yara.build_rule(meta=meta, score=score, static=noisy)
     assert "schemas.android.com" not in rule.text
+
+
+def test_yara_drops_toolchain_boilerplate(meta, score, static) -> None:
+    """Measured regression: a run over the canary keyed the rule on the Kotlin
+    reflection warning, which ships in every Kotlin app and would match most of the
+    Play Store. Prose that merely contains a URL is not an endpoint."""
+    noisy = static.model_copy(
+        update={
+            "urls": (
+                "Kotlin reflection is not yet supported. Please upvote "
+                "https://youtrack.jetbrains.com/issue/KT-55980",
+                "https://real-c2.example-evil.net/collect",
+            )
+        }
+    )
+    rule = yara.build_rule(meta=meta, score=score, static=noisy)
+    assert "youtrack" not in rule.text
+    assert "Kotlin reflection" not in rule.text
+    assert "real-c2.example-evil.net" in rule.text

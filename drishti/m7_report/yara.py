@@ -34,7 +34,10 @@ MAX_STRINGS = 20
 MIN_STRING_LEN = 8
 
 #: Substrings so common in Android builds that including them guarantees a hit on
-#: essentially every APK ever compiled.
+#: essentially every APK ever compiled. The second group is toolchain and popular
+#: third-party library boilerplate: a measured run over the canary produced a rule
+#: keyed on the Kotlin reflection warning string, which is present in every Kotlin
+#: app ever shipped and would have matched most of the Play Store.
 _BORING = (
     "android",
     "google",
@@ -46,7 +49,27 @@ _BORING = (
     "example.com",
     "localhost",
     "127.0.0.1",
+    # toolchain / library boilerplate
+    "kotlin",
+    "jetbrains",
+    "youtrack",
+    "androidx",
+    "squareup",
+    "okhttp",
+    "retrofit",
+    "gson",
+    "firebase",
+    "crashlytics",
+    "github.com",
+    "sqlite.org",
+    "bouncycastle",
+    "slf4j",
 )
+
+#: A URL string extracted from a DEX is only useful if it is actually a URL. M2's
+#: extractor returns the surrounding literal, so a prose sentence that merely mentions
+#: a link arrives here looking like an endpoint. Whitespace is the giveaway.
+_URL_SHAPE = re.compile(r"^h(?:tt|xx)ps?://\S+$", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -99,9 +122,11 @@ def _candidate_strings(static: StaticReport | None) -> list[tuple[str, str]]:
         candidates.append((comment, value))
 
     # Hardcoded endpoints are the strongest survivor: changing them means standing up
-    # new infrastructure, not just rebuilding the app.
+    # new infrastructure, not just rebuilding the app. Shape-checked, because a prose
+    # literal that merely contains a link is not an endpoint.
     for url in static.urls:
-        _add("hardcoded endpoint", url)
+        if _URL_SHAPE.match(url):
+            _add("hardcoded endpoint", url)
     for constant in static.crypto_constants:
         _add("embedded crypto constant", constant)
     for lib in static.native_libs:
