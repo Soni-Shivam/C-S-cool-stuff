@@ -181,6 +181,14 @@ def predict(static: StaticReport, models_dir: Path) -> MLPrediction:
     raw = float(bundle.model.predict_proba([vector])[0][1])
     calibrated = raw
     errors: list[str] = []
+    # A pickle written by one scikit-learn and unpickled by another loads happily and can
+    # then behave differently, with nothing raising. Say so rather than let the number
+    # pass as though the bundle and the runtime agreed.
+    if bundle.card is not None and (mismatch := bundle.card.runtime_mismatch()):
+        errors.append(
+            "the runtime does not match the one that trained this model, so the "
+            f"probability may not be the one it was validated at — {'; '.join(mismatch)}"
+        )
     if bundle.calibrator is not None:
         try:
             calibrated = float(bundle.calibrator.predict_proba([vector])[0][1])

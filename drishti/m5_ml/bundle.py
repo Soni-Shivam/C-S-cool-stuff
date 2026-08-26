@@ -69,6 +69,10 @@ class ModelCard:
     random_split_pr_auc_ci: list[float]
     generalisation_gap: float
     attribution_method: str = "unknown"
+    #: The libraries the pickles were written by. A pickle unpickled under a different
+    #: scikit-learn can load and then behave differently without raising, so the versions
+    #: travel with the bundle and `runtime_mismatch` says so out loud.
+    library_versions: dict[str, str] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
 
     @property
@@ -80,6 +84,14 @@ class ModelCard:
         payload = self.__dict__.copy()
         payload["model_version"] = self.version
         return payload
+
+    def runtime_mismatch(self) -> list[str]:
+        """Libraries whose version now differs from the one that wrote the pickles."""
+        return [
+            f"{name}: trained with {want}, loaded under {have}"
+            for name, want in self.library_versions.items()
+            if (have := _installed_version(name)) and have != want
+        ]
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> ModelCard:
@@ -127,6 +139,30 @@ def save(
     # Pickled rather than xgboost's save_model: `infer` needs the fitted sklearn wrapper
     # (predict_proba lives there), and save_model refuses the wrapper on this pairing.
     (models_dir / MODEL_FILE).write_bytes(pickle.dumps(model))
+
+
+def library_versions() -> dict[str, str]:
+    """Versions of the libraries that produce and consume the pickles in this bundle."""
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as installed
+
+    out: dict[str, str] = {}
+    for name in ("scikit-learn", "xgboost", "numpy"):
+        try:
+            out[name] = installed(name)
+        except PackageNotFoundError:
+            continue
+    return out
+
+
+def _installed_version(name: str) -> str | None:
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as installed
+
+    try:
+        return installed(name)
+    except PackageNotFoundError:
+        return None
 
 
 def load_card(models_dir: Path) -> ModelCard | None:

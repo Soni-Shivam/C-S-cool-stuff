@@ -64,6 +64,7 @@ def _card(name: str, n_features: int) -> bundle.ModelCard:
         random_split_pr_auc=0.0,
         random_split_pr_auc_ci=[0.0, 0.0],
         generalisation_gap=0.0,
+        library_versions=bundle.library_versions(),
         notes=["synthetic wiring fixture — not a measurement"],
     )
 
@@ -187,3 +188,29 @@ def test_the_model_card_records_the_counts_it_was_trained_on(trained_bundle: Pat
     assert card is not None
     assert card.n_train == 200 and card.n_test_malware == 6
     assert card.version.endswith(FEATURE_SCHEMA_VERSION)
+
+
+def test_a_runtime_that_does_not_match_the_training_one_is_declared(
+    trained_bundle: Path, canary_report
+) -> None:
+    """A pickle from a different scikit-learn loads happily and may behave differently.
+
+    Nothing raises, so the only defence is to notice and say so.
+    """
+    import json
+
+    card = json.loads((trained_bundle / bundle.CARD_FILE).read_text())
+    card["library_versions"] = {"scikit-learn": "0.0.0-not-installed"}
+    (trained_bundle / bundle.CARD_FILE).write_text(json.dumps(card))
+
+    result = predict(canary_report, trained_bundle)
+    assert result.partial is True
+    assert any("does not match the one that trained this model" in e for e in result.errors)
+
+
+def test_a_matching_runtime_raises_no_mismatch(trained_bundle: Path) -> None:
+    card = bundle.load_card(trained_bundle)
+    assert card is not None
+    card.library_versions = bundle.library_versions()
+    assert card.runtime_mismatch() == []
+    assert "scikit-learn" in card.library_versions

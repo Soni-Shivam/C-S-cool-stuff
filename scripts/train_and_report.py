@@ -216,6 +216,20 @@ def main() -> int:
     )
 
     composition = corpus.composition()
+
+    # Extraction runs test -> calib -> train, so for the first hours there is a full
+    # evaluation set and no training data at all. Nothing downstream can run on that:
+    # a vocabulary frozen from zero rows is empty, and every model would then be fitted
+    # on a zero-width matrix. Refuse here, with the reason, rather than crash later.
+    if min(composition["train"]["malware"], composition["train"]["benign"]) < 2:
+        print(
+            f"\nCANNOT TRAIN: the training split holds {composition['train']['malware']} "
+            f"malware and {composition['train']['benign']} benign rows. Extraction fills "
+            "test and calib first by design; training data arrives after. Nothing to fit "
+            "yet — this is not an error."
+        )
+        return 0
+
     smallest = min(
         composition["test"]["malware"],
         composition["test"]["benign"],
@@ -522,6 +536,7 @@ def main() -> int:
         random_split_pr_auc_ci=list(random_row.pr_auc_ci),
         generalisation_gap=round(random_row.pr_auc - time_row.pr_auc, 4),
         attribution_method=explainer.method,
+        library_versions=bundle.library_versions(),
         notes=notes,
     )
 
