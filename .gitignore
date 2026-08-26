@@ -130,3 +130,5 @@ docs/figures/sys_*.png
 REPORT/*.aux
 REPORT/*.log
 REPORT/*.out
+brand_icons/*.png
+!data/kb/brand_icons/README.md
