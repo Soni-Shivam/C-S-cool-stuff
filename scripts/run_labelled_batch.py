@@ -39,6 +39,12 @@ SCRATCH = Path("/tmp/drishti-batch")
 POLL_TIMEOUT_S = 900
 
 
+def _set_api(url: str) -> None:
+    """Point every subsequent GET at `url`."""
+    global API
+    API = url
+
+
 def get(path: str) -> Any:
     try:
         with urllib.request.urlopen(f"{API}{path}", timeout=60) as r:
@@ -162,9 +168,7 @@ def main() -> int:
     ap.add_argument("--out", type=Path, default=Path("/tmp/batch_report.txt"))
     ap.add_argument("--api", default=API)
     args = ap.parse_args()
-
-    global API
-    API = args.api
+    _set_api(args.api)
 
     targets: list[tuple[str, int]] = []
     for line in args.labels.read_text().splitlines():
