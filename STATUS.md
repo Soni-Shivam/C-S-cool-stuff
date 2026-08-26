@@ -481,14 +481,28 @@ land. The bar for this hackathon is a working PoC per idea, not a finished produ
 
 ## P6 — REPORT / UI / DEMO (H50→H72)
 
-- [ ] T6.1 YARA generation                         TODO
-- [ ] T6.2 STIX 2.1 export                         TODO
-- [ ] T6.3 HTML report                             TODO
-- [~] T6.4 Dashboard completion                    WIP   2026-08-25  7fce6f0 · seven views + reverse-engineering workspace render live
-      Every panel is wired to a real endpoint and renders only what the API sent. What
-      remains is depth that depends on unbuilt modules (report embed T6.3, YARA T6.1,
-      STIX T6.2 all render their 501s today) plus the dev-only **tamper demo**, which is
-      deliberately unbuilt — see Deviations.
+- [ ] T6.1 YARA generation                         TODO — **this line is stale.** `GET .../artifacts/yara` returns a real rule (verified 2026-08-26 on `job_3cf756dd48f2`); `test_export_routes_are_built` asserts 200. Owner to reconcile.
+- [ ] T6.2 STIX 2.1 export                         TODO — **stale, same reason.** Returns a deterministic bundle; a contract test pins byte-identical re-export.
+- [ ] T6.3 HTML report                             TODO — **stale, same reason.** Returns a 12KB self-contained document with a generated Limitations section.
+- [~] T6.4 Dashboard completion                    WIP   2026-08-26  dea2ee9 · seven views render live; the shared Verdict and the honesty affordances landed
+      Every panel is wired to a real endpoint and renders only what the API sent.
+      **The three "renders its 501" caveats above this line were stale** — report.html,
+      YARA and STIX all return 200 and are rendered and downloadable, and the A12
+      complaint package is now on screen too. What remains is the dev-only **tamper
+      demo**, which is deliberately unbuilt — see Deviations.
+
+      Landed 2026-08-26 (`1203ee0`, `dea2ee9`):
+      * `GET /api/jobs/{job_id}/verdict` — the A15 projection, one call to
+        `build_verdict()`. Documented as A16 (contract **1.7.0**) and frozen in
+        `tests/contract/test_api_surface.py`.
+      * The dashboard's `Verdict` TypeScript is **generated** from the pydantic model
+        by `ui/scripts/gen_verdict_types.py`; a contract test fails when it drifts.
+      * Provenance badge reads `verdict.provenance` only — STATIC_ONLY draws as red
+        NO TRACE. Confidence sits beside the score. Ungrounded score terms are
+        labelled "ungrounded — not measured" instead of a bare zero (paper §20.1);
+        on a static-only run that is R and G.
+      * Fixed: `artefact()` parsed text/html and text/plain as JSON, so the report
+        and the YARA rule rendered as empty and as the word "null".
 - [ ] T6.5 Code freeze @ H68                       TODO
 - [x] T6.6 Demo script                             DONE  2026-08-26 · `docs/DEMO_SCRIPT.md`, beat-by-beat with measured timings
 - [~] T6.7 Backup plan                             WIP   2026-08-26 · fallbacks per beat in DEMO_SCRIPT §5; no backup video yet
@@ -534,6 +548,77 @@ The single most-demoed artefact: an Android emulator on the demo laptop running
 | Layer 4 detection after install | < 1 s |
 | Superseded: verdict latency before the two-phase split | 7.9–13.1 s (5 runs), 41.4 s worst case on a cold LLM |
 | Tests | 581 contract+unit passing at this change |
+
+### Demo rehearsal, re-measured 2026-08-26 at `67a197a`
+
+Rehearsed cold, end to end, eight times. Numbers below supersede the two rows above
+that they overlap; the rest of the table still stands.
+
+| Measurement | Value |
+|---|---|
+| `demo_up.sh` cold to ready (AVD exists, quick-boot snapshot, nothing running) | **31.5 s** |
+| `demo_up.sh` warm (emulator already up) | 9–12 s |
+| **File landing → verdict, cleared app** | **4411 / 4724 / 5320 / 5682 / 5696 ms** |
+| **File landing → verdict, blocked app** | **4368 / 4813 / 4878 / 5156 / 5519 ms** |
+| Full `demo_run.sh --fast`, both beats | 30.9 / 37.3 / 40.4 / 40.4 s |
+| Tests | 880 contract+unit passing at `67a197a` |
+
+**Four silent failures found and fixed.** Each announced success and did something
+else, which is the only failure mode that matters on stage:
+
+1. **The Layer 3 veto had stopped working and setup still said "HELD".** `adb install
+   -r` drops the *active admin* record while the *device owner* record survives, so
+   `dpm list-owners` kept reporting DeviceOwner while every `addUserRestriction` threw
+   `SecurityException: Admin … does not exist or is not owned by uid`. Measured:
+   `block=true veto=false`, `Device policy restrictions: none`. Fixed by
+   `dpm set-active-admin` each run plus a **self-test that engages the veto, reads the
+   restriction back from `UserManager`, and releases it** before the demo is handed
+   over. Setup now dies if the veto cannot be proved.
+2. **`adb logcat -d -t N` returns ZERO Shield lines on a cold boot** — the boot flood
+   pushes them past the tail window. Measured: 0 lines via `-t 400`, all of them via
+   `-s DrishtiShield:I`. This is how verdict *latency* is read, so a cold emulator
+   would have reported "no verdict line" while the demo worked perfectly.
+3. **`am start --ez` silently drops the extra** to a stale top-most instance after
+   `install -r`, and to a task "brought to the front" after a force-stop. The demo
+   reset had been doing nothing. Fixed with `-f 0x10008000` (`NEW_TASK|CLEAR_TASK`).
+4. **Beat 1b passed without proving anything** — it inferred "Android shows its
+   install prompt" from the absence of an admin dialog, but `InstallStart` finishes
+   silently on a `file://` URI when there is nothing to block.
+
+**Correction to the veto note below:** `adb install` succeeding is *expected* and is
+**not** evidence against the veto — shell uid is a privileged installer and exempt.
+The user-facing package-installer path is the only honest test. Do not let anyone
+demo the veto with `adb install`.
+
+**The good-app/bad-app pair works back to back** and is the headline beat.
+`canary/benign-sanchay/` declares the identical five dual-use permissions as the decoy
+and is cleared (`block=false basis=CLEAR`), installs untouched, and Layer 4 does not
+quarantine it; the decoy is blocked by the OS's own
+`ActionDisabledByAdminDialog`. `scripts/demo_run.sh` runs both in the only order that
+works — cleared first, because the veto is device-wide.
+
+**The decoy now ships a raster launcher icon** (`res/mipmap-xxxhdpi/ic_launcher.png`,
+generated by `canary/decoy-challan/tools/make_launcher_icon.py`), because
+`m4_genai/vision.py` needs a PNG and a vector drawable compiles to XML — extraction
+returned `None` before, a 192×192 image now. **`assess_icon()` still has no caller in
+the pipeline**, so icon impersonation is not part of the scripted demo. The VLM scored
+the shipped icon 0.55–0.92 on identical pixels across five calls (threshold 0.80), so
+no fixed confidence may be quoted.
+
+### Deviations
+
+- **`shield/**` and `ui/**` handed off mid-task.** The demo workstream was split and
+  dedicated consumer-UI and analyst-portal agents took those trees. The Layer 3 veto
+  repair and self-test (`PolicyEngine.releaseAllQuarantines`,
+  `MainActivity.handleVetoSelfTest`) were committed at `bd3ea8a` before handing over;
+  everything else uncommitted under those paths belongs to the new owners.
+- **`demo_up.sh` no longer dies on a dashboard build failure.** It serves the previous
+  `ui/dist` with a loud warning instead. Reason: a TypeScript error in another
+  workstream's in-flight edit took the entire stage down, and the phone, the four
+  layers and the veto do not depend on the dashboard compiling.
+- **Two agents shared one emulator during rehearsal**, which caused one failed run
+  (Shield reinstalled mid-scan) and a decoy that reinstalls itself seconds after the
+  reset clears it. Before a real take, confirm nobody else is driving `emulator-5554`.
 
 **The veto is real and was proved, not asserted.** With Shield as device owner,
 `dumpsys user` reports `Device policy restrictions: no_install_unknown_sources`, and
