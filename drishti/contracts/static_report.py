@@ -247,6 +247,10 @@ class StaticReport(AnalyserResult):
     dcl_indicators: tuple[str, ...] = ()
     reflection_count: int = 0
     urls: tuple[str, ...] = ()
+    #: Package-shaped string constants. M2 has always extracted these to derive
+    #: hypotheses, but never surfaced them - so any rule looking for a roster of
+    #: targeted apps searched a haystack that could not contain one.
+    package_strings: tuple[str, ...] = ()
     crypto_constants: tuple[str, ...] = ()
     call_paths: tuple[CallPath, ...] = ()
     decompiled_methods: tuple[DecompiledMethod, ...] = ()

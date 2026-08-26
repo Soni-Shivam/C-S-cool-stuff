@@ -12,6 +12,7 @@ import re
 import time
 import zipfile
 from collections import Counter
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -164,6 +165,7 @@ def analyse(apk_path: Path, ledger: LedgerStore) -> StaticReport:
             dcl_indicators=dcl,
             reflection_count=reflection_count,
             urls=urls,
+            package_strings=package_strings,
             crypto_constants=crypto,
             call_paths=paths,
             decompiled_methods=decompiled_methods,
@@ -424,19 +426,57 @@ def _distinguished_name(name: Any) -> str:
         return "unknown" if text.startswith("<") else text
 
 
+def _certificate_validity(cert: Any) -> tuple[str, str, int]:
+    """Real validity dates and signing-key age in days.
+
+    These were previously hardcoded to `"unknown"` / `0`, which is worse than missing.
+    A measured run over 18 real APKs produced `age_days == 0` for every single one, so
+    the certificate-freshness rule in `lookalike.py` fired on 100% of samples including
+    the benign ones. A signal that is always true carries no information, and it looked
+    like a working discriminator right up until somebody measured it.
+
+    Age is counted from `not_before`, because the question a fraud analyst asks is "how
+    long has this signer existed". Android forces a publisher to reuse a signing key
+    across upgrades, so a key minted last week on an app claiming to be a bank is the
+    finding.
+    """
+    validity = cert["tbs_certificate"]["validity"]
+    start = validity["not_before"].native
+    end = validity["not_after"].native
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=UTC)
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=UTC)
+    # Clamped at zero: certificates dated in the future are real in this corpus
+    # (ZIP-epoch and clock-skew artefacts) and must not yield a negative age.
+    age_days = max(0, (datetime.now(UTC) - start).days)
+    return (
+        start.isoformat().replace("+00:00", "Z"),
+        end.isoformat().replace("+00:00", "Z"),
+        age_days,
+    )
+
+
 def _certificate(apk: Any, label: str, package: str, errors: list[str]) -> CertificateInfo:
     try:
         cert = apk.get_certificates()[0]
         raw = cert.dump() if hasattr(cert, "dump") else bytes(cert)
         subject = _distinguished_name(cert.subject)
         issuer = _distinguished_name(cert.issuer)
+        try:
+            not_before, not_after, age_days = _certificate_validity(cert)
+        except Exception as exc:
+            # Dates are a signal, not the report. Lose them loudly rather than
+            # losing the certificate.
+            errors.append(f"certificate dates unreadable: {type(exc).__name__}")
+            not_before, not_after, age_days = "unknown", "unknown", 0
         return CertificateInfo(
             sha256=hashlib.sha256(raw).hexdigest(),
             subject=subject,
             issuer=issuer,
-            not_before="unknown",
-            not_after="unknown",
-            age_days=0,
+            not_before=not_before,
+            not_after=not_after,
+            age_days=age_days,
             self_signed=subject == issuer,
             debug_cert="Android Debug" in subject,
             brand_mismatch=False,

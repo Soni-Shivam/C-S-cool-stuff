@@ -125,11 +125,20 @@ def _entrypoints_reaching(report: StaticReport, sinks: frozenset[str]) -> set[st
 
 def assess(report: StaticReport) -> LookalikeAssessment:
     """Decide whether a privileged app looks like a trojan or like a legitimate tool."""
+    # `package_strings` is the load-bearing addition. A measured run over 18 real
+    # samples found ZERO bank rosters because this searched only urls and crypto
+    # constants, and a roster of package identifiers lives in neither.
     haystack = " ".join(
-        (*report.urls, *report.crypto_constants, *report.sink_hits, *report.dcl_indicators)
+        (
+            *report.urls,
+            *report.package_strings,
+            *report.crypto_constants,
+            *report.sink_hits,
+            *report.dcl_indicators,
+            *(m.body for m in report.decompiled_methods),
+        )
     ).lower()
-    # Package-shaped strings are where a target roster would live.
-    package_blob = " ".join(report.sink_hits).lower()
+    package_blob = " ".join(report.package_strings).lower()
 
     financial = _load_list("financial_packages.txt")
     trusted_publishers = _load_list("known_good_publishers.txt")
