@@ -40,7 +40,7 @@ from drishti.ledger.verifier import NON_BEHAVIOURAL_TYPES, Verifier
 from drishti.logging import get_logger
 from drishti.m4_genai.client import LLMClient
 from drishti.m4_genai.resources import UiString, extract_ui_strings, record_ui_strings
-from drishti.m4_genai.retrieval import select
+from drishti.m4_genai.retrieval import select, workspace_budget
 from drishti.m4_genai.safety import (
     BEHAVIOUR_WEIGHTS,
     CONTEXT_WEIGHTS,
@@ -384,7 +384,10 @@ def analyse(
     # Code-graph RAG: walk backwards from the sinks, keep the highest-risk chains, and
     # send only those. Selected once and shared, so the workspace the model reads is
     # exactly the workspace the report and the UI describe.
-    pack = select(static)
+    # Sized to the provider rather than to a constant. A 1M-token model was being shown
+    # the same 1,800 tokens of code as an 8k one, which is why a job with 12 recovered
+    # methods reported ten of them as uninterpreted.
+    pack = select(static, token_budget=workspace_budget(settings))
     log.info(
         "retrieval_selected",
         chains=len(pack.chains),
@@ -410,16 +413,24 @@ def analyse(
     )
     # The other silent-empty path: `interpret_methods` degrades to no interpretations
     # WITHOUT raising when the provider returns nothing valid (it logs
-    # `code_interpreter_unavailable`). Chains were selected, so emptiness here is a
-    # provider failure, not the model declining its tools — say so in `errors`.
+    # `code_interpreter_unavailable`). Chains were selected, so emptiness here needs
+    # reporting — but NOT with a cause we did not establish.
+    #
+    # The previous wording blamed the provider unconditionally. Measured on the analysis
+    # VM: round 0 returned `outcome: ok` with 1,073 completion tokens, the model
+    # interpreted three methods, and every one was discarded because it named them in a
+    # signature dialect the matcher did not yet accept. The reported reason sent the
+    # reader to the LLM endpoint while the bug was in our own lookup — the same class of
+    # mistake as the "no dynamic evidence" claim, in a different module.
     if (
         pack.chains
         and not interpretations
         and not any("code_interpreter" in e for e in degradations)
     ):
         degradations.append(
-            f"code_interpreter returned no interpretations for {len(pack.chains)} selected "
-            "chains: provider unavailable or response invalid after retry"
+            f"code_interpreter produced no usable interpretation for {len(pack.chains)} "
+            "selected chains: the provider returned nothing valid, or every method it "
+            "named was one this analysis did not recover (see interpretation_for_unknown_method)"
         )
 
     victim = _guarded(

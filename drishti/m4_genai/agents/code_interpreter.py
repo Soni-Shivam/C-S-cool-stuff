@@ -46,7 +46,11 @@ log = get_logger(__name__)
 
 #: Interpretations we will keep. Matches `retrieval.MAX_CHAINS` in spirit: more than
 #: this and the answers get shorter rather than the coverage getting better.
-MAX_METHODS_INTERPRETED = 6
+#: Cap on interpretations kept from one response. Raised from 6 alongside the
+#: provider-aware workspace: capping below the number of methods actually SENT would
+#: discard readings the model was explicitly asked to produce, and the RE tab would keep
+#: reporting them as uninterpreted.
+MAX_METHODS_INTERPRETED = 16
 
 _PROMPTS = Path(__file__).resolve().parents[1] / "prompts"
 
@@ -129,8 +133,14 @@ def canonical_signature(signature: str) -> str:
         return ""
     owner, _, rest = text.partition("->")
     owner = owner.strip()
-    if owner.startswith("L") and owner.endswith(";"):
-        owner = owner[1:-1]
+    # Strip the JVM wrapper's two halves INDEPENDENTLY. Requiring both together missed a
+    # fourth dialect seen live — `com.b.a.c.a;->a(...)`, dotted like Java but keeping the
+    # descriptor's trailing semicolon — and left the owner as `com.b.a.c.a;`, which
+    # matches nothing. Models mix these conventions freely; the normaliser has to be the
+    # forgiving end of that.
+    if owner.startswith("L"):
+        owner = owner[1:]
+    owner = owner.rstrip(";")
     owner = owner.replace("/", ".").strip(".")
     name = rest.strip().partition("(")[0].strip()
     if not owner or not name:
