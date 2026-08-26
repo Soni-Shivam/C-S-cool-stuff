@@ -211,6 +211,14 @@ class WatchService : Service() {
      * fallback and the screen is one tap away — so this never becomes a hard failure.
      */
     private fun surface(scan: Scan) {
+        // Phase 2 re-surfaces a scan when its score lands. If a newer file has since
+        // arrived, bringing this one back to the front would flicker the screen away
+        // from the current verdict — `VerdictActivity` refuses the switch anyway, but
+        // not raising the window at all is the version with no flicker in it.
+        val newest = ScanBus.current
+        if (newest != null && newest.id != scan.id && newest.detectedAtMs > scan.detectedAtMs) {
+            return
+        }
         try {
             startActivity(
                 Intent(this, `in`.drishti.shield.ui.VerdictActivity::class.java).apply {

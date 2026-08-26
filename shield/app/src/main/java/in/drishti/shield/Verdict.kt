@@ -37,6 +37,86 @@ data class PermissionCombo(
     val description: String,
 )
 
+/**
+ * One discriminator from `m2_static/lookalike.py`, and whether it fired.
+ *
+ * Absent signals are kept, not dropped, for the same reason the Python model keeps
+ * them: "we looked for a banking roster and found none" is the finding on the benign
+ * side of this demo, and a card that only ever listed what fired would show an empty
+ * box for the app we are trying to prove we do not flag.
+ */
+data class LookalikeSignal(
+    val id: String,
+    val present: Boolean,
+    val weight: Double,
+    val detail: String,
+)
+
+/**
+ * Why this app is, or is not, the trojan its permissions would allow it to be.
+ *
+ * Mirrors `drishti.contracts.static_report.LookalikeAssessment` (contract A13). It is
+ * the answer to the only question a room ever asks a detector — *does it just flag
+ * everything?* — because [sharedPermissions] names the capabilities this sample holds
+ * in common with software the audience already trusts, and the signals name what
+ * separates them.
+ *
+ * `verdict` is never "benign". The best available is `indeterminate`.
+ */
+data class Lookalike(
+    val verdict: String,
+    val trojanScore: Double,
+    val signals: List<LookalikeSignal>,
+    val sharedPermissions: List<String>,
+    val targetedFinancialPackages: List<String>,
+    val publisherTrusted: Boolean,
+    val rationale: String,
+) {
+    val present: List<LookalikeSignal> get() = signals.filter { it.present }
+    val absent: List<LookalikeSignal> get() = signals.filterNot { it.present }
+
+    /** What the badge says. Deliberately not a colour decision — see the screen. */
+    val label: String
+        get() = when (verdict) {
+            "trojan_shape" -> "TROJAN SHAPE"
+            "legitimate_privileged" -> "LEGITIMATE PRIVILEGED APP"
+            else -> "INDETERMINATE"
+        }
+
+    companion object {
+        fun fromJson(json: JSONObject): Lookalike {
+            val signals = mutableListOf<LookalikeSignal>()
+            json.optJSONArray("signals")?.let { arr ->
+                for (i in 0 until arr.length()) {
+                    val s = arr.getJSONObject(i)
+                    signals += LookalikeSignal(
+                        id = s.optString("id"),
+                        present = s.optBoolean("present", false),
+                        weight = s.optDouble("weight", 0.0),
+                        detail = s.optString("detail"),
+                    )
+                }
+            }
+            fun strings(key: String): List<String> {
+                val out = mutableListOf<String>()
+                json.optJSONArray(key)?.let { arr ->
+                    for (i in 0 until arr.length()) out += arr.optString(i)
+                }
+                return out
+            }
+            return Lookalike(
+                verdict = json.optString("verdict", "indeterminate"),
+                trojanScore = json.optDouble("trojan_score", 0.0),
+                signals = signals,
+                sharedPermissions = strings("shared_permissions"),
+                targetedFinancialPackages = strings("targeted_financial_packages"),
+                publisherTrusted = json.optBoolean("publisher_trusted", false),
+                rationale = json.optString("rationale"),
+            )
+        }
+    }
+}
+
 /** The subset of M2's static report that the block decision and the dossier need. */
 data class StaticEvidence(
     val packageName: String,
@@ -46,6 +126,7 @@ data class StaticEvidence(
     val urls: List<String>,
     val exportedUnprotected: List<String>,
     val partial: Boolean,
+    val lookalike: Lookalike? = null,
 ) {
     val critical: List<PermissionCombo> get() = combos.filter { it.severity == Severity.CRITICAL }
     val high: List<PermissionCombo> get() = combos.filter { it.severity == Severity.HIGH }
@@ -85,6 +166,7 @@ data class StaticEvidence(
                 urls = strings("urls"),
                 exportedUnprotected = exported,
                 partial = json.optBoolean("partial", false),
+                lookalike = json.optJSONObject("lookalike")?.let { Lookalike.fromJson(it) },
             )
         }
     }

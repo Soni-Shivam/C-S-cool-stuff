@@ -11,13 +11,17 @@
 #   - dashboard answering on :4173
 #   - an Android 34 emulator booted with KVM acceleration
 #   - DRISHTI Shield installed, all four layers armed, device owner provisioned
-#   - the inert decoy staged OFF the watched directory, ready for the delivery beat
+#   - BOTH demo APKs staged OFF the watched directory, ready for the delivery beats:
+#       canary/benign-sanchay/   the cleared control  (Sanchay_Expenses.apk)
+#       canary/decoy-challan/    the blocked decoy    (RTO_Challan.apk)
 #
-# It deliberately does NOT deliver the decoy. That is scripts/demo_deliver.sh, and
-# keeping them apart is what lets the operator start the timer on stage.
+# It deliberately does NOT deliver either of them. That is scripts/demo_deliver.sh
+# (one beat) and scripts/demo_run.sh (the whole sequence), and keeping them apart is
+# what lets the operator start the timer on stage.
 #
-# SAFETY: the only APKs this script ever puts on the emulator are the two we author
-# ourselves — shield/ and canary/decoy-challan/, both built from source in this repo.
+# SAFETY: the only APKs this script ever puts on the emulator are the three we author
+# ourselves — shield/, canary/decoy-challan/ and canary/benign-sanchay/, all built
+# from source in this repo, and the latter two gated by their verify_inert.sh.
 # No sample from data/samples/ or any corpus bucket is touched. See CLAUDE.md.
 set -euo pipefail
 
@@ -36,11 +40,13 @@ SYSTEM_IMAGE="system-images;android-34;google_apis;x86_64"
 SHIELD_PKG="in.drishti.shield"
 SHIELD_ADMIN="$SHIELD_PKG/.DrishtiAdminReceiver"
 DECOY_PKG="com.rto.echallan.verify"
+BENIGN_PKG="in.co.sanchay.expenses"
 SHIELD_APK="$REPO/shield/dist/drishti-shield.apk"
 DECOY_APK="$REPO/canary/decoy-challan/dist/RTO_Challan.apk"
+BENIGN_APK="$REPO/canary/benign-sanchay/dist/Sanchay_Expenses.apk"
 
-# The decoy is staged OUTSIDE the watched directory. Staging it inside would fire
-# Layer 1 during setup and the stage beat would be over before the audience arrived.
+# Both APKs are staged OUTSIDE the watched directory. Staging either one inside would
+# fire Layer 1 during setup and the beat would be over before the audience arrived.
 STAGING_DIR="/sdcard/DrishtiStaging"
 WATCH_DIR="/sdcard/Download"
 
@@ -93,7 +99,7 @@ if (( avail_gb < 4 )); then
   warn "only ${avail_gb}GB free on this filesystem — the AVD needs headroom"
 fi
 
-# ─── 1. build the two APKs we author ─────────────────────────────────────────
+# ─── 1. build the three APKs we author ───────────────────────────────────────
 step "Build the demo APKs (compile only — nothing is executed here)"
 if [[ ! -f "$DECOY_APK" ]]; then
   bash "$REPO/canary/decoy-challan/build.sh" >"$STATE/build-decoy.log" 2>&1 \
@@ -103,6 +109,16 @@ fi
 # dist/ APK must never let a modified decoy through unchecked.
 bash "$REPO/canary/decoy-challan/verify_inert.sh" || die "decoy failed its inertness check"
 ok "decoy $(sha256sum "$DECOY_APK" | cut -c1-16)…"
+
+if [[ ! -f "$BENIGN_APK" ]]; then
+  bash "$REPO/canary/benign-sanchay/build.sh" >"$STATE/build-benign.log" 2>&1 \
+    || { tail -30 "$STATE/build-benign.log"; die "benign control build failed"; }
+fi
+# Same reasoning as the decoy: the gate runs on every invocation, not only on a cache
+# miss. This one also refuses a banking roster or a <service> component, either of
+# which would silently turn the negative control into something that gets blocked.
+bash "$REPO/canary/benign-sanchay/verify_inert.sh" || die "benign control failed its inertness check"
+ok "benign $(sha256sum "$BENIGN_APK" | cut -c1-16)…"
 
 if [[ ! -f "$SHIELD_APK" ]]; then
   bash "$REPO/shield/build.sh" >"$STATE/build-shield.log" 2>&1 \
@@ -190,6 +206,14 @@ if adbsh pm list packages | grep -q "$DECOY_PKG"; then
   adbsh pm unsuspend "$DECOY_PKG" >/dev/null || true
   timeout 60 "$ADB" uninstall "$DECOY_PKG" >/dev/null 2>&1 \
     || warn "could not uninstall the decoy (Layer 4 may still hold it)"
+fi
+# The benign control really does get installed during the demo — that is the beat.
+# So a rerun has to remove it, or the second run's install is a no-op and the
+# audience sees nothing happen.
+if adbsh pm list packages | grep -q "$BENIGN_PKG"; then
+  adbsh pm unsuspend "$BENIGN_PKG" >/dev/null || true
+  timeout 60 "$ADB" uninstall "$BENIGN_PKG" >/dev/null 2>&1 \
+    || warn "could not uninstall the benign control"
 fi
 adbsh "rm -f $WATCH_DIR/*.apk" >/dev/null || true
 adbsh "mkdir -p $STAGING_DIR" >/dev/null || true
@@ -280,14 +304,22 @@ fi
 adbsh "am start -n $SHIELD_PKG/.ui.MainActivity" >/dev/null || true
 sleep 3
 
-# ─── 8. stage the decoy ──────────────────────────────────────────────────────
-step "Stage the decoy (NOT delivered — that is scripts/demo_deliver.sh)"
-timeout 60 "$ADB" push "$DECOY_APK" "$STAGING_DIR/RTO_Challan.apk" >/dev/null 2>&1 \
-  || die "could not stage the decoy"
-staged_sha=$(adbsh sha256sum "$STAGING_DIR/RTO_Challan.apk" | cut -c1-16)
-host_sha=$(sha256sum "$DECOY_APK" | cut -c1-16)
-[[ "$staged_sha" == "$host_sha" ]] || die "staged decoy hash $staged_sha != host $host_sha"
-ok "staged at $STAGING_DIR/RTO_Challan.apk ($host_sha…)"
+# ─── 8. stage both demo APKs ─────────────────────────────────────────────────
+step "Stage both demo APKs (NOT delivered — that is demo_deliver.sh / demo_run.sh)"
+# Hash-checked after the push rather than trusted: `adb push` reports success on a
+# short write, and a truncated APK on stage looks like an analysis bug.
+stage_apk() {
+  local host_path="$1" device_name="$2" label="$3"
+  timeout 60 "$ADB" push "$host_path" "$STAGING_DIR/$device_name" >/dev/null 2>&1 \
+    || die "could not stage the $label"
+  local staged host
+  staged=$(adbsh sha256sum "$STAGING_DIR/$device_name" | cut -c1-16)
+  host=$(sha256sum "$host_path" | cut -c1-16)
+  [[ "$staged" == "$host" ]] || die "staged $label hash $staged != host $host"
+  ok "staged $STAGING_DIR/$device_name ($host…)"
+}
+stage_apk "$BENIGN_APK" "Sanchay_Expenses.apk" "benign control"
+stage_apk "$DECOY_APK" "RTO_Challan.apk" "decoy"
 
 # ─── 9. report what is actually armed ────────────────────────────────────────
 step "Demo is up"
@@ -303,7 +335,8 @@ cat <<EOF
   Layer 3      device owner $( [[ "${owner:-0}" -gt 0 ]] && echo HELD || echo 'NOT HELD — block will be advisory only' )
   Layer 4      armed by the watcher at runtime
 
-  Next:  scripts/demo_deliver.sh      # the WhatsApp-forward beat
+  Next:  scripts/demo_run.sh          # the whole scripted sequence, benign then blocked
+         scripts/demo_deliver.sh      # one beat only (--benign for the cleared app)
          scripts/demo_down.sh         # stop everything
 
 EOF

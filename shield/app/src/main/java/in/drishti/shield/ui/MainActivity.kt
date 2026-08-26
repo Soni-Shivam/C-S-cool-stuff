@@ -34,6 +34,11 @@ import `in`.drishti.shield.WatchService
  */
 class MainActivity : Activity() {
 
+    companion object {
+        /** Boolean extra that returns the device to the demo's starting state. */
+        const val EXTRA_DEMO_RESET = "drishti_demo_reset"
+    }
+
     private lateinit var body: LinearLayout
     private val refresh = Handler(Looper.getMainLooper())
     @Volatile private var backendUp: Boolean? = null
@@ -69,6 +74,53 @@ class MainActivity : Activity() {
         WatchService.start(this)
         ScanBus.subscribe(listener)
         probeBackend()
+        handleDemoReset(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleDemoReset(intent)
+    }
+
+    /**
+     * Put the device back into the state the demo starts from, on request.
+     *
+     * `scripts/demo_run.sh` runs the cleared app and the blocked app back to back and
+     * must be rerunnable, which means something has to release the Layer 3 veto that
+     * the previous run engaged. Doing it from adb —
+     * `am start -n in.drishti.shield/.ui.MainActivity --ez drishti_demo_reset true` —
+     * keeps the reset in one place instead of scattering `dpm` calls through a shell
+     * script.
+     *
+     * **Guarded on [FLAG_DEBUGGABLE].** `MainActivity` is exported because it is the
+     * launcher, so without the guard any installed app could send this extra and clear
+     * a device-owner restriction — the exact privilege escalation this app exists to
+     * prevent. Debug builds are the only thing the demo ever ships; a release build has
+     * no such surface at all.
+     */
+    private fun handleDemoReset(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_DEMO_RESET, false) != true) return
+        val debuggable =
+            (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        if (!debuggable) {
+            Toast.makeText(this, "Demo reset refused: this is not a debug build", Toast.LENGTH_LONG)
+                .show()
+            return
+        }
+        VerdictStore.clear(this)
+        val released = PolicyEngine.releaseVeto(this)
+        android.util.Log.i(
+            "DrishtiShield",
+            "demo_reset veto_released=$released store_cleared=true",
+        )
+        Toast.makeText(
+            this,
+            if (released) "Demo reset: veto released, verdict memory cleared"
+            else "Demo reset: verdict memory cleared (no veto was held)",
+            Toast.LENGTH_SHORT,
+        ).show()
+        render()
     }
 
     override fun onResume() {

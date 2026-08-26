@@ -33,6 +33,7 @@ object Ui {
     const val LOW = 0xFF2E9E5B.toInt()
 
     // Type scale, tuned for a judge three metres from a washed-out projector.
+    const val BANNER = 46f
     const val HUGE = 64f
     const val TITLE = 30f
     const val BODY = 16f
@@ -112,6 +113,41 @@ object Ui {
             setMargins(m, with(Ui) { context.dp(10) }, m, 0)
         }
     }
+
+    /**
+     * The one element that has to read from the back of the room.
+     *
+     * A filled band rather than coloured text on the dark background: at three metres
+     * through a projector, hue on a thin glyph is the first thing to go, while a solid
+     * block of colour survives almost anything. The word inside it is one word for the
+     * same reason — "BLOCKED" and "ALLOWED" differ in shape as well as in colour, so
+     * the screen still reads correctly to someone who cannot distinguish red and green.
+     */
+    fun banner(context: Context, word: String, sub: String, fill: Int): LinearLayout =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply {
+                setColor(fill)
+                cornerRadius = with(Ui) { context.dp(16) }.toFloat()
+            }
+            val p = with(Ui) { context.dp(18) }
+            setPadding(p, p, p, p)
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
+                topMargin = with(Ui) { context.dp(8) }
+            }
+            addView(
+                text(context, word, BANNER, 0xFFFFFFFF.toInt(), bold = true).apply {
+                    gravity = Gravity.CENTER
+                    letterSpacing = 0.06f
+                }
+            )
+            addView(
+                text(context, sub, SMALL, 0xCCFFFFFF.toInt()).apply {
+                    gravity = Gravity.CENTER
+                }
+            )
+        }
 
     fun pill(context: Context, label: String, color: Int): TextView = TextView(context).apply {
         text = "  $label  "

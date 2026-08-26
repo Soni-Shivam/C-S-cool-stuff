@@ -48,11 +48,14 @@ class VerdictActivity : Activity() {
     }
 
     private lateinit var root: LinearLayout
+    private lateinit var scroller: ScrollView
     private lateinit var body: LinearLayout
     private lateinit var timer: TextView
     private val ticker = Handler(Looper.getMainLooper())
     private var scan: Scan? = null
     private var installedPackage: String? = null
+    /** True between onResume and onPause. Gates the notification suppression below. */
+    private var resumed = false
 
     private val listener: (Scan) -> Unit = { updated ->
         if (scan == null || updated.id == scan?.id) render(updated)
@@ -88,17 +91,67 @@ class VerdictActivity : Activity() {
         handleIntent(intent)
     }
 
+    /**
+     * Take the heads-up notification down while this screen is up.
+     *
+     * The alert is posted on a HIGH-importance channel because a full-screen intent is
+     * only honoured on one, and that is what makes the verdict appear without a tap.
+     * The side effect was that its heads-up banner then sat on top of the verdict for
+     * several seconds — covering precisely the word the room is meant to read. It is
+     * re-posted in [onPause] so closing the screen still leaves the record in the
+     * shade.
+     */
+    override fun onResume() {
+        super.onResume()
+        resumed = true
+        dismissHeadsUp()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        resumed = false
+        scan?.takeIf { it.state != ScanState.SCANNING }?.let { s ->
+            runCatching {
+                `in`.drishti.shield.Notifications.post(
+                    this,
+                    `in`.drishti.shield.Notifications.ID_ALERT,
+                    `in`.drishti.shield.Notifications.alert(this, s),
+                )
+            }
+        }
+    }
+
     override fun onDestroy() {
         ScanBus.unsubscribe(listener)
         ticker.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
 
+    /**
+     * Show the scan this intent names — unless it is older than the one already on
+     * screen.
+     *
+     * `WatchService` re-surfaces a scan when its composite score lands, several
+     * seconds after its verdict. With two deliveries in quick succession that second
+     * surface arrives *after* the next file's verdict, and without this guard it
+     * pulled the screen back to the previous app. The demo showed ALLOWED over a file
+     * that had just been blocked.
+     */
     private fun handleIntent(intent: Intent) {
         installedPackage = intent.getStringExtra(EXTRA_PACKAGE)
         val id = intent.getStringExtra(EXTRA_SCAN_ID)
         val target = id?.let { ScanBus.find(it) } ?: ScanBus.current
-        if (target != null) render(target) else renderIdle()
+        if (target == null) {
+            renderIdle()
+            return
+        }
+        val showing = scan
+        if (showing != null && target.id != showing.id &&
+            target.detectedAtMs < showing.detectedAtMs
+        ) {
+            return
+        }
+        render(target)
     }
 
     // ── chrome ───────────────────────────────────────────────────────────────
@@ -108,13 +161,12 @@ class VerdictActivity : Activity() {
             setBackgroundColor(Ui.BG)
         }
         body = Ui.column(this)
-        root.addView(
-            ScrollView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-                isFillViewport = true
-                addView(body)
-            }
-        )
+        scroller = ScrollView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            isFillViewport = true
+            addView(body)
+        }
+        root.addView(scroller)
         timer = Ui.text(this, "0 ms", Ui.HUGE, Ui.ACCENT, bold = true).apply {
             gravity = Gravity.CENTER
         }
@@ -135,8 +187,28 @@ class VerdictActivity : Activity() {
         )
     }
 
+    /**
+     * Cancel the alert notification. Called on resume and on every re-render, because
+     * `WatchService` posts a fresh alert when the verdict lands — after this screen is
+     * already up — and each post raises a new heads-up over it.
+     */
+    private fun dismissHeadsUp() {
+        runCatching {
+            getSystemService(android.app.NotificationManager::class.java)
+                .cancel(`in`.drishti.shield.Notifications.ID_ALERT)
+        }
+    }
+
     private fun render(s: Scan) {
+        // A verdict for a DIFFERENT file must start at the top of the page. Rebuilding
+        // the children does not reset the ScrollView's offset, so the second beat of
+        // the demo opened halfway down the first beat's page — with the banner, the
+        // millisecond counter and the file name all scrolled off. The room would have
+        // seen a wall of text and no verdict.
+        val newScan = scan?.id != s.id
         scan = s
+        if (newScan) scroller.post { scroller.scrollTo(0, 0) }
+        if (resumed) dismissHeadsUp()
         val blocked = s.blocked
         val accent = when {
             s.state == ScanState.SCANNING -> Ui.ACCENT
@@ -144,7 +216,17 @@ class VerdictActivity : Activity() {
             blocked -> Ui.CRITICAL
             else -> Ui.LOW
         }
-        root.setBackgroundColor(if (blocked) 0xFF1A0708.toInt() else Ui.BG)
+        // The whole page is tinted, not just the banner. Two verdicts go past the room
+        // in ninety seconds and the difference has to survive a projector: a red-black
+        // page and a green-black page are distinguishable at a glance even when the
+        // text is not readable.
+        root.setBackgroundColor(
+            when {
+                s.state == ScanState.SCANNING || s.state == ScanState.ERROR -> Ui.BG
+                blocked -> 0xFF1A0708.toInt()
+                else -> 0xFF06140D.toInt()
+            }
+        )
         body.removeAllViews()
 
         // Banner ---------------------------------------------------------------
@@ -153,13 +235,25 @@ class VerdictActivity : Activity() {
             else "LAYER 1 · PRE-INSTALL INTERCEPT"
         body.addView(Ui.text(this, "DRISHTI SHIELD · $layerLabel", Ui.SMALL, Ui.MUTED, bold = true))
 
-        val headline = when {
-            s.state == ScanState.SCANNING -> "ANALYSING…"
-            s.state == ScanState.ERROR -> "NO VERDICT"
-            blocked && s.vetoEngaged -> "INSTALL BLOCKED"
-            blocked -> "MALICIOUS — NOT BLOCKED"
-            else -> "NO BLOCKING EVIDENCE"
+        // The one-word banner. Two apps go through this screen back to back on stage
+        // and the room has to tell them apart instantly, without reading anything.
+        val word = when {
+            s.state == ScanState.SCANNING -> "SCANNING"
+            s.state == ScanState.ERROR -> "INCONCLUSIVE"
+            blocked -> "BLOCKED"
+            else -> "ALLOWED"
         }
+        val bannerSub = when {
+            s.state == ScanState.SCANNING -> "DRISHTI is analysing this file before anyone opens it"
+            s.state == ScanState.ERROR -> "no analysis completed — this is not the same as safe"
+            blocked && s.vetoEngaged -> "the operating system will refuse this install"
+            blocked -> "malicious — but the Layer 3 veto is not available on this device"
+            // Never the word "safe", and never "benign". The most this system knows is
+            // that it found nothing that justifies stopping the user.
+            else -> "no blocking evidence — the install proceeds untouched"
+        }
+        body.addView(Ui.banner(this, word, bannerSub, accent))
+
         // The counter freezes at the decision. `scorePending` keeps the screen honest
         // about the fact that more is still arriving.
         val subtitle = when {
@@ -167,7 +261,6 @@ class VerdictActivity : Activity() {
             s.scorePending -> "from file landing to verdict — deeper analysis continues"
             else -> "from file landing to verdict on screen"
         }
-        body.addView(Ui.text(this, headline, Ui.TITLE, accent, bold = true, topMargin = 8))
 
         // Timer ----------------------------------------------------------------
         (timer.parent as? LinearLayout)?.removeView(timer)
@@ -186,6 +279,9 @@ class VerdictActivity : Activity() {
 
         body.addView(fileCard(s, accent))
         s.decision?.let { body.addView(basisCard(it, accent)) }
+        // Directly under the basis, because it is the rebuttal to the basis: these are
+        // the permissions that did NOT decide anything.
+        s.static?.lookalike?.let { body.addView(lookalikeCard(it, accent)) }
         if (s.verdict != null) {
             body.addView(scoreCard(s.verdict, accent))
         } else if (s.scorePending) {
@@ -241,6 +337,91 @@ class VerdictActivity : Activity() {
             card.addView(Ui.text(this, "• $it", Ui.SMALL, Ui.INK, topMargin = 6))
         }
         return card
+    }
+
+    /**
+     * The card that answers "so do you just flag every app that reads SMS?".
+     *
+     * It leads with what the sample has **in common** with software the audience
+     * already trusts, and only then with what separates them. That order is the
+     * argument: the permission is the capability, not the intent, and a detector that
+     * cannot say so out loud is one that flags Truecaller.
+     *
+     * Renders on both verdicts. On the blocked app it reads as an indictment; on the
+     * cleared one, as an acquittal — from the same fields, with no branch on which.
+     */
+    private fun lookalikeCard(la: `in`.drishti.shield.Lookalike, accent: Int): View {
+        val card = Ui.card(this, accent)
+        card.addView(Ui.text(this, "IS THIS JUST A PRIVILEGED APP?", Ui.SMALL, Ui.MUTED, bold = true))
+
+        if (la.sharedPermissions.isNotEmpty()) {
+            card.addView(
+                Ui.text(
+                    this,
+                    "Holds ${la.sharedPermissions.size} permission(s) that caller-ID, " +
+                        "SMS-backup and anti-spam apps hold too. Truecaller reads your " +
+                        "SMS as well. The permission set is not the finding.",
+                    Ui.SMALL, Ui.MUTED, topMargin = 8,
+                )
+            )
+            card.addView(
+                Ui.text(
+                    this,
+                    la.sharedPermissions.joinToString("  ") { it.substringAfterLast('.') },
+                    Ui.MONO, Ui.INK, mono = true, topMargin = 6,
+                )
+            )
+        }
+
+        val head = Ui.row(this).apply { setPadding(0, dp(12), 0, 0) }
+        head.addView(Ui.pill(this, la.label, if (la.verdict == "trojan_shape") Ui.CRITICAL else accent))
+        head.addView(
+            Ui.text(this, "trojan-shape ${fmt(la.trojanScore)}", Ui.SMALL, Ui.MUTED)
+                .apply { layoutParams = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT) }
+        )
+        card.addView(head)
+
+        val present = la.present
+        val absent = la.absent
+        if (present.isNotEmpty()) {
+            card.addView(
+                Ui.text(this, "What separates it from those apps", Ui.SMALL, Ui.INK,
+                    bold = true, topMargin = 12)
+            )
+            present.forEach {
+                card.addView(Ui.text(this, "✕  ${friendly(it.id)}", Ui.SMALL, Ui.HIGH,
+                    bold = true, topMargin = 6))
+                card.addView(Ui.text(this, "     ${it.detail}", Ui.SMALL, Ui.MUTED, topMargin = 2))
+            }
+        }
+        if (absent.isNotEmpty()) {
+            card.addView(
+                Ui.text(this, "Looked for and did not find", Ui.SMALL, Ui.INK,
+                    bold = true, topMargin = 12)
+            )
+            // Absent signals are listed, not dropped: on the cleared app this list IS
+            // the evidence, and a card that only ever showed what fired would be blank
+            // for exactly the sample we are trying to prove we do not flag.
+            absent.forEach {
+                card.addView(Ui.text(this, "✓  ${friendly(it.id)}", Ui.SMALL, Ui.LOW, topMargin = 4))
+            }
+        }
+
+        card.addView(Ui.text(this, la.rationale, Ui.SMALL, Ui.MUTED, topMargin = 12))
+        return card
+    }
+
+    /** Signal ids from `m2_static/lookalike.py`, in words a non-analyst reads once. */
+    private fun friendly(id: String): String = when (id) {
+        "financial_app_roster" -> "carries a roster of banking / UPI packages"
+        "sms_and_network_share_entrypoint" -> "reads messages on the same path that talks to the network"
+        "otp_lexicon" -> "cares about OTPs and card numbers specifically"
+        "overlay_after_package_enumeration" -> "picks what to draw over after asking what is installed"
+        "launcher_icon_hiding" -> "can hide its own launcher icon"
+        "accessibility_acts_on_the_user" -> "uses accessibility to tap on the user's behalf"
+        "second_stage_dropper" -> "can load a second stage"
+        "freshly_minted_certificate" -> "signed by an unknown key minted days ago"
+        else -> id.replace('_', ' ')
     }
 
     private fun scoreCard(verdict: `in`.drishti.shield.Verdict, accent: Int): View {
