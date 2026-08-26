@@ -500,6 +500,13 @@ def _sandbox(
     return trace.model_copy(update={"ledger_refs": (*trace.ledger_refs, node.id)})
 
 
+#: Wire enums are for the API; these are for the humans who read the report.
+_PASS_LABEL: dict[JobStage, str] = {
+    JobStage.SANDBOX_1: "first sandbox",
+    JobStage.SANDBOX_2: "second sandbox",
+}
+
+
 def _stub_trace(which: JobStage) -> DynamicTrace:
     """Declared stub for when no trace source can produce anything.
 
@@ -520,8 +527,11 @@ def _stub_trace(which: JobStage) -> DynamicTrace:
         synthetic=True,
         partial=True,
         errors=(
-            f"No sandbox was available for {which.value}, so this sample was never "
-            "executed. Nothing below was observed at runtime.",
+            # `which.value` is a wire enum (`sandbox_pass1`). This string is rendered
+            # verbatim in the report's Limitations and on the Sandbox view, so it says
+            # which pass in words a non-engineer reads.
+            f"No sandbox was available for the {_PASS_LABEL.get(which, 'sandbox')} run, "
+            "so this sample was never executed. Nothing below was observed at runtime.",
         ),
     )
 
@@ -637,11 +647,22 @@ def _fallback_frontier(ctx: Context, trace: DynamicTrace) -> MorphPlan:
     return plan
 
 
-def _stub_report(ctx: Context, sha256: str) -> str:
+def _record_report(ctx: Context, sha256: str) -> str:
+    """Record that the artefacts for this job are available.
+
+    The node used to name itself `m7_report:stub` with `note: "stub"`. That was true
+    when nothing was built; M7 now renders the HTML report, the YARA rule, the STIX
+    bundle and the complaint dossier on demand from this job's own artefacts, so the
+    old label understated what exists — and a ledger that undersells itself is as
+    inaccurate as one that oversells.
+    """
     node = ctx.ledger.append(
         type=EvidenceType.REPORT_GENERATED,
-        source_tool="m7_report:stub",
-        content={"sha256": sha256, "note": "stub"},
+        source_tool="m7_report",
+        content={
+            "sha256": sha256,
+            "artefacts": ["report.html", "yara", "stix", "dossier"],
+        },
         confidence=1.0,
     )
     return node.id
@@ -731,7 +752,7 @@ def run_pipeline(
         run.with_stage(JobStage.SCORE_FINAL, final=final)
 
         with stage(run, ctx, JobStage.REPORT):
-            _stub_report(ctx, job.sha256)
+            _record_report(ctx, job.sha256)
 
     except StageFailedError:
         # The stage contextmanager already recorded the ERROR node and set FAILED.
