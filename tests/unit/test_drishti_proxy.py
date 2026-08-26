@@ -466,7 +466,7 @@ def _http_proxy_flag_lines(script: str) -> list[str]:
     return [
         stripped
         for line in text.splitlines()
-        if (stripped := line.strip()).startswith("-http-proxy")
+        if "-http-proxy" in (stripped := line.strip()) and not stripped.startswith("#")
     ]
 
 
@@ -493,10 +493,21 @@ def test_emulator_launch_flag_targets_the_hosts_own_loopback() -> None:
 def test_mitmdump_pins_the_eager_connection_strategy() -> None:
     """`lazy` would answer the containment probe before any upstream was tried.
 
-    `containment.verify()` reads rc 0 from a connect to 169.254.169.254:80 as
-    REACHABLE. With guest TCP now terminating at our proxy, only `eager` — which
-    connects upstream before answering — keeps that probe honest; `lazy` turns every
-    FORBIDDEN probe into a false REACHABLE and aborts every batch.
+    `containment.verify()` reads rc 0 from a connect to 169.254.169.254:80 as REACHABLE.
+    With guest TCP terminating at our proxy, `lazy` answers immediately and turns every
+    FORBIDDEN probe into a false REACHABLE; `eager` connects upstream first, so a blocked
+    destination still fails the connect.
+
+    **CORRECTED 2026-08-27 — `eager` is necessary but NOT sufficient.** Measured on
+    m3-detonator with the proxy live and the host lockdown applied, the probe still
+    reported `169.254.169.254:80 is REACHABLE` and aborted the batch. `eager` never got a
+    say: the *emulator's* `-http-proxy` shim terminates the guest's port-80 TCP itself,
+    before anything reaches mitmproxy, so the guest's connect() succeeds regardless.
+    Nothing actually got through (an in-guest GET for the instance id returned zero bytes;
+    the same request from the host timed out against the DROP rule), so containment held
+    and only the measurement broke. The escape hatch is `DRISHTI_EMULATOR_PROXY=none` in
+    emulator_control.sh, where the full measurement is recorded. Keep this pin: it is
+    still what stops `lazy` from adding a second, independent false REACHABLE.
     """
     text = (_INFRA / "runtime_prepare.sh").read_text(encoding="utf-8")
     assert "--set connection_strategy=eager" in text

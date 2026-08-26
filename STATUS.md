@@ -490,6 +490,60 @@ rather than deleted — a superseded model is provenance, not garbage.
 
 ---
 
+### Live canary detonation — the first live trace WITH observations — 2026-08-27
+
+**DONE.** Full account: `.superpowers/sdd/2026-08-26-frontier-c2-closure/live-canary-report.md`.
+
+`ef7bd4e` proved the detonation path end to end but its sample was ARM64-only, so
+"a live trace WITH observations" stayed unproven. It is proven now. `canary/dist/canary.apk`
+(sha256 `9854900c…`, `in.drishti.canary`) detonated live on `m3-detonator`
+(instance `7382052279419138339`, image marker `m3-detonator-manual-20260826`):
+`outcome=completed`, `simulated=false`, **4 observations**, `mitre_observed =
+[T1412, T1417, T1418, T1437]`, snapshot restored clean before and after, containment
+manifest `fb9cfa49…` signed minutes before the run. Artifact at
+`data/fixtures/observations/9854900c….json`, replayable fixture at
+`data/fixtures/traces/9854900c….json` with `provenance.kind = captured` and an empty
+`post_morph`. `GET /api/jobs/{id}/dynamic` renders it as `source=replay`,
+`synthetic=False`, `detonated=True` — the Sandbox view is no longer empty for the canary.
+
+Four things it measured that were not known before:
+
+1. **T1417 "overlay" is a FALSE POSITIVE for any app with a UI.** `hooks.js` hooks
+   `WindowManagerImpl.addView` and emits T1417 unconditionally, without checking
+   `LayoutParams.type`. Every Activity adds its content view through that path. The
+   canary — which CLAUDE.md forbids from drawing an overlay — fired it. This very likely
+   inflates T1417 across all 117 artifacts in `data/fixtures/observations/`. Not fixed
+   here: changing the hook without re-detonating would leave artifacts and hook version
+   disagreeing, and editing a real capture would be tampering.
+2. **`-http-proxy` makes the containment probe report a false REACHABLE.** With the host
+   lockdown fully applied the probe still read `169.254.169.254:80 REACHABLE` and aborted
+   every batch. The emulator's proxy shim terminates guest port-80 TCP before mitmproxy
+   sees it, so `connect()` succeeds regardless; `connection_strategy=eager` never gets a
+   say. Containment held — an in-guest GET for the instance id returned zero bytes and the
+   same request from the host timed out against the DROP rule — only the *measurement*
+   broke. `emulator_control.sh` gained `DRISHTI_EMULATOR_PROXY=none`. Deliberately NOT
+   fixed by loosening `is_reachable` to "bytes came back": that would make an
+   exfiltration sink read as contained.
+3. **`drishti_proxy.py` died silently under mitmdump.** mitmproxy's loader does not
+   register the script in `sys.modules`, so `@dataclass` + `from __future__ import
+   annotations` raised `AttributeError: 'NoneType' object has no attribute '__dict__'`.
+   nohup'd, the only symptom is an empty `flows.jsonl` — indistinguishable from a sample
+   that never beaconed. The unit tests could not see it because they registered the module
+   first, on a comment that asserted mitmproxy does too. Fixed, with a regression test that
+   loads it the way mitmdump actually does.
+4. **The canary's own beacon was not captured** (`captured_flows: []`). The proxy log shows
+   `GET http://10.0.2.2:8080/canary` arriving and the client disconnecting before a
+   response. Cause not established — the `eager`-connects-upstream-to-a-blackholed-10.0.2.2
+   theory is untested speculation. Two unrelated flows (Android's connectivity check) *were*
+   sinkholed and logged, so the addon chain works.
+
+mitmproxy 11.0.2 is now installed on the VM **without ever opening the seal** — resolved
+for linux/cp311 on the laptop and shipped over IAP to `/opt/drishti/mitmpkgs`. The missing
+`snapshot` provision stamp was also written, so `detonator_provision.sh all` can no longer
+re-cut the `clean` snapshot.
+
+Tests: **1,821 contract+unit passing**. VM stopped (`make lab-down`).
+
 ### Measured negative results — 2026-08-26
 
 Recorded prominently because a negative result nobody can find is a claim waiting to be

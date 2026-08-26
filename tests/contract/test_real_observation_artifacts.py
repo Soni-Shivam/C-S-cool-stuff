@@ -24,6 +24,11 @@ from drishti.contracts.dynamic_trace import ObservationArtifact
 
 FIXTURES = Path(__file__).resolve().parents[2] / "data" / "fixtures" / "observations"
 
+#: The one artifact in this directory that is NOT a corpus row. `canary/` is authored by
+#: this repo and its behaviour is bounded by CLAUDE.md, so it is a real detonation of a
+#: provably inert sample rather than of vetted malware.
+CANARY_PACKAGE = "in.drishti.canary"
+
 
 def _artifacts() -> list[Path]:
     return sorted(FIXTURES.glob("*.json"))
@@ -80,7 +85,14 @@ def test_a_completed_artifact_carries_containment_and_snapshot_evidence() -> Non
     assert completed, "expected at least one completed real artifact"
     for artifact in completed:
         assert artifact.metadata.containment_verified is True
-        assert artifact.metadata.sample_kind == "vetted_malware"
+        # `sample_kind` must be the TRUE kind, not a constant. Every artifact here is a
+        # corpus row — labelled and VT-counted — except the canary, which this repo
+        # authors and which is genuinely inert; `detonator_run.sh detonate` hardcodes
+        # `vetted_malware`, so the canary is detonated through dynamic_analyze.py
+        # directly to keep its provenance honest. Asserting the constant would have
+        # forced the canary to be mislabelled as vetted malware to make a test pass.
+        expected = "inert_fixture" if artifact.package == CANARY_PACKAGE else "vetted_malware"
+        assert artifact.metadata.sample_kind == expected, artifact.sha256
         assert artifact.snapshot is not None
         assert artifact.snapshot.before_restore == "passed"
         assert artifact.snapshot.after_restore == "passed"

@@ -46,9 +46,40 @@ case "${1:-}" in
     # healthy, the batch reports success, and flows.jsonl stays empty — which reads as
     # "the sample never beaconed". 127.0.0.1 is already allowed by the lockdown's
     # `-o lo -j ACCEPT` and already served by mitmdump's --listen-host 0.0.0.0.
+    #
+    # DRISHTI_EMULATOR_PROXY=none OMITS the flag, and that escape hatch is not a
+    # convenience — it is the only honest way to run while the interaction below is
+    # unfixed.
+    #
+    # MEASURED 2026-08-27 on m3-detonator, with the proxy live and the host lockdown
+    # applied: `verify_containment.py` reported `169.254.169.254:80 is REACHABLE from
+    # inside the sandbox` and aborted the batch, while 8.8.8.8:53, 1.1.1.1:443 and
+    # 10.0.0.1:22 all read rc 1. It is a FALSE reachable. The emulator's -http-proxy
+    # shim terminates the guest's port-80 TCP locally and only then attempts the proxy
+    # hop, so the guest's connect() succeeds no matter what the destination does. Proof
+    # that nothing actually got through, taken at the same moment:
+    #   * an in-guest HTTP GET for /computeMetadata/v1/instance/id returned ZERO bytes;
+    #   * the same request from the HOST timed out (rc 124) against
+    #     `-A OUTPUT -d 169.254.169.254/32 -j DROP`.
+    # Containment held. What broke is the MEASUREMENT: `containment.is_reachable` reads
+    # a completed TCP handshake as reachability, and with a proxy in path a handshake no
+    # longer says who answered.
+    #
+    # It is deliberately NOT "fixed" by loosening that definition. Redefining reachable
+    # as "bytes came back" would make a destination that swallows data silently — an
+    # exfiltration sink — read as contained, which is a real weakening of the gate for a
+    # cosmetic pass. Until the probe can prove, per destination, that the answer came
+    # from the destination and not from the shim, the choice is between the flag and a
+    # trustworthy probe, and the probe wins.
+    # Not `local`: this is a case branch at script scope, and `local` outside a function
+    # aborts the start under `set -e` with "can only be used in a function".
+    proxy_args=()
+    if [[ "${DRISHTI_EMULATOR_PROXY:-127.0.0.1:8080}" != "none" ]]; then
+      proxy_args=(-http-proxy "${DRISHTI_EMULATOR_PROXY:-127.0.0.1:8080}")
+    fi
     emulator -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim \
       -no-snapshot-save -no-snapshot-load -accel on \
-      -http-proxy "${DRISHTI_EMULATOR_PROXY:-127.0.0.1:8080}" \
+      "${proxy_args[@]}" \
       -gpu swiftshader_indirect >/var/log/drishti-emulator.log 2>&1 &
     emulator_pid=$!
     printf '%s\n' "$emulator_pid" >"$PID_FILE"
