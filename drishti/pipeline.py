@@ -300,6 +300,47 @@ def _genai(ctx: Context, static: StaticReport, sha256: str, which: JobStage) -> 
     return genai_analyse(static, ctx.ledger, ctx.settings)
 
 
+def _with_impersonation(ctx: Context, verdict: GenAIVerdict, apk_path: Path) -> GenAIVerdict:
+    """Attach the icon-impersonation result (T3.9), and write it to the ledger.
+
+    Called from the pipeline rather than from inside the M4 controller because the
+    controller is handed a `StaticReport`, not the APK, and vision needs the file: the
+    launcher icon is a resource inside the archive. Reading it is the same read-as-data
+    posture the static engine uses — nothing is executed.
+
+    Wrapped: a vision failure degrades the verdict, never the job. An unavailable VLM,
+    a vector-only icon, or a corrupt archive all yield an honest below-threshold result
+    or none at all.
+    """
+    if not ctx.settings.vlm_enabled:
+        return verdict
+    try:
+        from drishti.m4_genai.vision import assess_icon
+
+        match = assess_icon(apk_path, ctx.settings)
+        node = ctx.ledger.append(
+            type=EvidenceType.VISION_MATCH,
+            source_tool=f"m4.vision:{match.method}",
+            content=match.model_dump(mode="json"),
+            # The producer's confidence in its own comparison, not a consensus value.
+            confidence=match.similarity,
+        )
+        return verdict.model_copy(
+            update={
+                "impersonation": match.model_copy(update={"evidence_refs": (node.id,)}),
+                "ledger_refs": (*verdict.ledger_refs, node.id),
+            }
+        )
+    except Exception as exc:  # pragma: no cover - defensive
+        log.info("vision_unavailable", error=f"{type(exc).__name__}: {exc}")
+        return verdict.model_copy(
+            update={
+                "partial": True,
+                "errors": (*verdict.errors, f"vision unavailable: {type(exc).__name__}"),
+            }
+        )
+
+
 def _genai_full(ctx: Context, sha256: str) -> GenAIVerdict:
     """The post-sandbox GenAI pass.
 
@@ -347,15 +388,23 @@ def _score(ctx: Context, which: JobStage) -> CompositeScore:
     Like M2 before it, the scorer existed and was tested but nothing called it: a full
     run reported S=0 on an APK the engine scores perfectly well in isolation.
     """
+    from drishti.m6_score.engine import rule_severity
     from drishti.m6_score.engine import score as m6_score
 
     meta = ctx.artefacts.get("ingest")
+    static_report = ctx.artefacts.get("static")
     result = m6_score(
-        static=ctx.artefacts.get("static"),
+        static=static_report,
         ml=ctx.artefacts.get("ml"),
         genai=ctx.artefacts.get("genai"),
         dynamic=ctx.artefacts.get("dynamic"),
         intel=meta.intel if meta is not None else None,
+        # G was a declared factor with a 0.15 weight that NO caller ever supplied, so
+        # it was permanently 0.0 and a static-only triage could not exceed S=54 however
+        # damning the manifest. Matched permission combinations are the same category of
+        # evidence as a YARA hit -- a deterministic rule fired, with a severity, no model
+        # in the path -- so they feed it.
+        yara_severity=rule_severity(static_report),
     )
     for factor in result.factors:
         ctx.ledger.append(
@@ -565,7 +614,8 @@ def run_pipeline(
             ctx.record("ml", _ml(ctx, static))
 
         with stage(run, ctx, JobStage.GENAI_STATIC):
-            ctx.record("genai", _genai(ctx, static, job.sha256, JobStage.GENAI_STATIC))
+            verdict = _genai(ctx, static, job.sha256, JobStage.GENAI_STATIC)
+            ctx.record("genai", _with_impersonation(ctx, verdict, apk_path))
 
         with stage(run, ctx, JobStage.SCORE_PRELIM):
             preliminary = _score(ctx, JobStage.SCORE_PRELIM)
