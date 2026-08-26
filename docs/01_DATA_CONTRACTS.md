@@ -1053,3 +1053,52 @@ from `drishti/contracts/verdict.py` without a red test.
 
 The dashboard consumes this route; it never produces a `Verdict`. No scoring, banding,
 or provenance logic exists in `ui/`.
+
+---
+
+### A17. `CapturedFlow` and `ObservationArtifact.captured_flows` (Generative C2 capture)
+
+`NetworkFlow` (§3) is what the *pipeline* builds after normalisation. It does not
+describe what the detonator's own proxy wrote down while the sample was running, and
+that is a different artefact with a different trust story: it crosses out of the VM,
+so it belongs to the wire contract and inherits its strictness.
+
+`ObservationArtifact` therefore gains one additive field:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `captured_flows` | `tuple[CapturedFlow, ...]` | HTTP flows the on-VM proxy observed during the run, redacted at the guest boundary. Empty for a run with no proxy or no traffic. `Field(strict=False)` for the `list -> tuple` reason in A2. |
+
+`CapturedFlow` is a `StrictWireModel`:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `t_ms_epoch` | `int` | Wall-clock milliseconds since the epoch at which the proxy saw the request. Epoch-based rather than run-relative so a flow can be lined up against the run manifest and the ledger. |
+| `method` | `str` | HTTP method as sent by the sample. |
+| `scheme` | `str` | URL scheme the sample used, recorded rather than assumed. |
+| `host` | `str` | Request host. This is the C2 candidate a reader cares about. |
+| `path` | `str` | Request path, default `"/"`. |
+| `status` | `int \| None` | Response status, or `None` when nothing answered — a dead C2 is a finding, not a gap. |
+| `req_body_preview` | `str` | Truncated request body, redacted. |
+| `resp_body_preview` | `str` | Truncated response body, redacted. |
+| `synthesised` | `bool` | `True` only when the Generative C2 answered this flow instead of real attacker infrastructure. |
+| `served_kind` | `str \| None` | The response shape we chose, set only alongside `synthesised`. `None` for an observed flow. |
+
+Three properties are load-bearing:
+
+* **Both body previews refuse to construct on unredacted sensitive text**, using the
+  same `contains_sensitive_text` gate as `ObservationEvent.detail` (A2 point 2). A
+  proxy bug must not become a data leak, and a validator that only warns is a
+  validator nobody notices failing. **Known coverage gap:** that gate's rules are
+  currently OTP, credential, token and JWT only — there is no card-number, phone-number
+  or UPI-VPA rule, and a captured C2 request body is the likeliest place in the system
+  for one to appear. The gate is real and fails closed on what it knows; it does not
+  yet know everything a banking trojan exfiltrates.
+* **`synthesised` / `served_kind` are the provenance line.** A flow we answered is
+  our own content injected into the analysis; the distinction has to survive into the
+  report, because a dead C2 stays dead and listing our own response as attacker
+  infrastructure would be a lie.
+* **There is no `tls_intercepted` field.** The detonator captures cleartext HTTP and
+  does not claim TLS interception (the system-CA step is deliberately deferred —
+  `CLAUDE.md` verified lab fact 7). A field that could only ever read `False` would
+  invite someone to set it.

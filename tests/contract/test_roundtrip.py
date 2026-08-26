@@ -57,6 +57,21 @@ def _harness_metadata() -> C.HarnessMetadata:
     )
 
 
+def _captured_flow() -> C.CapturedFlow:
+    return C.CapturedFlow(
+        t_ms_epoch=1_700_000_000_000,
+        method="POST",
+        scheme="http",
+        host="c2.invalid",
+        path="/gate",
+        status=200,
+        req_body_preview="id=abc",
+        resp_body_preview='{"status": "ok"}',
+        synthesised=True,
+        served_kind="command_poll",
+    )
+
+
 def _observation_event() -> C.ObservationEvent:
     return C.ObservationEvent(
         technique="Runtime DEX load",
@@ -284,6 +299,7 @@ FACTORIES: dict[str, Any] = {
         run_id="run_01932ab90e2f", source=C.TraceSourceKind.REPLAY, outcome="completed"
     ),
     "ObservationEvent": _observation_event,
+    "CapturedFlow": _captured_flow,
     "FailureRecord": lambda: C.FailureRecord(
         code="install_unsupported",
         stage="install",
@@ -305,6 +321,7 @@ FACTORIES: dict[str, Any] = {
         metadata=_harness_metadata(),
         started_at="2026-08-13T00:00:00.000Z",
         finished_at="2026-08-13T00:01:00.000Z",
+        captured_flows=(_captured_flow(),),
     ),
     # ── genai ──
     "GroundedClaim": lambda: C.GroundedClaim(

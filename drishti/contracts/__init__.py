@@ -20,6 +20,7 @@ from drishti.contracts.corpus import (
 )
 from drishti.contracts.dynamic_trace import (
     ApiEvent,
+    CapturedFlow,
     DecryptedBlob,
     DexLoadEvent,
     DynamicTrace,
@@ -104,6 +105,7 @@ __all__ = [
     "ApiEvent",
     "BenignLookalikeVerdict",
     "CallPath",
+    "CapturedFlow",
     "CertificateInfo",
     "ChainVerification",
     "CodeInterpretation",
