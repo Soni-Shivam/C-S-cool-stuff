@@ -64,7 +64,7 @@ def test_every_artifact_with_observations_becomes_a_fixture(converted: Path) -> 
 
 
 def test_an_empty_artifact_produces_no_fixture(converted: Path) -> None:
-    """"We could not observe it" and "it did nothing" are different statements."""
+    """ "We could not observe it" and "it did nothing" are different statements."""
     empty = {
         a.sha256
         for a in (ObservationArtifact.model_validate_json(p.read_text()) for p in _artifacts())

@@ -283,8 +283,18 @@ def _warm_up(package: str, serial: str) -> None:
     process and startup behaviour is not missed.
     """
     run_command(
-        ["adb", "-s", serial, "shell", "monkey", "-p", package, "-c",
-         "android.intent.category.LAUNCHER", "1"],
+        [
+            "adb",
+            "-s",
+            serial,
+            "shell",
+            "monkey",
+            "-p",
+            package,
+            "-c",
+            "android.intent.category.LAUNCHER",
+            "1",
+        ],
         timeout=90,
     )
     time.sleep(6)
