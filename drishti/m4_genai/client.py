@@ -110,6 +110,14 @@ _TOO_LARGE_TO_EVER_SUCCEED = re.compile(
     re.IGNORECASE,
 )
 
+#: A billing wall wearing a rate limit's clothes. Narrow on purpose: an ordinary quota
+#: message ("You exceeded your current quota", "rate limit reached") must stay retryable,
+#: because waiting genuinely fixes those.
+_PERMANENTLY_REFUSED = re.compile(
+    r"prepayment credits are depleted|billing account .{0,40}(?:disabled|closed|not found)",
+    re.IGNORECASE,
+)
+
 _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.MULTILINE)
 
 
@@ -123,6 +131,26 @@ def is_permanently_too_large(exc: Exception | None) -> bool:
     if not isinstance(exc, httpx.HTTPStatusError):
         return False
     return bool(_TOO_LARGE_TO_EVER_SUCCEED.search(exc.response.text or ""))
+
+
+def is_permanently_refused(exc: Exception | None) -> bool:
+    """True when a retryable STATUS carries an unretryable CAUSE.
+
+    Two of these are known, both measured, both answered with a status that normally means
+    "wait and try again":
+
+      * the request cannot fit at all (`is_permanently_too_large`);
+      * the account cannot pay. MEASURED 2026-08-26 on the supplied Gemini key: `429
+        RESOURCE_EXHAUSTED — "Your prepayment credits are depleted"`, with no `retryDelay`.
+        Indistinguishable by status from a per-minute quota, and no wait ever clears it, so
+        the retries cost 5s per call — 25 calls a job — to reach the same failure while a
+        demo watches.
+    """
+    if not isinstance(exc, httpx.HTTPStatusError):
+        return False
+    return is_permanently_too_large(exc) or bool(
+        _PERMANENTLY_REFUSED.search(exc.response.text or "")
+    )
 
 
 def retry_delay_from(exc: Exception | None) -> float | None:
@@ -676,20 +704,30 @@ class LLMClient:
             except httpx.HTTPStatusError as exc:
                 if exc.response.status_code not in RETRYABLE_STATUS:
                     raise
+                if is_permanently_refused(exc):
+                    raise LLMError(f"provider refused this request: {_explain(exc)}") from exc
                 last = exc
             except (httpx.TimeoutException, httpx.TransportError) as exc:
                 last = exc
             if attempt < MAX_TRANSPORT_ATTEMPTS:
-                delay = BACKOFF_BASE_S * (2 ** (attempt - 1)) + random.uniform(0, 0.25)
+                delay = retry_delay_from(last) or (
+                    BACKOFF_BASE_S * (2 ** (attempt - 1)) + random.uniform(0, 0.25)
+                )
                 log.warning(
                     "llm_retrying",
                     provider=self._provider,
                     attempt=attempt,
                     delay_s=round(delay, 2),
-                    error=str(last)[:160],
+                    error=_explain(last)[:200],
                 )
                 time.sleep(delay)
-        raise LLMError(f"provider unavailable after {MAX_TRANSPORT_ATTEMPTS} attempts: {last}")
+        # `_explain`, not `str`: `raise_for_status()` keeps the status line and throws away
+        # the body, and the body is where the provider says WHY. A live 429 read
+        # "Too Many Requests" here while the discarded body said "Your prepayment credits
+        # are depleted" — one of those sends you to the billing page, the other does not.
+        raise LLMError(
+            f"provider unavailable after {MAX_TRANSPORT_ATTEMPTS} attempts: {_explain(last)}"
+        )
 
     def complete_as(
         self,
@@ -846,12 +884,11 @@ class LLMClient:
             except httpx.HTTPStatusError as exc:
                 if exc.response.status_code not in RETRYABLE_STATUS:
                     raise
-                if is_permanently_too_large(exc):
-                    # Waiting cannot shrink the request. Fail now with the provider's own
-                    # words so the fix (a smaller workspace) is obvious from the log.
-                    raise LLMError(
-                        f"request cannot fit the provider limit: {_explain(exc)}"
-                    ) from exc
+                if is_permanently_refused(exc):
+                    # Waiting cannot shrink the request, and it cannot buy credits either.
+                    # Fail now with the provider's own words so the fix (a smaller
+                    # workspace, or a topped-up account) is obvious from the log.
+                    raise LLMError(f"provider refused this request: {_explain(exc)}") from exc
                 last = exc
             except (httpx.TimeoutException, httpx.TransportError) as exc:
                 last = exc

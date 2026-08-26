@@ -277,6 +277,60 @@ def test_a_blocked_prompt_degrades_to_none_rather_than_raising(
     assert LLMClient(gemini_settings, use_cache=False).complete(system="s", user="u") is None
 
 
+def test_a_depleted_account_fails_fast_instead_of_retrying(
+    gemini_settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MEASURED on the supplied key: `429 RESOURCE_EXHAUSTED — "Your prepayment credits
+    are depleted"`, no `retryDelay`. Same status as a per-minute quota, opposite handling:
+    no wait ever clears it, so retrying costs 5s a call, 25 calls a job, in front of an
+    audience — to arrive at the identical failure."""
+    posts = {"n": 0}
+
+    def depleted(url: str, **_kwargs: Any) -> httpx.Response:
+        posts["n"] += 1
+        return httpx.Response(
+            429,
+            json={
+                "error": {
+                    "code": 429,
+                    "message": "Your prepayment credits are depleted. Please go to AI "
+                    "Studio at https://ai.studio/projects to manage your project and "
+                    "billing.",
+                    "status": "RESOURCE_EXHAUSTED",
+                }
+            },
+            request=httpx.Request("POST", url),
+        )
+
+    monkeypatch.setattr(httpx, "post", depleted)
+    monkeypatch.setattr("drishti.m4_genai.client.time.sleep", lambda _s: None)
+    client = LLMClient(gemini_settings, use_cache=False)
+
+    assert client.complete(system="s", user="u") is None
+    assert posts["n"] == 1, "a billing wall is not a rate limit; do not wait it out"
+
+
+def test_an_ordinary_quota_message_is_still_retried(
+    gemini_settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The narrowness matters: a real per-minute limit clears on its own."""
+    posts = {"n": 0}
+
+    def throttled(url: str, **_kwargs: Any) -> httpx.Response:
+        posts["n"] += 1
+        return httpx.Response(
+            429,
+            json={"error": {"message": "You exceeded your current quota", "code": 429}},
+            request=httpx.Request("POST", url),
+        )
+
+    monkeypatch.setattr(httpx, "post", throttled)
+    monkeypatch.setattr("drishti.m4_genai.client.time.sleep", lambda _s: None)
+
+    assert LLMClient(gemini_settings, use_cache=False).complete(system="s", user="u") is None
+    assert posts["n"] == 3
+
+
 def test_a_non_retryable_failure_records_the_attempts_it_actually_made(
     gemini_settings: Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:

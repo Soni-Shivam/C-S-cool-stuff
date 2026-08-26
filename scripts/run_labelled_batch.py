@@ -167,6 +167,18 @@ def main() -> int:
     ap.add_argument("labels", type=Path, help="csv of <sha256>,<label>")
     ap.add_argument("--out", type=Path, default=Path("/tmp/batch_report.txt"))
     ap.add_argument("--api", default=API)
+    ap.add_argument(
+        "--pace",
+        type=float,
+        default=0.0,
+        help=(
+            "seconds to wait between samples. On a token-per-minute-limited provider a "
+            "back-to-back batch starves the GenAI stage: the checklist and the code "
+            "interpreter together need more tokens than one minute allows, so later "
+            "samples come back with no behavioural verdict at all and B is silently "
+            "absent from their score. Pacing buys the window back."
+        ),
+    )
     args = ap.parse_args()
     _set_api(args.api)
 
@@ -197,6 +209,8 @@ def main() -> int:
             f"    S={row['S']} {row['band']} p_cal={row['p_cal']} evidence={row['evidence']}",
             flush=True,
         )
+        if args.pace and index < len(targets):
+            time.sleep(args.pace)
 
     ok = [r for r in rows if isinstance(r.get("S"), int)]
     mal_s = [float(r["S"]) for r in ok if r["label"] == 1]
@@ -235,6 +249,9 @@ def main() -> int:
         f"     p_cal alone   {auc(mal_p, ben_p):.3f}",
         "",
         f"  claims verified     {sum(r['claims_passed'] for r in ok)} / {sum(r['claims_total'] for r in ok)}",
+        f"  behavioural verdict {sum(1 for r in ok if r['evidence'] is not None)} / {len(ok)}"
+        "   (a missing one means the GenAI stage did not run — usually provider rate"
+        " limiting — and B contributed NOTHING to that sample's score)",
     ]
 
     args.out.write_text("\n".join([*blocks, *summary]) + "\n", encoding="utf-8")
