@@ -441,7 +441,7 @@ from drishti.logging import get_logger
 from drishti.m3_dynamic.generative_c2 import (
     C2Request, C2ResponseKind, derive_hints, synthesise_response, _looks_like_beacon,
 )
-from drishti.util import utcnow  # or the project's timestamp helper; check drishti/util.py
+from drishti.util import now  # verified: drishti/util.py:28 def now() -> str (ISO ts)
 
 log = get_logger(__name__)
 
@@ -474,7 +474,7 @@ def build_c2_bundle(sha256, flows, static_report, *, client=None, ledger=None, m
             served_body=resp.served_body, is_payload_url=is_payload,
             derived_from=tuple(resp.evidence_refs) or tuple(hint.evidence_refs)))
     log.info("c2_bundle_built", sha256=sha256[:12], hosts=len(by_host), entries=len(entries), calls=calls)
-    return C2Bundle(sha256=sha256, entries=tuple(entries), built_at=utcnow(), synthesis_client=_client_name(client))
+    return C2Bundle(sha256=sha256, entries=tuple(entries), built_at=now(), synthesis_client=_client_name(client))
 
 def _client_name(client) -> str:
     return getattr(client, "model", None) or type(client).__name__ if client else "none"
