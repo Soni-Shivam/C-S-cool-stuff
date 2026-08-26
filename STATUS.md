@@ -4,9 +4,9 @@
 Update it after **every** task: task → DONE, hour, commit sha, test count.
 Protocol: `docs/00_GUIDING_MAP.md` §13.
 
-- **Started:** 2026-08-13 · **Last reconciled:** 2026-08-25
+- **Started:** 2026-08-13 · **Last reconciled:** 2026-08-26
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
-- **Phase:** Presentation hardening · GUI/reverse-engineering depth landed; live lab and model evaluation remain blocked
+- **Phase:** 24-hour demo build · corpus extracting, M7 exports landed, live LLM verified; detonation and trained model still unproven
 - **Tests:** **493 contract+unit + 15 e2e, all passing** (measured 2026-08-25 at `7fce6f0`)
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
@@ -32,6 +32,127 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 | PR trail | **Zero PRs exist on the remote.** `gh pr list --state all` on `Soni-Shivam/CyberShield` returns nothing; `PROGRESS.md`'s PRs #1–#11 describe local branch history only |
 | v1 corpus list | `v1-reference/backend/samples.csv`, 6,000 rows, 3000/3000 balanced — **split contaminated**: 1,235 rows (20.6%) dated 1980/81 all in train, 23 rows dated 2039–2107 all in test; only 62 rows from 2024, 55 from 2025 |
 | Test baseline | **Measured 2026-08-17 at `615a803`: 300 contract+unit, 14 e2e, 314 total, all passing.** ruff clean, mypy clean over 41 source files. v1's claimed 124 remains unverified — do not quote it |
+
+## Demo build — 2026-08-26 (24-hour prototype push)
+
+Four workstreams in parallel: corpus extraction, ML training, the Android demo, and the
+detonator. This section records the orchestration and the M7/report work; the ML and
+lab sections are updated by their own owners.
+
+### Lab state, re-measured 2026-08-26
+
+The 2026-08-17 table above is **stale in three rows**. Corrected by inspection:
+
+| Item | State on 2026-08-26 |
+|---|---|
+| Active gcloud account | `sonishivam.iitb@gmail.com`. The 2026-08-25 blocker (`vedant.jeecompass@gmail.com` could not list Compute) is **gone** — all projects and instances are listable |
+| Extractor VM | `instance-20260817-080247`, **resized `n2-standard-8` → `n2-standard-16`**. SA scope is `devstorage.read_write`, not `read_only` as recorded on 08-17, so GCS retention works |
+| Cross-project IAM | `887402914495-compute@…` already holds `roles/storage.objectAdmin` on `gs://cybershield-505518-corpus`. No grant needed |
+| Detonator VM | **`m3-detonator` created**, `n2-standard-4`, `us-east1-c`, **nested virtualisation ENABLED**. The first live detonation is in progress; none has succeeded yet |
+| Quota | `CPUS_ALL_REGIONS` 32, 15 in use before the resize. The resize to 16 vCPU was sized to leave headroom for the detonator |
+| Untouched | `instance-20260814-133700` (e2-micro) holds the operator's personal data and is explicitly out of scope for every task |
+
+### Corpus extraction — running
+
+Real APKs from AndroZoo, 10,599-row time-split list, extracted through the **real M2**
+into 131-feature records. `scripts/launch_extraction.sh` is the launcher and carries the
+findings below in its header.
+
+- **AndroZoo key verified live** (HTTP 206 on a ranged download). The full 3.3 GB index
+  was already on the laptop from a previous session; no re-fetch needed.
+- **Throughput is CPU-bound, not download-bound.** Measured: each shard pegs ~95% of a
+  core in androguard while the NIC moves 1 MB/s. 4 shards on 8 vCPU → **440 rec/hr**;
+  14 shards on 16 vCPU → **1,489 rec/hr**.
+- **Memory is the real ceiling and it counts THREADS.** `AnalyzeAPK` holds the DEX and
+  its call graph per thread, so in-flight analyses are shards × threads. At 14×4 = 56
+  the 64 GB VM entered sustained `Under memory pressure, flushing caches`, starved
+  sshd, and was unreachable for ~20 minutes; throughput collapsed to ~200 rec/hr before
+  it died. Fixed with per-unit `MemoryHigh=2500M` / `MemoryMax=3500M` and
+  `Restart=on-failure`, so one greedy shard is killed alone and resume brings it back.
+  **No records were lost** — 477 survived the incident.
+- **Settled at 14 shards × 3 threads**, ~680 rec/hr measured at 14×2 with memory at
+  32/62 GB.
+- **Evaluation splits are extracted first.** The full list will not finish inside the
+  deadline, so the prefix that *does* finish was chosen deliberately: test and calib
+  complete before any training row, because CI width is driven by test n while 131
+  features are learnable from a modest training sample. A uniform prefix would have
+  produced a test set of a few hundred rows with ~25 malware, too thin to report.
+- Round-robin sharding is preserved within each split, so any prefix stays label- and
+  time-band-balanced.
+
+### LLM provider — switched to OpenRouter, verified live
+
+`DRISHTI_LLM_PROVIDER=openrouter`, model **`nvidia/nemotron-3-ultra-550b-a55b:free`**.
+Verified against the live API, not assumed:
+
+- Model id exists; 1M context; **supports `tools`/`tool_choice`**, so the bounded
+  tool loop in the RE workspace works. Pricing 0.
+- A full pipeline run on the canary through the **real** provider: `genai_static`
+  completed in 7.6 s, 2 MITRE techniques mapped and grounded, **4 claims generated, 4
+  verified, 0 rejected** against 14 citable nodes.
+- **The free endpoint is unreliable: 2 of 5 probe calls returned
+  `502 Upstream error from Nvidia: Service temporarily overloaded`.** This is a demo
+  risk, not a code defect. The LLM path degrades gracefully, but a live demo should
+  either warm the cache first or be prepared to fall back.
+- **The key was pasted into a chat transcript and must be rotated post-demo**, same as
+  the AndroZoo key.
+
+### M7 — report, STIX, YARA, dossier (T6.1, T6.2, T6.3)
+
+`drishti/m7_report/` was **empty**; all three export routes returned 501. Now built,
+with every honesty property enforced by a test rather than by care:
+
+- **Report** (`report.html`): self-contained, no external assets, printable. The
+  Limitations section is **derived** from provenance flags — partial analysers, replay
+  vs live, hand-authored fixtures, unverified containment, rejected claims, mock
+  provider, low confidence. A sample that produced no runtime behaviour renders
+  `INCONCLUSIVE, never benign`.
+- **STIX 2.1**: ids are UUIDv5 over stable keys, so two exports of a job are
+  byte-identical and the scorer's determinism is not undone one layer up. Publishes
+  only *verified* claims and *observed* flows — never `synthesised` ones, which were
+  served by our own Generative C2.
+- **YARA**: keyed on repack-resistant artefacts; the hash is metadata, never a
+  condition. Below 3 distinctive strings it emits itself **disabled with the reason**.
+- **Dossier** (new route, contract addendum A12): the package a cyber cell or bank
+  fraud desk needs. `submission_is_manual` is always True — **NCRP has no public
+  submission API and nothing here files anything**. The sample never leaves the
+  analysis project.
+
+Two defects found by running it for real rather than by reading it:
+
+1. The YARA generator keyed its rule on the Kotlin reflection warning string, which
+   ships in every Kotlin app — the rule would have matched most of the Play Store.
+   Fixed with URL shape-checking and a toolchain-boilerplate filter.
+2. `str()` on an asn1crypto `Name` returns the object repr, so a real run put
+   `<asn1crypto.x509.Name 139086784924624 b'071\x16…>` into the investigation report
+   and into a document intended for a fraud desk. Now renders `CN=…, O=…, C=…`.
+
+### Integrity stage demos
+
+`scripts/demo_integrity.py` — `make demo-reject`, `make demo-tamper`, `make demo-integrity`.
+Throwaway DB and key, safe to run live and repeatedly.
+
+- **reject**: an AI claim citing nothing is refused; a *fabricated* citation is refused
+  by resolution; the same claim is accepted once cited. The refusals leave **no gap in
+  the sequence**, because grounding is checked inside the write transaction.
+- **tamper**: turned out to be a two-layer result. The append-only SQL triggers refuse
+  the `UPDATE` outright; after an attacker drops the triggers and rewrites the row, the
+  hash chain still reports the break **at the exact seq**. `T6.4`'s note that the tamper
+  demo was deliberately unbuilt is now superseded — it is built honestly, against real
+  SQL and real chain verification, not simulated in the browser.
+
+### Still unproven as of this entry
+
+- **No live detonation has succeeded.** The detonator VM exists with nested virt; the
+  emulator, frida pinning, containment verification, and the first real trace are all
+  still in progress.
+- **No trained model has shipped a reportable metric.** Pilot runs exist on a few
+  hundred samples and are stamped PILOT; the harness refuses to write reportable
+  numbers below 25 per class.
+- The Android Shield app and the Device-Owner install veto are being built and have not
+  been demonstrated end to end.
+
+---
 
 ## Presentation hardening — 2026-08-25
 
@@ -159,10 +280,63 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
       STIX T6.2 all render their 501s today) plus the dev-only **tamper demo**, which is
       deliberately unbuilt — see Deviations.
 - [ ] T6.5 Code freeze @ H68                       TODO
-- [ ] T6.6 Demo script                             TODO
-- [ ] T6.7 Backup plan                             TODO
+- [x] T6.6 Demo script                             DONE  2026-08-26 · `docs/DEMO_SCRIPT.md`, beat-by-beat with measured timings
+- [~] T6.7 Backup plan                             WIP   2026-08-26 · fallbacks per beat in DEMO_SCRIPT §5; no backup video yet
 - [ ] T6.8 Q&A preparation                         TODO
 - [ ] T6.9 Final hour                              TODO
+
+### T6.10 — Live on-device interception demo · DONE 2026-08-26
+
+The single most-demoed artefact: an Android emulator on the demo laptop running
+**DRISHTI Shield**, which intercepts a malicious APK *before* it installs.
+
+- **Emulator, local.** Android 34 `google_apis` x86_64 AVD (`drishti_demo`, 4 vCPU /
+  3 GB / 3 GB data) under KVM on the laptop. `google_apis`, not `playstore`, because
+  device owner requires a device with no accounts and `adb root` must work. This is
+  **not** a detonation host and nothing from `data/samples/` or any corpus bucket has
+  ever been on it — the only two APKs it has seen are `shield/` and
+  `canary/decoy-challan/`, both compiled from source in this repo.
+- **`shield/`** — Kotlin, AGP 8.7.3, minSdk 26, targetSdk 34, zero dependencies beyond
+  the Android framework. Four layers: pre-install `FileObserver` watcher + 250 ms
+  sweep; tap-time intent filter; `DevicePolicyManager` veto as device owner;
+  post-install hash-match failsafe.
+- **`canary/decoy-challan/`** — an inert decoy named "RTO Challan". Its manifest
+  declares the Indian challan-fraud family's permission set; **every implementation
+  body is an empty method or a `Log.i`**. `verify_inert.sh` proves it by grep (comment-
+  stripped) and gates both `build.sh` and `scripts/demo_up.sh`. Not committed.
+- **`scripts/demo_up.sh` / `demo_deliver.sh` / `demo_down.sh`** — cold start to ready
+  in **35 s measured**, including a wiped AVD.
+- **`GET /api/jobs`** added to the T0.6 surface (additive; recorded in
+  `docs/PHASE_0_FOUNDATIONS.md` in the same commit) so the dashboard can discover
+  jobs created by the phone. `ui/src/components/DeviceFeed.tsx` polls it and follows
+  the phone with nobody touching the browser — verified in a real browser.
+
+**Measured 2026-08-26** (never estimated; reproduce with `docs/DEMO_SCRIPT.md` §7):
+
+| Measurement | Value |
+|---|---|
+| `demo_up.sh --fresh`, cold to ready | 35 s |
+| File landing → verdict on screen, 5 runs | 7.9 / 8.3 / 10.1 / 12.6 / 13.1 s (median 10.1) |
+| — of which M2 static | 8.6–9.7 s (from `stage_history`) |
+| — of which Shield itself | < 0.3 s |
+| Layer 4 detection after install | < 1 s |
+| Tests | 581 contract+unit passing at this change |
+
+**The veto is real and was proved, not asserted.** With Shield as device owner,
+`dumpsys user` reports `Device policy restrictions: no_install_unknown_sources`, and
+driving the system package installer at the APK hands off to
+`com.android.settings/.enterprise.ActionDisabledByAdminDialog` — Android's own
+"blocked by your admin" screen. `adb install` still succeeds because the shell UID is
+exempt from the restriction; that is what Layer 4 exists for, and it caught it
+(`package_added` → `quarantine … suspended=true` → `failsafe_engaged`).
+
+**The composite score for the decoy is 0, and the phone says why.** `m6_score.engine`
+refuses to let an unavailable ML model or a mock LLM contribute to `S`, and this build
+has neither a trained model in `models/` nor an LLM key. So `S = 0` for every input.
+The Shield's `BlockDecision` therefore blocks on **M2 static evidence** — 1 critical +
+4 high permission combinations, each MITRE-mapped — and prints "BASIS FOR THIS
+DECISION · M2 static evidence" beside the zero, with the reason. No number was
+invented to make the demo look better.
 
 ## Salvage from v1 (see `docs/SALVAGE.md`)
 
@@ -350,3 +524,38 @@ not caught by any test or gate, only by reading `git log`. Single agent from her
   `ruff format` rewrote the spec (~445 lines in `01_DATA_CONTRACTS.md` alone) and CI's
   `ruff format --check .` failed on it. Fixed properly by adding `*.md` to
   `[tool.ruff] extend-exclude`, so `make fmt` and CI can both run repo-wide safely.
+
+### Deviations — 2026-08-26 (T6.10 live demo)
+
+- **`GET /api/jobs` added to the frozen T0.6 route surface.** Purely additive: no
+  existing route's path, method, or response shape changed. Needed because the demo's
+  jobs are created by the phone, so the dashboard has no job id to deep-link to.
+  `docs/PHASE_0_FOUNDATIONS.md` updated in the same change.
+- **The Shield's block decision is not `S >= 65`.** It cannot be, while `S` is
+  structurally 0 (see above). `BlockDecision` in `shield/.../Verdict.kt` falls back to
+  M2 static evidence — one CRITICAL combination, or two or more HIGH — and names its
+  own basis on screen. The threshold is a **policy, not a measured metric**; no
+  false-positive rate has been measured for it and the UI does not claim one. When ML
+  or GenAI becomes available, `S` takes the decision back with no other code change.
+- **The demo emulator is a laptop-local AVD.** `CLAUDE.md`'s rule that no real APK is
+  executed on a developer machine is unchanged and unbroken: the only APKs installed
+  are the two this repo compiles, and the decoy is inert by construction and by a
+  gate that runs on every `demo_up.sh` invocation.
+- **Layer 4's receiver is registered at runtime, not from the manifest.**
+  `ACTION_PACKAGE_ADDED` is not on API 26's implicit-broadcast exemption list, so the
+  manifest declaration alone never fires. Found by a failed test run, not by reading.
+- **`ScanEngine.settle` checks the ZIP End Of Central Directory record, not file
+  size.** Size stability produced a wrong sha256 on the first run — the verdict was
+  computed over bytes that were not the file, because emulated shared storage reports
+  its final size before the tail is readable.
+
+### Open risks — live demo
+
+- **Backend latency variance (7.9–13.1 s) is the largest on-stage uncertainty**, and
+  it is entirely M2 static analysis. Shield contributes under 300 ms.
+- **No backup video exists yet** (T6.7). The terminal fallback in `DEMO_SCRIPT.md` §5
+  is rehearsed but a recording is still the right insurance.
+- **Device owner provisioning is the one failure that cannot be repaired in under a
+  minute mid-demo.** `demo_up.sh` prints whether it is HELD; check it every time.
+- **No dynamic analysis has been run for the demo sample**, and the phone's
+  limitations list — generated by the backend, not typed — says so.
