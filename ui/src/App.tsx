@@ -201,6 +201,7 @@ export default function App() {
                       genai={genai}
                       ingest={ingest}
                       dynamic={dynamic}
+                      staticReport={staticReport}
                     />
                   )}
                   {tab === 'Static' && <StaticTab report={staticReport} />}

@@ -20,6 +20,7 @@ import type {
   FileMeta,
   GenAIVerdict,
   ProposedAction,
+  StaticReport,
 } from '../api/types'
 
 function ActionRow({ jobId, action }: { jobId: string; action: ProposedAction }) {
@@ -75,13 +76,20 @@ export function OverviewTab({
   genai,
   ingest,
   dynamic,
+  staticReport,
 }: {
   jobId: string
   score: Artefact<CompositeScore> | null
   genai: Artefact<GenAIVerdict> | null
   ingest: Artefact<FileMeta> | null
   dynamic: Artefact<DynamicTrace> | null
+  staticReport: Artefact<StaticReport> | null
 }) {
+  // One line, on the tab everyone actually looks at. The full A13 breakdown lives on
+  // the Static tab; this is the sentence that stops a reader concluding "it flagged
+  // an app for reading SMS" before they get there.
+  const lookalike =
+    staticReport?.state === 'ready' ? staticReport.value.lookalike : null
   return (
     <div className="grid gap-4 xl:grid-cols-2">
       <Panel title="Verdict" className="xl:col-span-2">
@@ -99,6 +107,38 @@ export function OverviewTab({
           )}
         </ArtefactGate>
       </Panel>
+
+      {lookalike && lookalike.shared_permissions.length > 0 && (
+        <Panel title="Shared with apps you trust" className="xl:col-span-2">
+          <p className="text-sm text-fg">
+            This sample holds{' '}
+            <span className="font-semibold">{lookalike.shared_permissions.length}</span>{' '}
+            dual-use permission
+            {lookalike.shared_permissions.length === 1 ? '' : 's'} that caller-ID, SMS-backup
+            and anti-spam apps hold too — Truecaller reads your SMS as well. The permission
+            set is not the finding.
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            {lookalike.shared_permissions.map((permission) => (
+              <span
+                key={permission}
+                title={permission}
+                className="rounded bg-ink px-1.5 py-0.5 font-mono text-[10px] text-muted"
+              >
+                {permission.split('.').pop()}
+              </span>
+            ))}
+            <Tag tone={lookalike.verdict === 'trojan_shape' ? 'bad' : 'neutral'}>
+              {lookalike.verdict.replace(/_/g, ' ')} · trojan-shape{' '}
+              {lookalike.trojan_score.toFixed(2)}
+            </Tag>
+          </div>
+          <p className="mt-2 text-xs text-muted">
+            Open the <span className="text-fg">Static</span> tab for the signal-by-signal
+            breakdown of what does, and does not, separate it from them.
+          </p>
+        </Panel>
+      )}
 
       <Panel title="Sample">
         <ArtefactGate artefact={ingest}>

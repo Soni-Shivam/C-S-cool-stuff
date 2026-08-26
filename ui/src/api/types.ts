@@ -328,6 +328,37 @@ export interface FileMeta extends AnalyserResult {
   ledger_refs: string[]
 }
 
+export type BenignLookalikeVerdict = 'trojan_shape' | 'legitimate_privileged' | 'indeterminate'
+
+/** One discriminator from `m2_static/lookalike.py`, and whether it fired. */
+export interface LookalikeSignal {
+  id: string
+  present: boolean
+  weight: number
+  detail: string
+  evidence_refs: string[]
+}
+
+/**
+ * Contract A13. Why this app is, or is not, the trojan its permissions would allow.
+ *
+ * `shared_permissions` is the half that matters to a reader: the capabilities this
+ * sample holds in common with Truecaller, SMS-backup tools and anti-spam apps. The
+ * panel leads with it, because a report that presents a dual-use permission as though
+ * it were itself the finding is a report that flags Truecaller.
+ *
+ * There is no `benign` verdict. `indeterminate` is the best available.
+ */
+export interface LookalikeAssessment {
+  verdict: BenignLookalikeVerdict
+  trojan_score: number
+  signals: LookalikeSignal[]
+  shared_permissions: string[]
+  targeted_financial_packages: string[]
+  publisher_trusted: boolean
+  rationale: string
+}
+
 export interface StaticReport extends AnalyserResult {
   sha256: string
   package: string
@@ -356,6 +387,7 @@ export interface StaticReport extends AnalyserResult {
   decompiled_methods: DecompiledMethod[]
   sink_hits: string[]
   hypotheses: Hypothesis[]
+  lookalike: LookalikeAssessment | null
   ledger_refs: string[]
 }
 
