@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from drishti.contracts.dynamic_trace import (
+    FailureCode,
     FailureRecord,
     HarnessMetadata,
     ObservationArtifact,
@@ -57,7 +58,7 @@ def run_command(args: list[str], *, timeout: int = 120) -> subprocess.CompletedP
 class HarnessError(RuntimeError):
     """A classified failure suitable for the strict wire artifact."""
 
-    def __init__(self, code: str, stage: str, message: str) -> None:
+    def __init__(self, code: FailureCode, stage: str, message: str) -> None:
         super().__init__(message)
         self.code = code
         self.stage = stage
@@ -129,7 +130,7 @@ class DynamicHarness:
         output = f"{result.stdout}\n{result.stderr}"[:400]
         if result.returncode == 0 and "Success" in (result.stdout or ""):
             return
-        code = (
+        code: FailureCode = (
             "install_unsupported"
             if any(item in output for item in self._UNSUPPORTED)
             else "install_failed"
@@ -207,7 +208,7 @@ class DynamicHarness:
             try:
                 self.restore_snapshot()
                 after = "passed"
-                absent = bool(package) and self.package_absent(package)
+                absent = self.package_absent(package) if package else False
             except Exception as exc:
                 after = "failed"
                 outcome = "failed"

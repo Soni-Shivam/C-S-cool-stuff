@@ -16,7 +16,6 @@ from pathlib import Path
 
 import pytest
 
-from drishti.config import Settings
 from drishti.contracts.evidence import EvidenceType
 from drishti.ledger.store import LedgerStore
 from drishti.m3_dynamic.generative_c2 import (

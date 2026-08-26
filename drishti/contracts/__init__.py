@@ -28,11 +28,11 @@ from drishti.contracts.dynamic_trace import (
     FileWrite,
     HarnessMetadata,
     NetworkFlow,
-    SyntheticC2Response,
     ObservationArtifact,
     ObservationEvent,
     SnapshotLifecycle,
     StrictWireModel,
+    SyntheticC2Response,
     TraceSourceKind,
 )
 from drishti.contracts.evidence import (
@@ -131,7 +131,6 @@ __all__ = [
     "MorphKind",
     "MorphPlan",
     "NetworkFlow",
-    "SyntheticC2Response",
     "ObservationArtifact",
     "ObservationEvent",
     "PermissionCombo",
@@ -145,6 +144,7 @@ __all__ = [
     "StageEvent",
     "StaticReport",
     "StrictWireModel",
+    "SyntheticC2Response",
     "TechniqueMapping",
     "ThreatIntel",
     "ToolCallRecord",

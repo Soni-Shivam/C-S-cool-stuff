@@ -23,7 +23,7 @@ alone, so the loop still closes when the model is unavailable.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
@@ -141,12 +141,17 @@ def _from_model(observations: list[dict[str, Any]], client: Any | None) -> PlanO
     if client is None:
         return None
     try:
-        return client.complete_as(
-            system=_system_prompt(),
-            user=build_user_turn(observations),
-            schema=PlanOut,
-            purpose="adversarial_elicitor",
-            max_output_tokens=800,
+        # `client` is deliberately untyped (Any) so a fake can be injected in tests;
+        # the cast records the contract the real client honours.
+        return cast(
+            "PlanOut | None",
+            client.complete_as(
+                system=_system_prompt(),
+                user=build_user_turn(observations),
+                schema=PlanOut,
+                purpose="adversarial_elicitor",
+                max_output_tokens=800,
+            ),
         )
     except Exception as exc:
         log.warning("elicitor_model_unavailable", error=str(exc))

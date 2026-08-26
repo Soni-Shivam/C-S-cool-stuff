@@ -22,6 +22,7 @@ product (CLAUDE.md rule 5), so the model cites or it is marked as having failed 
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal, cast
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
@@ -153,7 +154,12 @@ def interpret_methods(
             continue
         line_start = slice_.line_start if slice_ else (method.line_start if method else 1)
         line_end = slice_.line_end if slice_ else (method.line_end if method else 1)
-        confidence = item.confidence if item.confidence in {"high", "medium", "low"} else "low"
+        # The membership test genuinely validates the value; `cast` records that for
+        # the type checker, which cannot narrow a str through a set literal.
+        confidence = cast(
+            Literal["high", "medium", "low"],
+            item.confidence if item.confidence in {"high", "medium", "low"} else "low",
+        )
         claims = tuple(
             GroundedClaim(
                 text=claim.text.strip()[:500],

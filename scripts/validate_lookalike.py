@@ -43,10 +43,10 @@ try:
 except Exception:
     pass
 
-from drishti.ledger.store import LedgerStore  # noqa: E402
-from drishti.m2_static.engine import analyse  # noqa: E402
-from drishti.m2_static.lookalike import TROJAN_SHAPE_THRESHOLD  # noqa: E402
-from drishti.util import new_id  # noqa: E402
+from drishti.ledger.store import LedgerStore
+from drishti.m2_static.engine import analyse
+from drishti.m2_static.lookalike import TROJAN_SHAPE_THRESHOLD
+from drishti.util import new_id
 
 BUCKET = "gs://cybershield-505518-corpus/apks"
 _local = threading.local()
@@ -218,7 +218,7 @@ def main() -> int:
     mal = [r for r in rows if r["label"] == 1]
     ben = [r for r in rows if r["label"] == 0]
 
-    print("\n── verdict × true label ──")
+    print("\n── verdict x true label ──")
     cross: Counter[tuple[int, str]] = Counter((r["label"], r["verdict"]) for r in rows)
     for (label, verdict), count in sorted(cross.items()):
         print(f"  label={label}  {verdict:<24} {count}")

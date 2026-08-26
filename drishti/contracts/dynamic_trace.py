@@ -255,6 +255,24 @@ class ObservationEvent(StrictWireModel):
         return value
 
 
+#: Why a detonation produced no observations. Named rather than inlined so the harness
+#: that RAISES these and the wire contract that RECORDS them cannot drift apart — the
+#: same one-source-of-truth rule the evidence catalogue and verifier follow.
+FailureCode = Literal[
+    "containment_failed",
+    "snapshot_restore_failed",
+    "install_failed",
+    "install_unsupported",
+    "frida_failed",
+    "hook_error",
+    "sample_crashed",
+    "timeout",
+    "cleanup_failed",
+    "emulator_unhealthy",
+    "internal_error",
+]
+
+
 class FailureRecord(StrictWireModel):
     """Why a run did not produce observations.
 
@@ -263,19 +281,7 @@ class FailureRecord(StrictWireModel):
     inflated its evasion numbers (CARRIED_FINDINGS.md defect 11).
     """
 
-    code: Literal[
-        "containment_failed",
-        "snapshot_restore_failed",
-        "install_failed",
-        "install_unsupported",
-        "frida_failed",
-        "hook_error",
-        "sample_crashed",
-        "timeout",
-        "cleanup_failed",
-        "emulator_unhealthy",
-        "internal_error",
-    ]
+    code: FailureCode
     stage: Annotated[str, StringConstraints(min_length=1, max_length=80)]
     message: Annotated[str, StringConstraints(min_length=1, max_length=512)]
     occurred_at: str

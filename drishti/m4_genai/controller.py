@@ -26,7 +26,14 @@ from pydantic import BaseModel, Field
 
 from drishti.config import Settings
 from drishti.contracts.evidence import EvidenceType
-from drishti.contracts.genai_verdict import GenAIVerdict, GroundedClaim, VerifierStatus
+from drishti.contracts.genai_verdict import (
+    CodeInterpretation,
+    GenAIVerdict,
+    GroundedClaim,
+    ToolCallRecord,
+    VerifiedString,
+    VerifierStatus,
+)
 from drishti.contracts.static_report import StaticReport
 from drishti.ledger.store import LedgerStore
 from drishti.ledger.verifier import NON_BEHAVIOURAL_TYPES, Verifier
@@ -328,10 +335,17 @@ def analyse(
         budget=pack.token_budget,
     )
 
+    # Annotated rather than inline: a bare `((), (), ())` makes mypy infer T from the
+    # DEFAULT (three empty tuples) instead of from the callable's real return type.
+    empty_interpretations: tuple[
+        tuple[CodeInterpretation, ...],
+        tuple[ToolCallRecord, ...],
+        tuple[VerifiedString, ...],
+    ] = ((), (), ())
     interpretations, tool_calls, verified_strings = _guarded(
         "code_interpreter",
         lambda: interpret_methods(static, ledger, job_id, llm, pack=pack),
-        default=((), (), ()),
+        default=empty_interpretations,
     )
 
     victim = _guarded(
@@ -339,7 +353,7 @@ def analyse(
         lambda: profile_victim(static, ui_strings, ledger, job_id, llm),
         default=None,
     )
-    verified_interpretations = []
+    verified_interpretations: list[CodeInterpretation] = []
     for interpretation in interpretations:
         checked = tuple(
             claim.model_copy(update={"verifier_status": verifier.check_claim(claim)})
