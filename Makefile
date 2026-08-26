@@ -66,6 +66,22 @@ check: lint test ## What CI runs
 ledger: ## Verify a job's hash chain: make ledger JOB=job_xxx
 	uv run python -m drishti.ledger.cli verify --job $(JOB)
 
+# ─── Stage demos ─────────────────────────────────────────────────────────────
+# Both run against a throwaway database and key, so they are safe to run live,
+# repeatedly, in any order, without touching a real job.
+
+.PHONY: demo-reject
+demo-reject: ## Live: an AI claim citing no resolvable evidence is REFUSED
+	uv run python scripts/demo_integrity.py reject
+
+.PHONY: demo-tamper
+demo-tamper: ## Live: an edited ledger is detected at an exact seq
+	uv run python scripts/demo_integrity.py tamper
+
+.PHONY: demo-integrity
+demo-integrity: ## Both integrity demos, back to back
+	uv run python scripts/demo_integrity.py both
+
 # ─── GCP lab ─────────────────────────────────────────────────────────────────
 # The ONLY place a real sample is ever executed. Targets are deliberately
 # explicit: a nested-virt VM left running is the easiest way to burn the budget.
