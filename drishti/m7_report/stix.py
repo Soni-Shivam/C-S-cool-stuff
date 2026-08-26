@@ -39,6 +39,27 @@ _BAND_CONFIDENCE = {
     SeverityBand.LOW: 25,
 }
 
+#: STIX `indicator-type-ov` for each band.
+#:
+#: `benign` is deliberately absent. DRISHTI never concludes that a sample is safe —
+#: a low score means the signals it had did not add up, which the rest of the system
+#: states as "safety could not be confirmed either way" and reports as REVIEW. Exporting
+#: that same job to a partner as `benign` would turn a withheld judgement into a
+#: positive clearance the moment it left this process, and it is the one claim the
+#: pipeline is never allowed to make. `unknown` is the honest member of the vocabulary
+#: for that case.
+_BAND_INDICATOR_TYPES = {
+    SeverityBand.CRITICAL: ["malicious-activity"],
+    SeverityBand.HIGH: ["malicious-activity"],
+    SeverityBand.MEDIUM: ["anomalous-activity"],
+    SeverityBand.LOW: ["unknown"],
+}
+
+
+def _indicator_types(band: SeverityBand) -> list[str]:
+    """The STIX indicator types for a band. Never `benign` — see `_BAND_INDICATOR_TYPES`."""
+    return list(_BAND_INDICATOR_TYPES.get(band, ["unknown"]))
+
 
 def _sdo_id(kind: str, key: str) -> str:
     """A stable STIX id for `kind` identified by `key` within this producer."""
@@ -111,7 +132,7 @@ def build_bundle(
         "modified": stamp,
         "name": f"DRISHTI {score.band.value.upper()} — {meta.package or meta.filename}",
         "description": score.explanation or "Automated static and dynamic triage.",
-        "indicator_types": ["malicious-activity"] if malicious else ["benign"],
+        "indicator_types": _indicator_types(score.band),
         "pattern": f"[file:hashes.'SHA-256' = '{meta.sha256}']",
         "pattern_type": "stix",
         "valid_from": stamp,

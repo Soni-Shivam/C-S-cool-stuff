@@ -246,6 +246,28 @@ def test_stix_carries_its_own_limitations(meta) -> None:
     assert indicator["x_drishti_limitations"] == ["ML model unavailable"]
 
 
+def test_stix_never_exports_a_sample_as_benign(meta) -> None:
+    """A low score is a withheld judgement, and must not leave as a clearance.
+
+    The rest of the system says "safety could not be confirmed either way" and
+    recommends REVIEW for a LOW band. A partner reading `indicator_types: [benign]`
+    out of the bundle would read that as DRISHTI having cleared the sample, which is
+    the one conclusion it is never allowed to reach.
+    """
+    for band in SeverityBand:
+        bundle = stix.build_bundle(
+            meta=meta, score=CompositeScore(S=10, band=band, C=0.2, gamma=0.5)
+        )
+        for obj in bundle["objects"]:
+            assert "benign" not in obj.get("indicator_types", [])
+
+    low = stix.build_bundle(
+        meta=meta, score=CompositeScore(S=10, band=SeverityBand.LOW, C=0.2, gamma=0.5)
+    )
+    indicator = next(o for o in low["objects"] if o["type"] == "indicator")
+    assert indicator["indicator_types"] == ["unknown"]
+
+
 # ── YARA must be honest about its own quality ───────────────────────────────
 def test_yara_disables_itself_without_enough_distinctive_strings(meta, score) -> None:
     rule = yara.build_rule(meta=meta, score=score, static=None)

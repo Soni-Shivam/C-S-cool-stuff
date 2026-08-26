@@ -82,10 +82,10 @@ def test_a_transient_413_recovers_instead_of_killing_the_interpreter(
         llm_provider="groq", llm_max_calls_per_job=25, llm_max_prompt_tokens=12000
     )
     llm = client_mod.LLMClient.__new__(client_mod.LLMClient)
-    llm._settings = settings  # noqa: SLF001 - constructing without touching the network
+    llm._settings = settings
     monkeypatch.setattr(llm, "_groq_exchange", boom, raising=False)
 
-    message, attempts = llm._exchange_with_retry(  # noqa: SLF001
+    message, attempts = llm._exchange_with_retry(
         messages=[{"role": "user", "content": "x"}], tools=[], max_output_tokens=10
     )
     assert message == {"content": "{}", "tool_calls": []}

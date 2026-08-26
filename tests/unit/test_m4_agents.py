@@ -19,9 +19,17 @@ from drishti.config import Settings
 from drishti.ledger.store import LedgerStore
 from drishti.m2_static.engine import analyse
 from drishti.m2_static.sinks import SINKS
-from drishti.m4_genai.agents.code_interpreter import explain_paths
+from drishti.m4_genai.agents.code_interpreter import (
+    InterpretationOut,
+    InterpretationSet,
+    explain_paths,
+    interpret_methods,
+    normalise_signature,
+    resolve_signature,
+)
 from drishti.m4_genai.agents.technique_mapper import load_kb, map_techniques
 from drishti.m4_genai.client import LLMClient
+from drishti.m4_genai.retrieval import select
 
 REPO = Path(__file__).resolve().parents[2]
 CANARY = REPO / "canary" / "dist" / "canary.apk"
@@ -114,3 +122,134 @@ def test_explanations_cite_the_path_they_describe(ledger, tmp_path: Path) -> Non
         assert claim.agent == "code_interpreter"
         for ref in claim.evidence_refs:
             assert store.get(ref) is not None
+
+
+# ── code interpreter: signature identity ─────────────────────────────────────
+# Our canonical form is `Lpkg/Cls;->method` with NO parameter descriptor. Handed the
+# source, the model writes the parameters back, or writes the class in Java spelling.
+# Measured over five live calls on the canary, ZERO of five matched by string equality
+# and all five interpretations were dropped — the Reverse Engineering view showed code
+# with no reading beside it, and the run blamed a provider that had answered correctly.
+@pytest.mark.parametrize(
+    "returned",
+    [
+        "Lin/drishti/canary/MainActivity;->onCreate",
+        "Lin/drishti/canary/MainActivity;->onCreate(Landroid/os/Bundle;)V",
+        "in.drishti.canary.MainActivity;->onCreate(android.os.Bundle)",
+        "in.drishti.canary.MainActivity;->onCreate",
+        "in.drishti.canary.MainActivity.onCreate",
+        "  Lin/drishti/canary/MainActivity;->onCreate(Landroid/os/Bundle;)V  ",
+    ],
+)
+def test_every_spelling_of_a_signature_resolves_to_the_one_we_recovered(returned: str) -> None:
+    """Identity is the class and method, not the transcription the model chose."""
+    canonical = "Lin/drishti/canary/MainActivity;->onCreate"
+    assert resolve_signature(returned, [canonical]) == canonical
+
+
+def test_a_method_we_did_not_recover_still_resolves_to_nothing() -> None:
+    """The grounding rule is unchanged: only the spelling is forgiven, never the method."""
+    canonical = "Lin/drishti/canary/MainActivity;->onCreate"
+    for absent in (
+        "Lin/drishti/canary/MainActivity;->onResume",
+        "Lcom/evil/Payload;->onCreate",
+        "",
+        "not a signature at all",
+    ):
+        assert resolve_signature(absent, [canonical]) is None
+
+
+def test_an_ambiguous_signature_is_dropped_rather_than_guessed() -> None:
+    """Two candidates normalising alike means we cannot say which was read. Refuse."""
+    candidates = ["La/b/C;->run", "La.b.C;->run"]
+    assert resolve_signature("a.b.C.run", candidates) is None
+
+
+def test_an_exact_match_wins_before_any_normalisation() -> None:
+    """Normalisation is a fallback, never a rewrite of a signature that already matched."""
+    exact = "La/b/C;->run(I)V"
+    assert resolve_signature(exact, [exact, "La/b/C;->run"]) == exact
+
+
+def test_normalisation_keeps_a_class_whose_name_begins_with_l() -> None:
+    """`Llama` is a class, `L` is a descriptor prefix — only strip when one follows."""
+    assert normalise_signature("Lcom/x/Llama;->go") == "com.x.Llama.go"
+    assert normalise_signature("Llama;->go") == "Llama.go"
+
+
+def test_a_kept_interpretation_is_stored_under_the_canonical_signature(
+    ledger, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The UI joins interpretation to source on this exact string, so it must be ours.
+
+    Storing the model's spelling would leave the reading orphaned beside the code even
+    when it was kept — the same blank panel, one layer further along.
+    """
+    store, report = ledger
+    settings = Settings(groq_api_key="gsk-test", llm_cache_dir=tmp_path / "c")
+    client = LLMClient(settings, use_cache=False)
+    pack = select(report)
+    canonical = pack.chains[0].methods[0].signature
+
+    def reply(**_: object) -> InterpretationSet:
+        return InterpretationSet(
+            interpretations=[
+                InterpretationOut(
+                    # Java spelling with a descriptor: what the live model returned on
+                    # four of five measured runs.
+                    method_signature=canonical.lstrip("L").replace("/", ".")
+                    + "(android.os.Bundle)",
+                    summary="probes the package manager and counts SMS",
+                    confidence="high",
+                )
+            ]
+        )
+
+    monkeypatch.setattr(client, "complete_with_tools_as", reply)
+    kept, _, _ = interpret_methods(report, store, "job_agents", client, pack=pack)
+    assert [k.method_signature for k in kept] == [canonical]
+
+
+def test_an_empty_pass_names_the_cause_it_observed(
+    ledger, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Three failures, three different sentences. None of them may blame the provider.
+
+    "provider unavailable or response invalid after retry" was printed for all of them,
+    including the case where the provider answered correctly and we discarded the
+    answer. A banner naming the wrong subsystem is a false claim on the dashboard.
+    """
+    store, report = ledger
+    settings = Settings(groq_api_key="gsk-test", llm_cache_dir=tmp_path / "c")
+    pack = select(report)
+
+    def run(reply, failure=None) -> list[str]:
+        client = LLMClient(settings, use_cache=False)
+        client.last_failure = failure
+        monkeypatch.setattr(client, "complete_with_tools_as", lambda **_: reply)
+        notes: list[str] = []
+        got, _, _ = interpret_methods(
+            report, store, "job_agents", client, pack=pack, diagnostics=notes
+        )
+        assert got == ()
+        assert len(notes) == 1
+        return notes
+
+    # 1. The request never produced a usable reply: the client's own words, verbatim.
+    transport = run(None, failure="the request to the model failed: connect timeout")
+    assert "connect timeout" in transport[0]
+
+    # 2. The model answered, and named a method outside this analysis.
+    dropped = run(
+        InterpretationSet(
+            interpretations=[InterpretationOut(method_signature="Lcom/evil/Never;->seen")]
+        )
+    )
+    assert "did not recover" in dropped[0]
+    assert "Lcom/evil/Never;->seen" in dropped[0]
+    assert "provider" not in dropped[0]
+
+    # 3. The model answered with an empty list. Also not a provider problem.
+    empty = run(InterpretationSet(interpretations=[]))
+    assert "no interpretations" in empty[0]
+    assert "unavailable" not in empty[0]

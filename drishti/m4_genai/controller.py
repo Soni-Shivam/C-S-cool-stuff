@@ -402,24 +402,32 @@ def analyse(
         tuple[VerifiedString, ...],
     ] = ((), (), ())
     degradations: list[str] = []
+    # `interpret_methods` degrades to no interpretations WITHOUT raising, so it reports
+    # the reason it observed through this sink rather than leaving the caller to guess.
+    # The guess used to be "provider unavailable or response invalid after retry" for
+    # every empty pass, including the common case where the provider answered perfectly
+    # and the answer was discarded here. An error banner that names the wrong subsystem
+    # is a false claim on the dashboard, which is the one thing this project cannot ship.
+    interpreter_notes: list[str] = []
     interpretations, tool_calls, verified_strings = _guarded(
         "code_interpreter",
-        lambda: interpret_methods(static, ledger, job_id, llm, pack=pack),
+        lambda: interpret_methods(
+            static, ledger, job_id, llm, pack=pack, diagnostics=interpreter_notes
+        ),
         default=empty_interpretations,
         errors=degradations,
     )
-    # The other silent-empty path: `interpret_methods` degrades to no interpretations
-    # WITHOUT raising when the provider returns nothing valid (it logs
-    # `code_interpreter_unavailable`). Chains were selected, so emptiness here is a
-    # provider failure, not the model declining its tools — say so in `errors`.
     if (
         pack.chains
         and not interpretations
         and not any("code_interpreter" in e for e in degradations)
     ):
-        degradations.append(
-            f"code_interpreter returned no interpretations for {len(pack.chains)} selected "
-            "chains: provider unavailable or response invalid after retry"
+        degradations.extend(
+            interpreter_notes
+            or [
+                f"code_interpreter returned no interpretations for {len(pack.chains)} "
+                "selected chains; the pass reported no reason"
+            ]
         )
 
     victim = _guarded(

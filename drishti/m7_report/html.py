@@ -113,7 +113,15 @@ def _limitations(
             "is capable of, not what it was observed doing."
         )
     else:
-        if trace.synthetic:
+        if trace.synthetic and trace.source == TraceSourceKind.UNAVAILABLE:
+            # `synthetic` covers two different situations and they must not read alike.
+            # A reader told "hand-authored fixture" will ask which fixture — and when no
+            # sandbox was reachable there is no fixture to show them.
+            items.append(
+                "No sandbox was available, so this sample was never executed. Nothing "
+                "in this report was observed at runtime."
+            )
+        elif trace.synthetic:
             items.append(
                 "The dynamic trace is a hand-authored fixture. It illustrates the "
                 "pipeline and must not be read as evidence about this sample."
@@ -123,7 +131,11 @@ def _limitations(
                 "The dynamic trace is a replay of a previously captured run, not a "
                 "live detonation performed for this report."
             )
-        if not trace.containment_verified:
+        if not trace.containment_verified and trace.source != TraceSourceKind.UNAVAILABLE:
+            # Only meaningful when something ran. "Containment was not verified for this
+            # run" implies there was a run whose isolation is in doubt; with no sandbox
+            # at all it invents a failed safety check on top of an analysis that never
+            # happened. The line above already says nothing was executed.
             items.append(
                 "Sandbox containment was not verified for this run, so the network "
                 "observations carry no isolation guarantee."

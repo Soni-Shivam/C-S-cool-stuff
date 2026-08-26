@@ -528,6 +528,14 @@ class LLMClient:
     #: attribute so it exists even on instances built with `__new__` in tests.
     _last_attempts: int = 0
 
+    #: Why the most recent tool loop returned `None`, in the caller's words-for-a-human.
+    #: `complete_with_tools_as` collapses three different failures — a transport error,
+    #: a reply that did not parse, and a loop that hit its round cap — into one `None`.
+    #: An agent that reports all three as "provider unavailable" is making a claim it
+    #: has not checked, which is exactly what this project refuses to do elsewhere.
+    #: A class attribute so it exists on instances built with `__new__` in tests.
+    last_failure: str | None = None
+
     def __init__(self, settings: Settings, *, use_cache: bool | None = None) -> None:
         self._settings = settings
         self._model = settings.resolved_llm_model
@@ -807,6 +815,8 @@ class LLMClient:
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ]
+        # Cleared up front so a caller never reads a diagnosis left by an earlier call.
+        self.last_failure = None
         for round_index in range(max_rounds + 1):
             prompt = json.dumps(messages, ensure_ascii=True)
             self._check_budgets(prompt)
@@ -827,15 +837,42 @@ class LLMClient:
                     self._last_attempts,
                     outcome="failed",
                 )
+                self.last_failure = (
+                    f"the request to the model failed on round {round_index} after "
+                    f"{self._last_attempts} attempt(s): {_explain(exc)}"
+                )
                 return None
             self.calls_made += 1
             self._record(f"{purpose}:round{round_index}", prompt, started, attempts)
 
             tool_calls = message.get("tool_calls") or []
             if not tool_calls:
-                return parse_and_validate(str(message.get("content") or ""), schema)
+                content = str(message.get("content") or "")
+                validated = parse_and_validate(content, schema)
+                if validated is None:
+                    # Distinguished from a transport failure on purpose: the provider
+                    # answered, so blaming its availability would be false. Say which
+                    # of the two it was, and keep a slice of the reply for the log.
+                    self.last_failure = (
+                        "the model replied but its output is not a valid "
+                        f"{schema.__name__} JSON object"
+                        if content.strip()
+                        else "the model returned an empty reply"
+                    )
+                    log.warning(
+                        "llm_tool_output_invalid",
+                        purpose=purpose,
+                        schema=schema.__name__,
+                        reply_chars=len(content),
+                        reply_head=content.strip()[:200],
+                    )
+                return validated
             if round_index >= max_rounds:
                 log.error("llm_tool_round_budget_exhausted", rounds=max_rounds)
+                self.last_failure = (
+                    f"the model was still requesting tools after {max_rounds} rounds; the "
+                    "bounded tool loop stopped before it produced an answer"
+                )
                 return None
 
             messages.append(
@@ -860,6 +897,10 @@ class LLMClient:
                         "content": json.dumps(result, ensure_ascii=True),
                     }
                 )
+        self.last_failure = (
+            f"the bounded tool loop ran its {max_rounds} rounds without the model "
+            "returning a final answer"
+        )
         return None
 
     def _exchange_with_retry(

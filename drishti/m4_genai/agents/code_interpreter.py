@@ -17,10 +17,24 @@ deterministic evaluator has to reproduce.
 the method's own evidence id to every claim the model returned and watch the citation
 rate hit 100%. That number would mean nothing. The verifier's rejections are the
 product (CLAUDE.md rule 5), so the model cites or it is marked as having failed to.
+
+**A signature is matched on identity, not on spelling.** The interpretations were
+looked up by exact string equality against our canonical `Lpkg/Cls;->method` form, and
+that form deliberately carries no parameter descriptor (`m2_static.engine
+.canonical_signature`). Handed a body whose parameters are right there in the source,
+the model reasonably writes them back — `Lin/drishti/canary/MainActivity;->onCreate(
+Landroid/os/Bundle;)V`, or the Java spelling `in.drishti.canary.MainActivity;->
+onCreate(android.os.Bundle)`. Measured over five live calls on the canary, zero
+matched exactly and all five were dropped, so the view showed code with no reading
+beside it and the run reported a provider outage that had not happened.
+`resolve_signature` normalises both sides and requires a *unique* hit, so the
+grounding rule is unchanged: an interpretation still cannot name a method we did not
+recover. Only its spelling is forgiven.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Literal, cast
 
@@ -70,6 +84,52 @@ class InterpretationOut(BaseModel):
 
 class InterpretationSet(BaseModel):
     interpretations: list[InterpretationOut] = Field(default_factory=list)
+
+
+def normalise_signature(raw: str) -> str:
+    """Reduce a method signature to `package.Class.method`, however it was spelled.
+
+    Smali and Java name the same method differently and our canonical form carries no
+    parameter descriptor at all, so string equality cannot decide identity here. Pure
+    and total: an unparseable input returns a stripped string that simply matches
+    nothing, which fails safe.
+    """
+    text = raw.strip().split("(", 1)[0].strip()
+    if not text:
+        return ""
+    klass, separator, method = text.partition("->")
+    if not separator:
+        # Java spelling with no arrow: the last dotted segment is the method name.
+        klass, separator, method = text.rpartition(".")
+        if not separator:
+            return text
+    klass = klass.strip().rstrip(";").replace("/", ".")
+    # Smali type descriptors prefix the class with `L`; a real package name never
+    # begins with a bare `L` segment, so requiring a following separator is enough.
+    if klass.startswith("L") and "." in klass:
+        klass = klass[1:]
+    method = method.strip().lstrip(".")
+    return f"{klass}.{method}" if method else klass
+
+
+def resolve_signature(raw: str, candidates: Iterable[str]) -> str | None:
+    """Map the model's spelling of a signature onto one we actually recovered.
+
+    Exact match first, then a unique normalised match, then nothing. Ambiguity and
+    absence both return `None` so the interpretation is dropped: reporting on a method
+    this analysis never recovered is precisely the ungrounded claim the system exists
+    to refuse (CLAUDE.md rule 5).
+    """
+    known = list(candidates)
+    if raw in known:
+        return raw
+    target = normalise_signature(raw)
+    if not target:
+        return None
+    matches = {signature for signature in known if normalise_signature(signature) == target}
+    if len(matches) == 1:
+        return matches.pop()
+    return None
 
 
 def _system_prompt() -> str:
@@ -127,11 +187,18 @@ def interpret_methods(
     client: LLMClient,
     *,
     pack: RetrievalPack | None = None,
+    diagnostics: list[str] | None = None,
 ) -> tuple[tuple[CodeInterpretation, ...], tuple[ToolCallRecord, ...], tuple[VerifiedString, ...]]:
     """Interpret the sink-reachable methods retrieval selected.
 
     Degrades to empty tuples rather than raising: losing M2's work because a provider
     timed out would be absurd (CLAUDE.md rule 2).
+
+    `diagnostics` is the caller's error sink, in the same shape `controller._guarded`
+    uses. When this pass produces nothing it appends the reason it actually observed —
+    the request failed, the reply did not parse, the model returned an empty list, or
+    every interpretation named a method outside this analysis. Those call for opposite
+    responses from an operator, and the dashboard used to print one guess for all four.
     """
     workspace = pack if pack is not None else select(static)
     if not workspace.chains:
@@ -153,24 +220,40 @@ def interpret_methods(
         max_output_tokens=_output_budget(client),
     )
     if response is None:
-        log.warning("code_interpreter_unavailable", chains=len(workspace.chains))
+        reason = client.last_failure or "no usable response from the model"
+        log.warning("code_interpreter_unavailable", chains=len(workspace.chains), reason=reason)
+        if diagnostics is not None:
+            diagnostics.append(f"code_interpreter produced nothing: {reason}")
         return (), tuple(toolbox.records), tuple(toolbox.verified_strings)
 
     known = {slice_.signature: slice_ for chain in workspace.chains for slice_ in chain.methods}
     # A method that was named in the catalogue but whose body we did not send can still
     # be interpreted — the model can `read_method` it — so accept those signatures too.
     fallback = {m.signature: m for m in static.decompiled_methods}
+    candidates = [*known, *(s for s in fallback if s not in known)]
 
     interpretations: list[CodeInterpretation] = []
+    unresolved: list[str] = []
     for item in response.interpretations[:MAX_METHODS_INTERPRETED]:
-        slice_ = known.get(item.method_signature)
-        method = fallback.get(item.method_signature)
-        if slice_ is None and method is None:
+        # Identity, not spelling: see the module docstring. The canonical signature is
+        # what gets stored, so the UI can line the reading up against the source panel,
+        # which joins the two on this exact string.
+        signature = resolve_signature(item.method_signature, candidates)
+        if signature is None:
             # The model named a method that is not in this analysis. Dropping it is the
             # same discipline as rejecting a bad citation: we do not report on code we
             # did not recover.
             log.warning("interpretation_for_unknown_method", signature=item.method_signature[:120])
+            unresolved.append(item.method_signature[:120])
             continue
+        if signature != item.method_signature:
+            log.info(
+                "interpretation_signature_normalised",
+                returned=item.method_signature[:120],
+                resolved=signature[:120],
+            )
+        slice_ = known.get(signature)
+        method = fallback.get(signature)
         line_start = slice_.line_start if slice_ else (method.line_start if method else 1)
         line_end = slice_.line_end if slice_ else (method.line_end if method else 1)
         # The membership test genuinely validates the value; `cast` records that for
@@ -192,7 +275,7 @@ def interpret_methods(
         lines = tuple(line for line in item.cited_lines[:40] if line_start <= line <= line_end)
         interpretations.append(
             CodeInterpretation(
-                method_signature=item.method_signature[:512],
+                method_signature=signature[:512],
                 summary=item.summary.strip()[:1_000],
                 claims=claims,
                 renamed_symbols={
@@ -207,14 +290,36 @@ def interpret_methods(
             )
         )
 
+    if not interpretations and diagnostics is not None:
+        diagnostics.append(_empty_pass_reason(unresolved, len(response.interpretations)))
+
     _record_injection_attempts(interpretations, workspace, ledger)
     log.info(
         "code_interpreter_done",
         interpretations=len(interpretations),
+        unresolved=len(unresolved),
         tool_calls=len(toolbox.records),
         chains=len(workspace.chains),
     )
     return tuple(interpretations), tuple(toolbox.records), tuple(toolbox.verified_strings)
+
+
+def _empty_pass_reason(unresolved: list[str], returned: int) -> str:
+    """Say why a completed interpretation pass kept nothing, in an analyst's terms.
+
+    The model answered in both branches, so neither may be reported as a provider
+    problem — the distinction is the whole point of writing this sentence at all.
+    """
+    if unresolved:
+        return (
+            f"code_interpreter kept none of the {returned} interpretation(s) the model "
+            f"returned: each named a method this analysis did not recover "
+            f"(first: {unresolved[0]}), so all were dropped as ungrounded"
+        )
+    return (
+        "code_interpreter produced nothing: the model returned a valid response "
+        "containing no interpretations"
+    )
 
 
 def _record_injection_attempts(

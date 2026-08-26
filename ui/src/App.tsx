@@ -354,9 +354,10 @@ function Welcome() {
           open an investigation.
         </h1>
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
-          The preliminary verdict lands at <span className="font-mono text-v300">SCORE_PRELIM</span>;
-          everything after it — sandbox passes, frontier probes, the full model reading — continues
-          asynchronously while you already have a score to act on. Every number on every screen is
+          The preliminary verdict lands as soon as the file has been read, classified and reasoned
+          over; everything after it — sandbox passes, frontier probes, the full model reading —
+          continues asynchronously while you already have a score to act on. Every number on every
+          screen is
           traceable to a node in an append-only evidence ledger, and anything that could not be
           grounded is shown as ungrounded rather than quietly dropped.
         </p>

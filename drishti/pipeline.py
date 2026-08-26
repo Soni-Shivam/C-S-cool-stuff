@@ -25,7 +25,6 @@ from typing import Any
 from drishti.config import Settings
 from drishti.contracts.dynamic_trace import (
     DynamicTrace,
-    EvasionObservation,
     TraceSourceKind,
 )
 from drishti.contracts.evidence import EvidenceType
@@ -483,7 +482,7 @@ def _sandbox(
             log.info("sandbox_source_unavailable", stage=which.value, reason=str(exc))
 
     if trace is None:
-        trace = _stub_trace(which, with_evasion=not plan.morphs)
+        trace = _stub_trace(which)
 
     node = ctx.ledger.append(
         type=EvidenceType.API_TRACE,
@@ -501,36 +500,28 @@ def _sandbox(
     return trace.model_copy(update={"ledger_refs": (*trace.ledger_refs, node.id)})
 
 
-def _stub_trace(which: JobStage, *, with_evasion: bool) -> DynamicTrace:
+def _stub_trace(which: JobStage) -> DynamicTrace:
     """Declared stub for when no trace source can produce anything.
 
-    Pass 1 reports an evasion observation so the FRONTIER branch is exercised even
-    with no fixture present. A skeleton that never takes its conditional path has not
-    been tested — and this is the branch the whole demo narrative hangs on.
+    It reports that nothing was observed, and nothing else. An earlier version
+    fabricated an `EvasionObservation` here so the frontier branch would be exercised
+    without a fixture — but a sample that was never executed cannot have probed its
+    environment, and that invented observation flowed into the elicitor, the ledger and
+    the Frontier view as a grounded morph. A stub that manufactures the evidence the
+    next stage consumes is the one failure this project exists to refuse; the frontier
+    branch is a test's job to exercise, not a runtime stub's.
     """
-    observations: tuple[EvasionObservation, ...] = ()
-    if with_evasion:
-        observations = (
-            EvasionObservation(
-                probe_kind="installed_package",
-                queried="com.example.stub",
-                result="MISS",
-                t_ms=0,
-                followed_by_stall=True,
-                inferred_requirement="stub: a target package must be present",
-            ),
-        )
     return DynamicTrace(
         run_id=new_id("run"),
         source=TraceSourceKind.UNAVAILABLE,
         detonated=False,
         outcome="inconclusive",
-        evasion_observations=observations,
+        evasion_observations=(),
         synthetic=True,
         partial=True,
         errors=(
-            f"stub: no trace source available for {which.value}; "
-            "M3 lands in P4 and no sample was executed",
+            f"No sandbox was available for {which.value}, so this sample was never "
+            "executed. Nothing below was observed at runtime.",
         ),
     )
 

@@ -184,7 +184,7 @@ def test_a_failure_message_keeps_the_end_of_stderr(monkeypatch: pytest.MonkeyPat
     banner = "WARNING: \n\nTo increase the performance of the tunnel, " + "x" * 380
     real = "another detonation is already running"
 
-    def fake_run(args, **kwargs):  # noqa: ANN001, ANN003, ARG001
+    def fake_run(args, **kwargs):
         return subprocess.CompletedProcess(args, 1, stdout="", stderr=f"{banner}\n{real}\n")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -193,7 +193,9 @@ def test_a_failure_message_keeps_the_end_of_stderr(monkeypatch: pytest.MonkeyPat
     assert real in str(excinfo.value), "the end of stderr is where the reason lives"
 
 
-def test_an_unsafe_artifact_is_not_an_unreachable_detonator(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_an_unsafe_artifact_is_not_an_unreachable_detonator(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """`dynamic_analyze.py` exits 2 for a run that happened but is unsafe to ingest.
 
     MEASURED 2026-08-26 on `m3-detonator` with an ARM64-only APK: containment verified,
@@ -209,9 +211,11 @@ def test_an_unsafe_artifact_is_not_an_unreachable_detonator(monkeypatch: pytest.
     """
     seen: list[int] = []
 
-    def fake_run(args, **kwargs):  # noqa: ANN001, ANN003, ARG001
+    def fake_run(args, **kwargs):
         seen.append(1)
-        return subprocess.CompletedProcess(args, 2, stdout="artifact=... outcome=failed\n", stderr="")
+        return subprocess.CompletedProcess(
+            args, 2, stdout="artifact=... outcome=failed\n", stderr=""
+        )
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     # Must not raise: the detonation ran, and only the artifact can say whether it counts.
@@ -222,7 +226,7 @@ def test_an_unsafe_artifact_is_not_an_unreachable_detonator(monkeypatch: pytest.
 def test_a_real_transport_failure_still_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """Only rc 2 is special. rc 3 (`sample not staged`) is still a failure."""
 
-    def fake_run(args, **kwargs):  # noqa: ANN001, ANN003, ARG001
+    def fake_run(args, **kwargs):
         return subprocess.CompletedProcess(args, 3, stdout="", stderr="sample not staged")
 
     monkeypatch.setattr(subprocess, "run", fake_run)

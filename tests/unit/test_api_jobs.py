@@ -65,7 +65,16 @@ def test_job_reaches_done_and_carries_both_verdicts(client) -> None:
             for line in stream.iter_lines()
             if line.startswith("data: ") and "stage" in line
         ]
-    assert JobStage.FRONTIER.value in stages, "the conditional branch should be visible"
+    # The frontier is CONDITIONAL and must stay absent here. It fires only when pass 1
+    # observed an environment probe to answer, and no sandbox ran for this upload — so a
+    # frontier stage in this list would mean the pipeline morphed in response to nothing.
+    # An earlier version of the stub fabricated an `EvasionObservation` so this branch
+    # would always appear; that invented observation reached the elicitor, the ledger and
+    # the Frontier view as a grounded morph. The branch is exercised for real in
+    # `test_pipeline_frontier.py` instead, with an observation that actually exists.
+    assert JobStage.FRONTIER.value not in stages, (
+        "the frontier must not run for a sample that was never executed"
+    )
 
     job = client.get(f"/api/jobs/{job_id}").json()
     assert job["stage"] == JobStage.DONE.value, job.get("error")

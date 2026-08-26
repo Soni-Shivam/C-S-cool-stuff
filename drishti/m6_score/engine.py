@@ -276,13 +276,17 @@ def _limitations(
         items.append("behavioural analysis is partial")
 
     if dynamic is None or dynamic.source is TraceSourceKind.UNAVAILABLE:
+        # "unavailable" is the whole story, and the only honest one. The synthetic and
+        # containment lines below describe a trace; when no sandbox ran there is no
+        # trace for them to describe, and a reader shown "the dynamic trace is
+        # synthetic" and "containment was not verified for the dynamic trace" will
+        # reasonably infer that something was executed and then went wrong.
         items.append("dynamic analysis unavailable")
     else:
         if dynamic.source is TraceSourceKind.REPLAY:
             items.append("dynamic trace was replayed, not live")
         if dynamic.partial:
             items.append("dynamic analysis is partial")
-    if dynamic is not None:
         if dynamic.synthetic:
             items.append("dynamic trace is synthetic")
         if not dynamic.containment_verified:

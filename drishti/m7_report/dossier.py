@@ -23,7 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from drishti.contracts.dynamic_trace import DynamicTrace
+from drishti.contracts.dynamic_trace import DynamicTrace, TraceSourceKind
 from drishti.contracts.evidence import ChainVerification
 from drishti.contracts.genai_verdict import GenAIVerdict
 from drishti.contracts.score import CompositeScore, SeverityBand
@@ -165,6 +165,13 @@ def build(
     caveats = list(score.limitations)
     if dynamic is None:
         caveats.append("No dynamic analysis was performed; capability only, not behaviour.")
+    elif dynamic.synthetic and dynamic.source == TraceSourceKind.UNAVAILABLE:
+        # Same distinction the HTML report draws: "no sandbox ran" is not "a fixture was
+        # replayed", and a reader told the latter will ask to see the fixture.
+        caveats.append(
+            "No sandbox was available; this sample was never executed and nothing here "
+            "was observed at runtime."
+        )
     elif dynamic.synthetic:
         caveats.append("The dynamic trace is a hand-authored fixture, not a measurement.")
     if withheld:

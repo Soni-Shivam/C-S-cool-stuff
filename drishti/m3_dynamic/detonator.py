@@ -246,7 +246,9 @@ class RemoteDetonatorClient:
         # real reason (`outcome=failed`, a dirty snapshot, unverified containment) and
         # the pipeline would fall back to a synthetic stub that contradicts a signed
         # containment manifest. Let it return; only the artifact can judge the run.
-        self._ssh(command, timeout=duration_s + 600, ok_returncodes=frozenset({0, RC_UNSAFE_ARTIFACT}))
+        self._ssh(
+            command, timeout=duration_s + 600, ok_returncodes=frozenset({0, RC_UNSAFE_ARTIFACT})
+        )
         log.info("detonation_finished", sha256=sha256[:12], morphs=len(morphs))
 
     @staticmethod

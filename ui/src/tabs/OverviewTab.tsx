@@ -111,7 +111,7 @@ export function OverviewTab({
       <SectionHead
         eyebrow="Investigation"
         title="Verdict"
-        lede="This is GET /api/jobs/{id}/verdict — the one projection the consumer phone screen, this portal and the demo scripts all read. Rendering it here rather than assembling an equivalent out of score + genai + dynamic is the point: two surfaces can only disagree about a sample if someone builds a second projection."
+        lede="One verdict, built once on the server, read by the phone in the victim's hand, by this portal and by the exports. Nothing on this screen is reassembled from the parts — two surfaces can only disagree about a sample if someone builds a second answer."
       />
 
       <ArtefactGate artefact={verdict}>{(value) => <VerdictHeadline verdict={value} />}</ArtefactGate>
@@ -163,7 +163,7 @@ export function OverviewTab({
 
       <Panel
         title="How the scorer explained it"
-        subtitle="CompositeScore.explanation — the analyst-facing wording behind the verdict above"
+        subtitle="The scorer's own wording for the verdict above, written for an analyst"
       >
         <ArtefactGate artefact={score}>
           {(value) => (
@@ -261,7 +261,7 @@ export function OverviewTab({
 
       <Panel
         title="Proposed actions"
-        subtitle="Recommendations only — confirming records an ANALYST_ACTION node, it executes nothing"
+        subtitle="Recommendations only — confirming writes a signed record into the evidence ledger and executes nothing"
       >
         <ArtefactGate artefact={score}>
           {(value) =>
