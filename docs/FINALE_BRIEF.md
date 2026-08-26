@@ -86,9 +86,9 @@ manufacture a gap; `CLAUDE.md` forbids it and the negative result above is publi
 
 ## Known gaps — state them plainly if asked
 
-- **The Sandbox and Frontier views are empty for these three samples.** No sandbox was
-  reachable, and the UI says exactly that rather than showing a blank panel. A live
-  detonation of the canary was in progress at the time of writing.
+- **The Frontier view is empty for these samples** — no environment probe was observed,
+  so the frontier correctly does not fire. The UI says that rather than showing a blank
+  panel.
 - **The inert second stage is built but not reachable end to end.** `SINKHOLE_URL` is
   guest loopback (`127.0.0.1:9`), so a fetch of it never traverses the emulated NIC.
   Deliberate: making it reachable means rewriting the inertness gate, which is the one
@@ -99,6 +99,48 @@ manufacture a gap; `CLAUDE.md` forbids it and the negative result above is publi
 - **Two `tests/e2e/test_pipeline_walk.py` tests fail** and predate this entire branch
   (verified at the base commit `a4f013e`). `STATUS.md`'s header claim of "15 e2e, all
   passing" is stale and should be corrected rather than refreshed.
+
+## The Sandbox view has a real detonation behind it
+
+`canary.apk` was detonated live on the sealed `m3-detonator` (VM instance
+`7382052279419138339`, image `m3-detonator-manual-20260826`), containment manifest
+signed minutes before the run, snapshot clean before and after, `simulated=false`. The
+capture is committed at `data/fixtures/traces/9854900c….json` with
+`provenance.kind=captured`, so the dashboard replays a **real** run and discloses that
+it is a replay — the badge reads REPLAY, never LIVE.
+
+**Detonation is what moves confidence, and now you can show it:**
+
+| canary | static only | with the real trace |
+|---|---|---|
+| provenance | `STATIC_ONLY` | `REPLAY` |
+| threat score | 30 | **47** |
+| confidence | **0.24** | **0.86** |
+
+The three observations are exactly what the canary is built to do — `T1418` package
+probe, `T1412` SMS query, `T1437` network call. Nothing else.
+
+## The overlay detector was firing on almost everything
+
+Worth telling, because it is the strongest evidence that the honesty machinery works.
+
+`T1417 Input capture via overlay` is *the* headline banking-trojan behaviour. The Frida
+hook emitted it on every `WindowManagerImpl.addView` call without reading
+`LayoutParams.type` — and every Activity attaches its content view that way. Measured
+across the captured corpus: **47 of 52 artifacts claimed an overlay attack**, including
+the canary, which this repo forbids from drawing one.
+
+It was caught because our own control app confessed to an attack it is built to be
+incapable of. An overlay needs a *system* window; the hook now emits only for the system
+range (2000–2999). For the 116 artifacts already captured with the blind hook, the
+overlay observation is dropped at ingest **and the drop is disclosed** in the report's
+Limitations. The captured artifacts are not rewritten: they record what the hook emitted,
+which is true. What changed is whether we draw a conclusion the instrument could not
+support.
+
+Four artifacts had *only* that observation. They now produce no fixture at all, because
+a fixture with nothing in it replays as "the sample did nothing" — a different claim from
+"we could not observe it", and the more dangerous one.
 
 ## The trust invariants — all three verified working 2026-08-27
 
