@@ -461,14 +461,17 @@ def to_gemini_contents(
                 parts.append({"text": str(content)})
             for call in message.get("tool_calls") or []:
                 function = call.get("function") or {}
-                parts.append(
-                    {
-                        "functionCall": {
-                            "name": str(function.get("name") or ""),
-                            "args": _as_object(function.get("arguments")),
-                        }
+                call_part: dict[str, Any] = {
+                    "functionCall": {
+                        "name": str(function.get("name") or ""),
+                        "args": _as_object(function.get("arguments")),
                     }
-                )
+                }
+                signature = call.get("thought_signature")
+                if isinstance(signature, str):
+                    # Gemini 3 requires its own signature back on the part it signed.
+                    call_part["thoughtSignature"] = signature
+                parts.append(call_part)
             if parts:
                 contents.append({"role": "model", "parts": parts})
             continue
@@ -496,17 +499,24 @@ def message_from_gemini(payload: dict[str, Any]) -> dict[str, Any]:
             continue  # a thought summary is reasoning, not the answer
         call = part.get("functionCall")
         if isinstance(call, dict):
-            tool_calls.append(
-                {
-                    # Gemini does not issue call ids; the loop only needs a stable handle.
-                    "id": f"call_{index}",
-                    "type": "function",
-                    "function": {
-                        "name": str(call.get("name") or ""),
-                        "arguments": json.dumps(call.get("args") or {}, ensure_ascii=True),
-                    },
-                }
-            )
+            tool_call: dict[str, Any] = {
+                # Gemini does not issue call ids; the loop only needs a stable handle.
+                "id": f"call_{index}",
+                "type": "function",
+                "function": {
+                    "name": str(call.get("name") or ""),
+                    "arguments": json.dumps(call.get("args") or {}, ensure_ascii=True),
+                },
+            }
+            if isinstance(part.get("thoughtSignature"), str):
+                # Gemini 3 signs the reasoning behind a function call and requires the
+                # signature back on the same part in the next turn; dropping it is a 400
+                # ("Function call is missing thought_signature") on exactly the round that
+                # carries the tool results — the round this provider was adopted for. It
+                # rides on the OpenAI-shaped tool call so the loop stays provider-neutral;
+                # Groq never sets it, and `to_gemini_contents` only re-emits what it finds.
+                tool_call["thought_signature"] = part["thoughtSignature"]
+            tool_calls.append(tool_call)
             continue
         if isinstance(part.get("text"), str):
             texts.append(part["text"])

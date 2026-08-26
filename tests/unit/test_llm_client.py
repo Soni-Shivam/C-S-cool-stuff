@@ -34,6 +34,12 @@ class Verdict(BaseModel):
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
     return Settings(
+        # Pinned, not inherited. This file asserts Groq's endpoint and header shape, so
+        # it must not depend on which provider the ambient .env happens to select —
+        # flipping DRISHTI_LLM_PROVIDER to gemini otherwise turns these into failures
+        # about a setting they are not testing.
+        llm_provider="groq",
+        llm_model="qwen/qwen3.8-27b",
         groq_api_key="gsk-test",
         db_path=tmp_path / "d.db",
         ledger_key_path=tmp_path / "k.pem",

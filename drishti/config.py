@@ -40,7 +40,8 @@ DEFAULT_MODELS: dict[str, str] = {
 #: cross-wired pair at startup — see `_model_matches_provider`.
 _GEMINI_MODEL_PREFIX = "gemini"
 
-#: Gemini's documented per-request input limit (`inputTokenLimit` on every 2.5 model).
+#: Gemini's per-request input limit, read from ListModels' `inputTokenLimit` (identical on
+#: every 2.5/3.x flash and pro model this key can see).
 #: Two orders of magnitude above the Groq free tier's 8,000, which is the entire reason
 #: this provider was added.
 GEMINI_MAX_REQUEST_TOKENS = 1_048_576

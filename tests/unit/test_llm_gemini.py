@@ -502,6 +502,50 @@ def test_a_function_call_part_becomes_an_openai_shaped_tool_call() -> None:
     assert json.loads(call["function"]["arguments"]) == {"signature": "Lx;"}
 
 
+def test_a_thought_signature_is_carried_back_to_the_next_turn() -> None:
+    """Gemini 3 signs the reasoning behind a function call and wants the signature back on
+    the part it signed. Dropping it is a 400 on the round that carries the tool results —
+    the exact round this provider was adopted for. It rides on the OpenAI-shaped tool call
+    so the loop itself stays provider-neutral."""
+    message = message_from_gemini(
+        {
+            "candidates": [
+                {
+                    "content": {
+                        "role": "model",
+                        "parts": [
+                            {
+                                "functionCall": {"name": "read_method", "args": {}},
+                                "thoughtSignature": "SIG123",
+                            }
+                        ],
+                    }
+                }
+            ]
+        }
+    )
+    assert message["tool_calls"][0]["thought_signature"] == "SIG123"
+
+    _, contents = to_gemini_contents(
+        [{"role": "assistant", "content": "", "tool_calls": message["tool_calls"]}]
+    )
+    assert contents[0]["parts"][0]["thoughtSignature"] == "SIG123"
+
+
+def test_a_groq_tool_call_carries_no_signature_field() -> None:
+    """Nothing is invented: the field appears only when the provider sent one."""
+    _, contents = to_gemini_contents(
+        [
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [{"id": "c1", "function": {"name": "t", "arguments": "{}"}}],
+            }
+        ]
+    )
+    assert "thoughtSignature" not in contents[0]["parts"][0]
+
+
 def test_the_tool_loop_round_trips_and_validates_its_final_json(
     gemini_settings: Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
