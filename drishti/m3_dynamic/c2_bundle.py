@@ -26,6 +26,7 @@ Three properties, each pinned by a test in `tests/unit/test_c2_bundle_builder.py
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from drishti.contracts.c2_bundle import C2Bundle, C2BundleEntry
@@ -43,9 +44,12 @@ from drishti.util import now
 
 log = get_logger(__name__)
 
-#: CLAUDE.md rule 10 — the per-job LLM ceiling, enforced here rather than trusted to the
-#: caller. `max_calls` may lower it and can never raise it.
-MAX_LLM_CALLS_PER_JOB = 25
+#: Last-resort ceiling, used only when settings cannot be resolved. The budget's real
+#: home is `Settings.llm_max_calls_per_job`, which `LLMClient._check_budgets` enforces;
+#: duplicating the number here would mean a deployment that lowered the config did not
+#: lower this cap. Kept as a fallback so the builder stays importable and testable
+#: without an environment — see `_job_call_budget`.
+_FALLBACK_MAX_LLM_CALLS_PER_JOB = 25
 
 #: The prefix `drishti.m3_dynamic.redaction` writes in place of a secret. See
 #: `_clean_path_prefix` for why the builder has to cut the path here.
@@ -56,6 +60,32 @@ _REDACTION_MARKER = "[REDACTED:"
 #: as "this content is ours". Enum membership is strictly stronger than a length check.
 _VALID_KINDS: frozenset[str] = frozenset(kind.value for kind in C2ResponseKind)
 
+_SHA256_RE = re.compile(r"[0-9a-f]{64}")
+#: Sentinel digest for a bundle refused over a bad `sha256`. Matches no real sample.
+_NULL_SHA256 = "0" * 64
+
+
+def _job_call_budget(max_calls: int | None) -> int:
+    """The per-job LLM call ceiling: configured, never duplicated, never raisable.
+
+    `Settings.llm_max_calls_per_job` is the single source of truth — it is what
+    `LLMClient._check_budgets` enforces, so a deployment that lowers it must lower this
+    cap too. Settings are read lazily and defensively: a missing `.env` must not stop a
+    pure-function test from importing or calling the builder, so an unresolvable setting
+    degrades to `_FALLBACK_MAX_LLM_CALLS_PER_JOB` rather than raising.
+    """
+    ceiling = _FALLBACK_MAX_LLM_CALLS_PER_JOB
+    try:
+        from drishti.config import get_settings
+
+        ceiling = int(get_settings().llm_max_calls_per_job)
+    except Exception as exc:  # no env, no keys, no problem — the cap still binds
+        log.debug("c2_bundle_settings_unavailable", error=str(exc))
+    if max_calls is None:
+        return max(0, ceiling)
+    # An explicit argument may only tighten the configured budget.
+    return max(0, min(int(max_calls), ceiling))
+
 
 def build_c2_bundle(
     sha256: str,
@@ -64,19 +94,31 @@ def build_c2_bundle(
     *,
     client: Any | None = None,
     ledger: Any | None = None,
-    max_calls: int = MAX_LLM_CALLS_PER_JOB,
+    max_calls: int | None = None,
 ) -> C2Bundle:
     """Precompute the inert responses to stage for pass 2 of one sample's detonation.
 
     Groups pass-1 flows by host, drops developer noise, fuses each host's observed
     request with the static schema hint, and spends **one** model call per distinct
     beacon host. An entry is emitted only when the response is provably inert, its kind
-    is a real `C2ResponseKind`, and it cites pass-1 evidence. Failures degrade to a
-    smaller bundle; nothing here raises, because a bundle is not worth losing a
-    detonation over.
+    is a real `C2ResponseKind`, and it cites pass-1 evidence.
+
+    `max_calls` defaults to the configured per-job LLM budget and can only lower it.
+
+    **This function does not raise.** A bad digest, a broken ledger or an unavailable
+    provider costs entries, never the detonation — losing a run that already spent an
+    emulator boot on real malware is far more expensive than losing a bundle.
     """
+    if not _SHA256_RE.fullmatch(sha256 or ""):
+        # Caller bug, caught before a single model call is spent — the constructor at the
+        # bottom would otherwise raise a ValidationError only after the whole budget was
+        # gone. The all-zero digest is an unmistakable sentinel that matches no sample,
+        # and the bundle is empty, so it can never answer a request for one.
+        log.error("c2_bundle_bad_sha256", sha256=str(sha256)[:80])
+        return C2Bundle(sha256=_NULL_SHA256, built_at=now(), synthesis_client="none")
+
     hints = derive_hints(static_report)  # host -> C2SchemaHint, grounded in static evidence
-    budget = max(0, min(int(max_calls), MAX_LLM_CALLS_PER_JOB))
+    budget = _job_call_budget(max_calls)
 
     # Insertion-ordered: the first flow observed for a host is the one we answer, and the
     # order hosts were first seen in becomes the order of `entries`. This is the whole of
@@ -204,7 +246,21 @@ def _clean_path_prefix(path: str) -> str:
 
 
 def _client_name(client: Any | None) -> str:
-    """A stable, non-secret label for whatever produced the bundle."""
+    """The model that produced the bundle, per `C2Bundle.synthesis_client`'s contract.
+
+    `LLMClient` stores its resolved model on `_model` and exposes no public `model`, so a
+    class-name fallback would have recorded the literal string "LLMClient" on every real
+    bundle — a provenance field that cannot answer "which model wrote this". `_model` is
+    read first for that reason; the class name survives only as a last resort, for a
+    client type that genuinely has no model to name.
+
+    Never reads an API key or anything else secret — this string is written to disk and
+    staged onto the detonator.
+    """
     if client is None:
         return "none"
-    return str(getattr(client, "model", None) or type(client).__name__)
+    for attribute in ("model", "_model", "model_name"):
+        value = getattr(client, attribute, None)
+        if isinstance(value, str) and value:
+            return value
+    return type(client).__name__

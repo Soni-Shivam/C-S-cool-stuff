@@ -262,10 +262,12 @@ def test_path_prefix_truncates_at_the_redaction_marker():
     ],
 )
 def test_clean_path_prefix_cases(path, expected):
+    # `path` reaches CapturedFlow verbatim, including the empty string, which the model
+    # does accept. Substituting "/" for it would turn that row into a vacuous "/" -> "/".
+    flow = _flow("gate.evil.tk", path)
+    assert flow.path == path
     bundle = build_c2_bundle(
-        SHA,
-        [_flow("gate.evil.tk", path)] if path else [_flow("gate.evil.tk", "/")],
-        _static(urls=["hxxp://gate.evil.tk/register"], refs=["ledger://n1"]),
+        SHA, [flow], _static(urls=["hxxp://gate.evil.tk/register"], refs=["ledger://n1"])
     )
     assert bundle.entries[0].path_prefix == expected
 
@@ -322,18 +324,87 @@ def test_every_emitted_entry_is_grounded():
 
 
 # ── budget and degradation ────────────────────────────────────────────────────
+def _many_beacons(n=30):
+    flows = [_flow(f"c2-{i}.bad.su", "/poll") for i in range(n)]
+    static = _static(urls=[f"hxxp://c2-{i}.bad.su/poll" for i in range(n)], refs=["ledger://n1"])
+    return flows, static
+
+
 def test_max_calls_is_clamped_to_the_job_budget():
     """CLAUDE.md rule 10: budgets are asserts, not hopes. A caller cannot raise the cap."""
     client = _CountingClient()
-    flows = [_flow(f"c2-{i}.bad.su", "/poll") for i in range(30)]
-    static = _static(urls=[f"hxxp://c2-{i}.bad.su/poll" for i in range(30)], refs=["ledger://n1"])
+    flows, static = _many_beacons()
     build_c2_bundle(SHA, flows, static, client=client, max_calls=999)
     assert client.calls <= 25
 
 
-def test_a_failing_ledger_yields_a_partial_bundle_not_an_exception():
-    """A refused or broken dependency degrades to fewer entries; it never fails the
-    detonation, which is the expensive thing this whole pass exists to protect."""
+def _settings(**overrides):
+    """A valid Settings for tests. `groq_api_key` is required by the provider validator."""
+    from drishti.config import Settings
+
+    overrides.setdefault("groq_api_key", "test-key-not-real")
+    return Settings(llm_provider="groq", **overrides)
+
+
+def _pin_settings(monkeypatch, **overrides):
+    """Pin what the builder's lazy `from drishti.config import get_settings` resolves to.
+
+    Patching the module attribute rather than the `lru_cache`'s `__wrapped__`: the cache
+    would otherwise hand back a previously-built Settings and the override would be
+    silently ignored, which is exactly the kind of test that passes without testing.
+    """
+    import drishti.config as config_module
+
+    monkeypatch.setattr(config_module, "get_settings", lambda: _settings(**overrides))
+
+
+def test_budget_comes_from_settings_not_a_second_constant(monkeypatch):
+    """The budget's home is `Settings.llm_max_calls_per_job`, which `LLMClient` enforces.
+    A module constant here would be a second source of truth: a deployment that lowered
+    the config would not lower this cap, and the two would disagree silently."""
+    _pin_settings(monkeypatch, llm_max_calls_per_job=3)
+    client = _CountingClient()
+    flows, static = _many_beacons()
+    build_c2_bundle(SHA, flows, static, client=client)
+    assert client.calls == 3
+    # ...and the module fallback is NOT what produced that number.
+    assert builder_module._FALLBACK_MAX_LLM_CALLS_PER_JOB != 3
+
+
+def test_an_explicit_max_calls_can_only_tighten_the_configured_budget(monkeypatch):
+    _pin_settings(monkeypatch, llm_max_calls_per_job=5)
+    flows, static = _many_beacons()
+
+    tighter = _CountingClient()
+    build_c2_bundle(SHA, flows, static, client=tighter, max_calls=2)
+    assert tighter.calls == 2  # lowering is honoured
+
+    looser = _CountingClient()
+    build_c2_bundle(SHA, flows, static, client=looser, max_calls=99)
+    assert looser.calls == 5  # raising is not
+
+
+def test_budget_falls_back_when_settings_are_unresolvable(monkeypatch):
+    """A pure-function test must not need an environment. If settings cannot be built,
+    the cap degrades to the module fallback rather than raising."""
+    import drishti.config as config_module
+
+    def _explode() -> None:
+        raise RuntimeError("no .env here")
+
+    monkeypatch.setattr(config_module, "get_settings", _explode)
+    client = _CountingClient()
+    flows, static = _many_beacons(40)
+    build_c2_bundle(SHA, flows, static, client=client)
+    assert client.calls == builder_module._FALLBACK_MAX_LLM_CALLS_PER_JOB
+
+
+def test_a_failing_ledger_yields_an_empty_bundle_not_an_exception():
+    """A broken ledger does NOT degrade to fewer entries — it eliminates C2 emulation for
+    the whole job, because every host needs a ledger node and every one fails the same
+    way. That is correct under CLAUDE.md rule 5 (an unrecordable claim is not made), and
+    the point of this test is that it fails *closed and quietly* rather than taking the
+    detonation down with it. Named for what happens, not for the nicer thing it isn't."""
 
     class _BoomLedger:
         def append(self, **_kwargs):
@@ -364,8 +435,68 @@ def test_bundle_records_its_provenance():
     flows, static = _determinism_inputs()
     bundle = build_c2_bundle(SHA, flows, static, client=_CountingClient())
     assert bundle.built_at.endswith("Z")
-    assert bundle.synthesis_client == "_CountingClient"
     assert build_c2_bundle(SHA, flows, static).synthesis_client == "none"
+    # A client with no model at all is the only case that may fall back to a class name.
+    assert bundle.synthesis_client == "_CountingClient"
+
+
+def test_synthesis_client_records_the_model_not_the_class_name():
+    """`C2Bundle.synthesis_client` promises *which model* produced the bundle.
+
+    `LLMClient` keeps its resolved model on `_model` and exposes no public `model`, so a
+    class-name fallback recorded the literal "LLMClient" on every real bundle — a
+    provenance field that could not answer the question it documents. This test uses a
+    class whose NAME DIFFERS FROM ITS MODEL, so it fails against that fallback instead of
+    passing by coincidence the way a fake named after itself would."""
+
+    class LLMClient:  # deliberately shadows the real class name
+        def __init__(self) -> None:
+            self._model = "llama-3.3-70b-versatile"
+
+        def complete_as(self, **_kwargs):
+            return None
+
+    flows, static = _determinism_inputs()
+    bundle = build_c2_bundle(SHA, flows, static, client=LLMClient())
+    assert bundle.synthesis_client == "llama-3.3-70b-versatile"
+    assert bundle.synthesis_client != "LLMClient"
+
+
+def test_synthesis_client_is_the_real_clients_model():
+    """The same property against the actual `LLMClient`, so the test cannot drift from it
+    if the attribute is ever renamed. This is the case M1 was about: before the fix, this
+    recorded the literal string "LLMClient" on every production bundle."""
+    from drishti.m4_genai.client import LLMClient
+
+    client = LLMClient(_settings(llm_model="test-model-x"))
+    flows, static = _determinism_inputs()
+    bundle = build_c2_bundle(SHA, flows, static, client=client)
+    assert bundle.synthesis_client == "test-model-x"
+
+
+def test_synthesis_client_never_leaks_a_secret():
+    """This string is written to disk and staged onto the detonator."""
+    from drishti.m4_genai.client import LLMClient
+
+    client = LLMClient(_settings(llm_model="test-model-x", groq_api_key="sk-supersecret"))
+    flows, static = _determinism_inputs()
+    bundle = build_c2_bundle(SHA, flows, static, client=client)
+    assert "supersecret" not in bundle.model_dump_json()
+
+
+@pytest.mark.parametrize("bad", ["", "not-a-digest", "A" * 64, "a" * 63, "a" * 65])
+def test_a_bad_sha256_is_refused_before_any_model_call(bad):
+    """`build_c2_bundle` documents that it does not raise. A malformed digest used to
+    reach the `C2Bundle` constructor and raise a ValidationError *after* the entire LLM
+    budget had been spent — the worst of both outcomes. It is now caught first."""
+    client = _CountingClient()
+    flows, static = _determinism_inputs()
+    bundle = build_c2_bundle(bad, flows, static, client=client)
+    assert isinstance(bundle, C2Bundle)
+    assert bundle.entries == ()
+    assert client.calls == 0  # the budget is intact
+    assert bundle.sha256 == "0" * 64  # a sentinel that matches no real sample
+    assert bundle.matches("gate.evil.tk", "/register") is None
 
 
 def test_payload_stub_entries_are_flagged():
