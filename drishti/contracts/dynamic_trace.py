@@ -87,6 +87,37 @@ class DecryptedBlob(DrishtiModel):
     occurrences: int = 1
 
 
+class SyntheticC2Response(DrishtiModel):
+    """One response DRISHTI synthesised and served in place of a dead C2.
+
+    This is *our* content injected into the analysis, so every field a reader needs to
+    audit it is here: the request that triggered it, the shape we chose, the body we
+    served, and — the honest metric — whether the sample's behaviour changed after it.
+
+    `provably_inert` is not a hope. It is set by `assert_inert`, which sanitises the
+    body against a fixed allowlist of response shapes and neutralises anything that
+    could resolve, execute or load. `neutralisations` records every change that guard
+    made, so "we served an inert response" is a claim with a diff behind it.
+    """
+
+    t_ms: int = 0
+    host: str = ""
+    url: str = ""
+    request_method: str = "GET"
+    response_kind: str = ""
+    inferred_schema: dict = Field(default_factory=dict)
+    served_status: int = 200
+    served_content_type: str = "application/json"
+    served_body: str = ""
+    reasoning: str = ""
+    #: Set only by the deterministic inertness gate. Never by the model, never by a flag.
+    provably_inert: bool = False
+    neutralisations: tuple[str, ...] = ()
+    #: The honest "did it work" field. None until a second pass observes the effect.
+    behaviour_changed: bool | None = None
+    evidence_refs: tuple[str, ...] = ()
+
+
 class DexLoadEvent(DrishtiModel):
     """Runtime code loading — the dropper signal (T1407).
 

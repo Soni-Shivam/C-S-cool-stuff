@@ -212,6 +212,16 @@ FACTORIES: dict[str, Any] = {
     "NetworkFlow": lambda: C.NetworkFlow(
         t_ms=5000, method="POST", url="http://c2.invalid/a", host="c2.invalid", status=200
     ),
+    "SyntheticC2Response": lambda: C.SyntheticC2Response(
+        t_ms=5000,
+        host="c2.invalid",
+        url="http://c2.invalid/gate",
+        response_kind="command_poll",
+        served_body='{"status": "ok", "cmd": "noop"}',
+        provably_inert=True,
+        neutralisations=("command field 'cmd': 'download' -> 'noop'",),
+        evidence_refs=("gc2_0001",),
+    ),
     "DecryptedBlob": lambda: C.DecryptedBlob(
         t_ms=1200,
         algorithm="AES/CBC/PKCS5Padding",
