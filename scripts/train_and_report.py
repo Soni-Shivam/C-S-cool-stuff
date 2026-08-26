@@ -57,9 +57,11 @@ os.environ.setdefault("OMP_WAIT_POLICY", "PASSIVE")
 import numpy as np  # noqa: E402
 
 from drishti.m5_ml import (  # noqa: E402
+    ablation,
     anomaly,
     bundle,
     calibrate,
+    composite,
     dataset,
     evaluate,
     explain,
@@ -71,6 +73,17 @@ from drishti.m5_ml.features import FEATURE_SCHEMA_VERSION  # noqa: E402
 #: Below this many of either class in an evaluation split, no metric is reported.
 #: A PR-AUC over nine test samples is noise with a decimal point on it.
 MIN_PER_CLASS = 25
+
+#: Feature groups worth an explicit refit-with-and-without measurement, and why each is
+#: on the list. A group lands here when someone would otherwise be tempted to say a
+#: column "is in the model" as though that were a result.
+ABLATION_GROUPS: dict[str, str] = {
+    "cert:": (
+        "the certificate columns, dropped from the previous run because a two-epoch "
+        "corpus made their presence a proxy for the label. The corpus is now single-epoch, "
+        "so they are evaluable for the first time"
+    ),
+}
 
 
 def _cv_pr_auc(
@@ -478,6 +491,7 @@ def main() -> int:
     # ── calibration of the winner, on calib ──────────────────────────────────
     calibration: dict[str, Any] = {"performed": False}
     calibrator = None
+    calibrated_test: np.ndarray | None = None
     try:
         chosen = calibrate.select(model, x_calib, y_calib)
     except (calibrate.NotEnoughCalibrationDataError, ValueError) as exc:
@@ -544,6 +558,70 @@ def main() -> int:
     except Exception as exc:
         anomaly_summary = {"performed": False, "reason": f"{type(exc).__name__}: {exc}"}
         print(f"anomaly skipped: {anomaly_summary['reason']}")
+
+    # ── is a re-admitted feature group actually worth anything? ──────────────
+    # "It is in the vocabulary" is not a result. Each group is refit out and back in on
+    # identical rows with one seed, and the paired interval on the difference decides
+    # whether anything is claimed. A group that comes back inconclusive is reported as
+    # inconclusive — that is the outcome this measurement exists to be able to state.
+    ablations: list[dict[str, Any]] = []
+    for prefix, rationale in ABLATION_GROUPS.items():
+        members = ablation.members_of(vocabulary, prefix)
+        if not members:
+            print(f"\nablation {prefix}: no such columns in the vocabulary — nothing to measure")
+            continue
+        print(
+            f"\nablation: refitting {winner} without {len(members)} `{prefix}` columns", flush=True
+        )
+        measured = ablation.ablate_group(
+            winner,
+            group=prefix,
+            members=members,
+            vocabulary=vocabulary,
+            x_train=x_train,
+            y_train=y_train,
+            x_test=x_test,
+            y_test=y_test,
+        )
+        ablations.append({**measured.as_dict(), "rationale": rationale})
+        print(
+            f"  PR-AUC with {measured.pr_auc_with} / without {measured.pr_auc_without} "
+            f"-> delta {measured.delta:+.4f} {list(measured.delta_ci)} "
+            f"({'carries signal' if measured.carries_signal else 'NOT distinguishable from zero'})"
+        )
+
+    # ── the composite score an analyst actually sees ─────────────────────────
+    # PR-AUC is the model; `S` is the queue. `G` acquired a caller after the previous
+    # run, so every composite number from it is stale and is re-measured here through
+    # the real pure scorer rather than a local copy of the formula.
+    composite_summary: dict[str, Any] = {"performed": False}
+    if calibrated_test is not None and len(test_samples) == len(calibrated_test):
+        escalate = detector.score(x_test) >= anomaly.ESCALATE_AT if detector is not None else None
+        triage = composite.triage_scores(
+            test_samples,
+            calibrated_test,
+            model_version=f"{winner}-{len(vocabulary)}f-{FEATURE_SCHEMA_VERSION}",
+            anomaly_escalate=escalate,
+        )
+        composite_summary = {"performed": True, **composite.summarise(triage)}
+        figures.composite_bands(
+            composite_summary["band_distribution"],
+            args.figures / "ml_composite_bands.png",
+            ceiling=composite_summary["reachable_ceiling"],
+            n=composite_summary["n"],
+            configuration=composite.CONFIGURATION,
+        )
+        print(f"\ncomposite ({composite.CONFIGURATION}): {json.dumps(composite_summary)}")
+    else:
+        composite_summary = {
+            "performed": False,
+            "reason": (
+                "no calibrator was fitted, so there is no `p_calibrated` to fuse — and "
+                "`S` computed from a raw score would not be the number the pipeline "
+                "produces"
+            ),
+        }
+        print(f"composite skipped: {composite_summary['reason']}")
 
     # ── learning curve: how much did the last slice of training data buy? ────
     learning_curve: list[dict[str, Any]] = []
@@ -658,6 +736,8 @@ def main() -> int:
         "results": [row.as_dict() for row in results],
         "calibration": calibration,
         "anomaly": anomaly_summary,
+        "ablations": ablations,
+        "composite": composite_summary,
         "attribution_method": explainer.method,
         "global_importance_method": global_rows[0].method if global_rows else "none",
         "global_importance_top20": [
@@ -814,7 +894,8 @@ def _write_results(
         )
         dropped = ", ".join(f"`{name}`" for name in epochs["divergent"])
         lines.append(
-            "**This corpus was written by two extractor versions, and four features were "
+            f"**This corpus was written by more than one extractor version, and "
+            f"{len(epochs['divergent'])} features were "
             "dropped because of it.** Extraction ran for days and the extractor was fixed "
             f"mid-batch, so the rows divide by schema epoch: {rows}. A feature only one "
             "version emits is absent from the other version's rows, and projection would "
@@ -824,6 +905,24 @@ def _write_results(
             f"ranking metric would have rewarded it. Dropped from both vocabularies: "
             f"{dropped}. `dataset.epoch_divergent_features` finds these by measuring "
             "per-epoch presence rates; nothing is dropped by hand.\n"
+        )
+    elif epochs.get("epochs"):
+        stamp = ", ".join(
+            f"`{version}` {stats['n']} rows ({stats['malware_rate']:.1%} malware)"
+            for version, stats in epochs["epochs"].items()
+        )
+        lines.append(
+            f"**Single-epoch corpus, verified rather than assumed: {stamp}, and "
+            "`dataset.epoch_divergent_features` finds no divergent column.** A previous "
+            "build of this corpus was written by two extractor versions with very "
+            "different class balance, which made a feature's mere *presence* a proxy for "
+            "the label — projection zero-fills a column the other version never emitted, "
+            "so the model learns *when the row was extracted*. Four certificate columns "
+            "were dropped for that reason and could not be evaluated at all. The stale "
+            "rows have since been re-extracted from the retained APKs, the guard is "
+            "re-run on every training run, and nothing is excluded here. What that buys "
+            "is the ability to *test* those columns; §6c is the test, and it is a "
+            "measurement rather than a promotion.\n"
         )
 
     repartition = corpus.get("repartition", {})
@@ -1051,6 +1150,141 @@ def _write_results(
         )
         lines.append("![Learning curve](figures/ml_learning_curve.png)\n")
 
+    for entry in metrics.get("ablations") or []:
+        lines.append(f"## 6c. Is the `{entry['group']}` feature group worth anything?\n")
+        lines.append(
+            f"The group is {entry['rationale']}. Being *evaluable* is not the same as "
+            "being *useful*, so it was measured: the winner was refit with the group "
+            "removed, on identical rows with one seed, and the difference bootstrapped "
+            "as a paired quantity on the same test split.\n"
+        )
+        lines.append(
+            f"- Columns in the vocabulary: **{len(entry['members'])}** "
+            f"({', '.join(f'`{n}`' for n in entry['members'])})"
+        )
+        if entry["constant_in_train"]:
+            lines.append(
+                f"- Constant across every training row, so incapable of carrying signal "
+                f"whatever else is true: {', '.join(f'`{n}`' for n in entry['constant_in_train'])}"
+            )
+        lines.append(
+            f"- Time-split PR-AUC **with** the group: {entry['pr_auc_with']:.4f}; "
+            f"**without**: {entry['pr_auc_without']:.4f}"
+        )
+        lines.append(
+            f"- Difference: **{entry['delta']:+.4f}**, paired 95% bootstrap "
+            f"[{entry['delta_ci'][0]}, {entry['delta_ci'][1]}] over n={entry['n_test']} "
+            f"({entry['n_test_pos']} malware)\n"
+        )
+        if entry["carries_signal"]:
+            movers = [
+                row["feature"]
+                for row in entry["per_feature_importance"]
+                if row["mean_drop_pr_auc"] > 0.0
+            ]
+            lines.append(
+                "**The interval excludes zero, so this group carries measurable signal "
+                "on this corpus.** The claim is the interval, not the point estimate, and "
+                f"{entry['delta']:+.4f} is a small effect — worth keeping, not worth "
+                "leading with.\n"
+            )
+            if movers:
+                lines.append(
+                    "The per-column table below narrows it further: only "
+                    + ", ".join(f"`{name}`" for name in movers)
+                    + " move PR-AUC at all when shuffled. The rest of the group is "
+                    'carried by those, and saying "the certificate features work" '
+                    "would overstate what was measured.\n"
+                )
+        else:
+            lines.append(
+                "**The interval spans zero, so no signal can be claimed for this group on "
+                "this corpus.** The columns were re-admitted because a corpus artefact "
+                "that made them uninterpretable is gone, and that made them *testable*; "
+                "this measurement is the test, and it came back inconclusive. Reporting "
+                "them as a working feature because they are now in the vector would be "
+                "exactly the unsupported claim this project refuses to make.\n"
+            )
+        if entry["per_feature_importance"]:
+            lines.append("| column | mean drop in PR-AUC when shuffled | non-zero rows in test |")
+            lines.append("|---|---:|---:|")
+            for row in entry["per_feature_importance"]:
+                lines.append(
+                    f"| `{row['feature']}` | {row['mean_drop_pr_auc']} | {row['nonzero_in_test']} |"
+                )
+            lines.append("")
+
+    composite_summary = metrics.get("composite") or {}
+    if composite_summary.get("performed"):
+        lines.append("## 6d. The composite score an analyst actually sees\n")
+        lines.append(
+            "PR-AUC ranks; `S` is what lands in a queue. `S` fuses the calibrated "
+            "probability with the deterministic-rule term `G`, the drift term `D` and "
+            "the reputation term `R`, so a triage claim has to be measured over `S`. "
+            f"Configuration: **{composite_summary['configuration']}** — `R` is 0 because "
+            "no threat-intel feed ran over the corpus (and a VirusTotal-derived one "
+            "would be circular against a VirusTotal-derived label), and the behavioural "
+            "term is absent because none of these rows was detonated. This is the floor "
+            "the full system builds on, not the full system.\n"
+        )
+        lines.append(
+            "Every `S` here comes from `m6_score.engine.score`, the shipped pure scorer, "
+            "called over reconstructed reports — not from a local copy of the formula, "
+            "which would agree today and drift silently after the next weight change.\n"
+        )
+        lines.append(
+            f"- Highest `S` this configuration can produce: **{composite_summary['reachable_ceiling']}** "
+            "(computed from the shipped weights, not written down). CRITICAL (85) is "
+            "therefore unreachable without intel, a behavioural verdict or a detonation, "
+            "and is reported as unreachable rather than as an absence of critical samples."
+        )
+        lines.append(
+            f"- Highest `S` observed on the test split: **{composite_summary['max_S_observed']}**"
+        )
+        lines.append(
+            f"- A deterministic permission-combination rule fired on "
+            f"**{composite_summary['rule_severity_fired']}** of "
+            f"{composite_summary['n']} test rows — those are the rows where `G` is "
+            "non-zero at all.\n"
+        )
+        lines.append("| flag at | precision | recall | flagged | TP | FP |")
+        lines.append("|---|---:|---:|---:|---:|---:|")
+        for band in composite_summary["bands"]:
+            lines.append(
+                f"| {band['band']} or above (S>={band['floor']}) | "
+                f"{_fmt(band['precision'])} | {_fmt(band['recall'])} | {band['flagged']} | "
+                f"{band['true_positives']} | {band['false_positives']} |"
+            )
+        lines.append("")
+        lines.append(
+            f"Measured over n={composite_summary['n']} test rows "
+            f"({composite_summary['n_malware']} malware).\n"
+        )
+        lines.append(
+            "Read the ceiling and that table together before reading anything into the "
+            "HIGH row. `S` cannot exceed "
+            f"{composite_summary['reachable_ceiling']} in this configuration and the HIGH "
+            "floor is 65, so the HIGH band is four points wide here. A precision of 1.00 "
+            "over a four-point window is a statement about the width of the window, not "
+            "about the classifier. The MEDIUM row is the one that describes this "
+            "configuration's actual triage behaviour.\n"
+        )
+        escalation = composite_summary.get("escalation") or {}
+        if escalation.get("promoted_to_high"):
+            lines.append(
+                "**The band histogram and the `S` table disagree, and the difference is "
+                "the novelty escalator.** It forces a LOW band to HIGH without moving `S` "
+                f"by a point, and on this split it promoted "
+                f"**{escalation['promoted_to_high']}** rows that way — "
+                f"{escalation['promoted_malware']} malware and "
+                f"**{escalation['promoted_benign']} benign**. That is the analyst cost of "
+                "the flag §6 already measures as non-discriminating, stated in rows rather "
+                "than in rates. The figure below plots the band from `S` alone; the "
+                f"pipeline's emitted band puts {escalation['promoted_to_high']} more rows "
+                "in HIGH than the score does.\n"
+            )
+        lines.append("![Composite bands](figures/ml_composite_bands.png)\n")
+
     lines.append("## 7. What the model leans on (T2.6)\n")
     lines.append(
         f"Global importance measured by permutation on the test split (n={time_rows[0].n}): "
@@ -1114,6 +1348,34 @@ def _write_results(
             "certificate-validity signal is therefore **untested**, not disproven — it needs "
             "a corpus re-extracted end to end by a single extractor version."
         )
+    for entry in metrics.get("ablations") or []:
+        if not entry["carries_signal"]:
+            limitations.append(
+                f"The `{entry['group']}` feature group is in the vector but does not "
+                f"measurably help: refitting without it moves time-split PR-AUC by "
+                f"{entry['delta']:+.4f}, paired 95% interval "
+                f"[{entry['delta_ci'][0]}, {entry['delta_ci'][1]}], which spans zero. "
+                "It is kept because it is cheap and interpretable, and reported as "
+                "unproven rather than described as a working signal (§6c)."
+            )
+    if composite_summary.get("performed"):
+        limitations.append(
+            f"Composite `S` here is {composite_summary['configuration']}, so the highest "
+            f"score reachable is **{composite_summary['reachable_ceiling']}** and CRITICAL "
+            "cannot be produced at all. That also makes the HIGH band four points wide, "
+            "so its precision in §6d is a property of the window rather than of the "
+            "model. Composite precision/recall must not be compared against numbers from "
+            "a run that had threat intel, a behavioural verdict or a detonation available."
+        )
+        _promoted = (composite_summary.get("escalation") or {}).get("promoted_to_high", 0)
+        if _promoted:
+            limitations.append(
+                f"The novelty escalator promotes **{_promoted}** test rows from LOW to "
+                "HIGH without moving `S`, and "
+                f"{composite_summary['escalation']['promoted_benign']} of them are benign. "
+                "The band the pipeline emits is therefore not the band `S` implies, and "
+                "any queue-size claim has to say which of the two it means."
+            )
     limitations.append(
         "Binary maliciousness only. The corpus carries no family labels that are not "
         "derived from `vt_detection`, and weak-labelling from the same signal that "
@@ -1128,11 +1390,10 @@ def _write_results(
         "`docs/figures/precision_recall.png`, `reliability.png`, "
         "`feature_importance.png`, `corpus_composition.png` and `docs/figures/metrics.json` "
         "come from an earlier 397-sample pilot and are **not** regenerated here — this run "
-        "writes `ml_`-prefixed files instead, so nothing is silently overwritten. "
-        "`REPORT/main.tex` still `\\includegraphics` the old names and its prose still "
-        "quotes the pilot's PR-AUC. **Whoever owns the paper must repoint those figures at "
-        "the `ml_` files and requote from this document**, or the paper will cite a model "
-        "that is no longer the one in `models/`.\n"
+        "writes `ml_`-prefixed files instead, so nothing is silently overwritten. Anything "
+        "quoting the pilot must be requoted from this document; every `ml_`-prefixed figure "
+        "and every number below belongs to the run stamped at the top of this file, and to "
+        "the bundle currently in `models/`.\n"
     )
     lines.append(
         f"Raw metrics: `{Path('docs/figures/ml_metrics.json')}` and `models/metrics.json`. "

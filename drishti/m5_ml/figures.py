@@ -303,3 +303,42 @@ def learning_curve(
     )
     ax.set_ylim(min(ys) - 0.08, min(1.04, max(ys) + 0.12))
     return _save(fig, out)
+
+
+def composite_bands(
+    distribution: dict[str, dict[str, int]],
+    out: Path,
+    *,
+    ceiling: int,
+    n: int,
+    configuration: str,
+) -> Path:
+    """Where the composite score `S` actually lands, split by true label.
+
+    Drawn because the model's PR-AUC is not what an analyst sees — the band is. The
+    reachable ceiling is annotated on the axis so a reader can see immediately which
+    bands this configuration can and cannot produce; before `G` had a caller the whole
+    HIGH band was empty by construction and nothing on the plot said so.
+    """
+    order = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    names = [band for band in order if band in distribution]
+    x = np.arange(len(names))
+    malware = [distribution[b]["malware"] for b in names]
+    benign = [distribution[b]["n"] - distribution[b]["malware"] for b in names]
+    fig, ax = plt.subplots(figsize=(6.4, 4.0), dpi=200)
+    ax.bar(x - 0.2, malware, 0.4, label="malware", color=BAD)
+    ax.bar(x + 0.2, benign, 0.4, label="benign", color=OK)
+    ax.set_xticks(x)
+    ax.set_xticklabels(names, fontsize=8)
+    for i, (m, b) in enumerate(zip(malware, benign, strict=True)):
+        ax.text(i - 0.2, m, str(m), ha="center", va="bottom", fontsize=7, color=INK)
+        ax.text(i + 0.2, b, str(b), ha="center", va="bottom", fontsize=7, color=INK)
+    _style(
+        ax,
+        f"Band from the composite score S alone, time-split test set (n={n})\n{configuration}; "
+        f"highest S this configuration can produce: {ceiling}",
+        "band",
+        "samples",
+    )
+    ax.legend(frameon=False, fontsize=8)
+    return _save(fig, out)
