@@ -38,6 +38,7 @@ from drishti.ledger.store import LedgerStore
 from drishti.logging import get_logger
 from drishti.m1_ingest.ingest import ingest as m1_ingest
 from drishti.m3_dynamic.trace_source import (
+    LiveSandboxSource,
     ReplayTraceSource,
     TraceSource,
     TraceSourceUnavailableError,
@@ -465,7 +466,10 @@ def _sandbox(
     source = ctx.trace_source
     if source is not None:
         try:
-            if isinstance(source, ReplayTraceSource):
+            if isinstance(source, ReplayTraceSource | LiveSandboxSource):
+                # Both real sources accept the digest the ingest stage already computed.
+                # Re-hashing here would mean reading a 300MB upload a second time to
+                # learn something the job has known since M1.
                 trace = source.run(apk_path, plan, sha256=sha256)
             else:
                 trace = source.run(apk_path, plan)

@@ -9,6 +9,9 @@
     "captured_from_image": "m3-detonator-manual-20260826"
   },
   "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
     "run_id": "run_d3a8a1637b7e",
     "source": "live",
     "detonated": true,
@@ -21,6 +24,9 @@
         "args": [
           "added a window over other apps"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 2
       },
       {
@@ -29,6 +35,9 @@
         "args": [
           "crypto op plaintext=e###b####a###fbd"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 122
       },
       {
@@ -37,6 +46,9 @@
         "args": [
           "queried package=com.google.android.gms"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 93
       },
       {
@@ -45,17 +57,51 @@
         "args": [
           "opened connection to=https://graph.facebook.com/v#.#/###############?fields=supports_implicit_sdk_logging%#Cgdpv#_nux..."
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 63
       }
     ],
+    "network_flows": [
+      {
+        "t_ms": 135,
+        "method": "GET",
+        "url": "https://graph.facebook.com/v#.#/###############?fields=supports_implicit_sdk_logging%#Cgdpv#_nux...",
+        "host": "graph.facebook.com",
+        "req_headers": {},
+        "req_body_preview": "",
+        "req_body_sha256": null,
+        "status": null,
+        "resp_body_preview": null,
+        "synthesised": false,
+        "tls_intercepted": false
+      }
+    ],
+    "decrypted_blobs": [
+      {
+        "t_ms": 8292,
+        "algorithm": null,
+        "plaintext_preview": "e###b####a###fbd",
+        "plaintext_sha256": null,
+        "length_bytes": 16,
+        "contains_url": false,
+        "contains_dex_magic": false,
+        "occurrences": 122
+      }
+    ],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
     "emulator_image": "m3-detonator-manual-20260826",
     "vm_instance_id": "7382052279419138339",
     "harness_version": "m3-harness-2.0.0",
     "containment_verified": true,
     "captured_at": "2026-08-26T04:11:18.849189+00:00",
-    "synthetic": false,
-    "errors": [],
-    "partial": false
+    "synthetic": false
   },
   "post_morph": {}
 }

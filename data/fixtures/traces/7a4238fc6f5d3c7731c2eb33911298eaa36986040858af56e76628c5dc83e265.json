@@ -1,0 +1,107 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "7a4238fc6f5d3c7731c2eb33911298eaa36986040858af56e76628c5dc83e265",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of nusku.ermacv2.apk on the sealed GCE detonator, containment manifest ff6e8ca11aebe0a5b63d5cc781ee33f8541b31c3ac7ac6d9be6331838e744a20.",
+    "authored_at": "2026-08-26T05:55:16.430342+00:00",
+    "source_sha256": "7a4238fc6f5d3c7731c2eb33911298eaa36986040858af56e76628c5dc83e265",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_7a4238fc6f5d",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "26 instrumented observations across 4 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 52,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 3
+      },
+      {
+        "t_ms": 0,
+        "api": "Cipher.doFinal",
+        "args": [
+          "crypto op plaintext=\u0013{\u001e\ufffd|\ufffd#\ufffdY\u0006\ufffddL,\u0011D\ufffd_]\ufffd\ufffd\ufffdk,\u0015j\f\ufffd#j\u0001\ufffd"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 11
+      },
+      {
+        "t_ms": 680,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.google.android.webview"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 11
+      },
+      {
+        "t_ms": 638,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=http://###.###.#.###:####/z#ajy#kniamlynbmyx.php/"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      }
+    ],
+    "network_flows": [
+      {
+        "t_ms": 638,
+        "method": "GET",
+        "url": "http://###.###.#.###:####/z#ajy#kniamlynbmyx.php/",
+        "host": "###.###.#.###:####",
+        "req_headers": {},
+        "req_body_preview": "",
+        "req_body_sha256": null,
+        "status": null,
+        "resp_body_preview": null,
+        "synthesised": false,
+        "tls_intercepted": false
+      }
+    ],
+    "decrypted_blobs": [
+      {
+        "t_ms": 0,
+        "algorithm": null,
+        "plaintext_preview": "\u0013{\u001e\ufffd|\ufffd#\ufffdY\u0006\ufffddL,\u0011D\ufffd_]\ufffd\ufffd\ufffdk,\u0015j\f\ufffd#j\u0001\ufffd",
+        "plaintext_sha256": null,
+        "length_bytes": 32,
+        "contains_url": false,
+        "contains_dex_magic": false,
+        "occurrences": 11
+      }
+    ],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T05:55:16.430342+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

@@ -1,0 +1,117 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "31f3e56bad615b2e749f41a9fc12e7e8689fe57f208e900da6bc1ad9ac28733d",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.yore.cleaner.bigfile on the sealed GCE detonator, containment manifest 8ef2612d2075b3b275e8cce80e7f95d23d76734f09c38cb52fec4f7188264dd5.",
+    "authored_at": "2026-08-26T05:32:01.732543+00:00",
+    "source_sha256": "31f3e56bad615b2e749f41a9fc12e7e8689fe57f208e900da6bc1ad9ac28733d",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_31f3e56bad61",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "245 instrumented observations across 5 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 956,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 5
+      },
+      {
+        "t_ms": 987,
+        "api": "DexClassLoader.$init",
+        "args": [
+          "loaded dex path=/data/user/#/com.yore.cleaner.bigfile/app_pccache/#/####CF##F##DE######DAE####C#A##BB###D#CC/pca..."
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      },
+      {
+        "t_ms": 455,
+        "api": "ContentResolver.query",
+        "args": [
+          "queried provider content://com.google.android.gms.phenotype/com.google.android.gms.measurement"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.yore.cleaner.bigfile"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 161
+      },
+      {
+        "t_ms": 45,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 77
+      }
+    ],
+    "network_flows": [
+      {
+        "t_ms": 45,
+        "method": "GET",
+        "url": "https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+        "host": "firebaseinstallations.googleapis.com",
+        "req_headers": {},
+        "req_body_preview": "",
+        "req_body_sha256": null,
+        "status": null,
+        "resp_body_preview": null,
+        "synthesised": false,
+        "tls_intercepted": false
+      }
+    ],
+    "decrypted_blobs": [],
+    "dex_loads": [
+      {
+        "t_ms": 987,
+        "loader": "DexClassLoader.$init",
+        "path": "/data/user/#/com.yore.cleaner.bigfile/app_pccache/#/####CF##F##DE######DAE####C#A##BB###D#CC/pca...",
+        "sha256": null,
+        "size_bytes": null,
+        "in_original_apk": false,
+        "dumped_to": null
+      }
+    ],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T05:32:01.732543+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

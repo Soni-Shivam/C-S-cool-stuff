@@ -1,0 +1,60 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "2211e5b751634ef3681bff599b25d57f47f1593bc27aeb83273ee63a64d62e25",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.sdfabfnf.efpkfohw on the sealed GCE detonator, containment manifest 941508ca4d95a16fe7fbf5994a3b958a8346268667e4231f098e5a6ce9822a26.",
+    "authored_at": "2026-08-26T05:26:29.682582+00:00",
+    "source_sha256": "2211e5b751634ef3681bff599b25d57f47f1593bc27aeb83273ee63a64d62e25",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_2211e5b75163",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "22 instrumented observations across 2 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 657,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 4
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.android.vending"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 18
+      }
+    ],
+    "network_flows": [],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T05:26:29.682582+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

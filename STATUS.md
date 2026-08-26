@@ -801,6 +801,80 @@ land. The bar for this hackathon is a working PoC per idea, not a finished produ
 - [x] T4.6 Trace normalisation                     DONE  2026-08-26 · 1,925 raw events → 40 groups; `b_dynamic` provably unchanged
 - [x] T4.7 TRIPWIRE @ H40                          PASSED — live detonation achieved, so the fallback was never needed
 - [x] T4.8 Sandbox plan builder                    DONE  2026-08-26 · SandboxPlan built and consumed by both sandbox passes
+- [x] T4.9 Live detonation wired into the pipeline DONE  2026-08-26 · `LiveSandboxSource` implemented; see below
+
+### T4.9 — the execution path is wired, not just the analysis path — 2026-08-26
+
+The paper (§13.2 Table 12, §15.3, §17 Table 18) records M3 as *partially* built: the
+analysis layer — trace normalisation, rule-11 aggregation, evasion detection, the
+containment probe — was built and tested, while the **execution path was not reachable
+from the pipeline**. That was accurate. `LiveSandboxSource.available()` returned a
+hardcoded `False` with the comment "P0: the lab is not built", and `.run()` raised
+"not implemented until P4". The 115 detonations that did happen were driven by hand,
+one `detonator_run.sh` invocation at a time, and their output reached the product only
+if somebody remembered to run `scripts/observation_to_trace.py` afterwards.
+
+So the dynamic layer could never fire for a sample a user actually uploaded. What was
+built:
+
+- **`drishti/m3_dynamic/ingest.py`** — `artifact_to_trace()`, the single
+  `ObservationArtifact` → `DynamicTrace` conversion. It previously existed only inside
+  `scripts/observation_to_trace.py`, so the offline fixture path and any future live
+  path would have been two implementations of one conversion. The script is now a CLI
+  over the module and `tests/contract/test_observation_ingest_parity.py` holds them
+  together — the M3 analogue of `test_feature_parity.py`.
+- **`drishti/m3_dynamic/detonator.py`** — `RemoteDetonatorClient`, the runbook's
+  stage → detonate → collect sequence over IAP, with the retry loop the runbook asks
+  for. No local branch exists: CLAUDE.md's rule is enforced by the structure rather
+  than by a comment.
+- **`LiveSandboxSource`** — real health probe (VM `RUNNING`, never *started* as a side
+  effect of a job) and a real run path. Two gates abort rather than warn: containment
+  not verified, and `safe_for_ingestion` false.
+- **Evasion observations now survive conversion.** The old converter dropped them, so
+  every captured fixture replayed as a sample that never probed its environment and the
+  frontier could not fire on real data. 10 of 51 captured runs carry a probe→stall
+  pattern; those now reach `_frontier`.
+
+**A protocol bug was caught before it cost a VM start.** The first client was written
+to send `detonate --sha256 X --serial Y --duration N --morphs <json>`. The script takes
+`detonate <sha> [duration]` positionally and puts pass 2 behind a *separate* `morph
+<sha> <kinds> [duration]` subcommand writing `<sha>.morph.json`. `MorphKind` also
+enumerates nine kinds while only five have Frida scripts; the VM answers rc 5 for the
+rest. `tests/unit/test_detonator_client.py` now asserts the command surface against
+`infra/gcp/detonator_run.sh` itself.
+
+**Fixture backfill.** 117 captured artifacts existed; 51 carry observations; only 25
+had ever been converted. All 51 are now committed as replayable `TraceFixture`s, so
+replay covers the real corpus instead of a quarter of it.
+
+**Structured evidence is no longer dropped in conversion.** `ObservationEvent` is flat
+— technique, mitre, hook, one redacted `detail` string — so the dropped-dex path, the C2
+URL and the pre-encryption plaintext all arrive as prose. The old converter kept none of
+it, which is why the Sandbox tab reported `0 network flows · 0 dex loads · 0 decrypted
+blobs` for samples that had genuinely produced them. Measured over the 51 captured runs:
+
+| Lifted | Count | Note |
+|---|---|---|
+| `dex_loads` | 11 | all from runtime-written paths (`/data/user/…/cache`, `app_DynamicOptDex`) |
+| `network_flows` | 17 | across 13 distinct hosts |
+| `decrypted_blobs` | 18 | `Cipher.doFinal` plaintext, captured before encryption |
+
+Parsing is anchored on the hook's own marker and refuses to guess: a detail with no
+`path=` yields no `DexLoadEvent` at all, rather than one with an invented verdict.
+`in_original_apk` is **derived from the path** rather than defaulted, because it is the
+strongest single input to `D` and the default (`False`) is the accusatory value — a
+split APK loading its own `base.apk!/classes.dex` must not be called a dropper.
+
+**This partially un-deadens `D`.** 11 of the 51 captured samples load dex from a
+runtime-written path, so `D` is now reachable for real traces instead of being
+structurally zero. It remains zero for static-only jobs, and `StaticReport.used_not_declared`
+is still never populated by M2 — that half of `D` is untouched and still a real gap.
+
+**Still not done, explicitly:** no live detonation has been run through this path. The
+`m3-detonator` VM is `TERMINATED` and `DRISHTI_GCP_PROJECT` is unset in `.env`, so
+`auto` resolves to replay. The code is exercised against a fake detonator, not a real
+one — `tests/lab/` is where a live-marked test belongs and none has been written yet.
+Until that runs, T4.9 is "wired and unit-tested", not "proven live".
 
 ## P5 — FRONTIER (H44→H58)
 

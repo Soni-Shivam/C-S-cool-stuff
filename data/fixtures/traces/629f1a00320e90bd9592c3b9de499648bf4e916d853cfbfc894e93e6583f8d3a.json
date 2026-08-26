@@ -1,0 +1,71 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "629f1a00320e90bd9592c3b9de499648bf4e916d853cfbfc894e93e6583f8d3a",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.cell.departments on the sealed GCE detonator, containment manifest 6b0d7eaadbaf4bbadfa8979da4b0d5eca8aa8e50a4e1320ffb9e5251074c778c.",
+    "authored_at": "2026-08-26T05:50:19.846781+00:00",
+    "source_sha256": "629f1a00320e90bd9592c3b9de499648bf4e916d853cfbfc894e93e6583f8d3a",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_629f1a00320e",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "7 instrumented observations across 2 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 0,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 6
+      },
+      {
+        "t_ms": 624,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.cell.departments"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      }
+    ],
+    "network_flows": [],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [
+      {
+        "probe_kind": "PackageManager.getPackageInfo",
+        "queried": "queried package=com.cell.departments",
+        "result": "MISS",
+        "t_ms": 624,
+        "followed_by_stall": true,
+        "stall_duration_ms": null,
+        "inferred_requirement": "install_packages",
+        "stack": []
+      }
+    ],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T05:50:19.846781+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

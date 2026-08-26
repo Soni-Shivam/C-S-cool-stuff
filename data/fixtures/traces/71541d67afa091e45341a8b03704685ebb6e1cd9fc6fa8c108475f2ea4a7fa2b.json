@@ -9,6 +9,9 @@
     "captured_from_image": "m3-detonator-manual-20260826"
   },
   "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
     "run_id": "run_71541d67afa0",
     "source": "live",
     "detonated": true,
@@ -21,6 +24,9 @@
         "args": [
           "added a window over other apps"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 4
       },
       {
@@ -29,6 +35,9 @@
         "args": [
           "queried package=com.threegtrain#.activity"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 8
       },
       {
@@ -37,6 +46,9 @@
         "args": [
           "getDeviceId -> <null>"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 7
       },
       {
@@ -45,17 +57,40 @@
         "args": [
           "opened connection to=http://ebook.dlmdj.com/xml/zhuanti_##.xml"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 2
       }
     ],
+    "network_flows": [
+      {
+        "t_ms": 1580,
+        "method": "GET",
+        "url": "http://ebook.dlmdj.com/xml/zhuanti_##.xml",
+        "host": "ebook.dlmdj.com",
+        "req_headers": {},
+        "req_body_preview": "",
+        "req_body_sha256": null,
+        "status": null,
+        "resp_body_preview": null,
+        "synthesised": false,
+        "tls_intercepted": false
+      }
+    ],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
     "emulator_image": "m3-detonator-manual-20260826",
     "vm_instance_id": "7382052279419138339",
     "harness_version": "m3-harness-2.0.0",
     "containment_verified": true,
     "captured_at": "2026-08-26T03:08:03.336226+00:00",
-    "synthetic": false,
-    "errors": [],
-    "partial": false
+    "synthetic": false
   },
   "post_morph": {}
 }

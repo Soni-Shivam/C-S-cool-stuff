@@ -1,0 +1,107 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "d0279f6afa15e29234f752229e9b91312fc118f1c73971a2042e163d586c3792",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.jakedegivuwuwe.yewo on the sealed GCE detonator, containment manifest 704ea7654035173773972c288fa23766cbe52f7a7cdfada8dd1af5cfd6d0fa5c.",
+    "authored_at": "2026-08-26T06:34:23.379928+00:00",
+    "source_sha256": "d0279f6afa15e29234f752229e9b91312fc118f1c73971a2042e163d586c3792",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_d0279f6afa15",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "31 instrumented observations across 4 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 107,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 4
+      },
+      {
+        "t_ms": 0,
+        "api": "Cipher.doFinal",
+        "args": [
+          "crypto op plaintext=\u0013{\u001e\ufffd|\ufffd#\ufffdY\u0006\ufffddL,\u0011D\ufffd_]\ufffd\ufffd\ufffdk,\u0015j\f\ufffd#j\u0001\ufffd"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 13
+      },
+      {
+        "t_ms": 969,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.google.android.webview"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 13
+      },
+      {
+        "t_ms": 898,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=http://###.###.##.##:####/ig#bi.php/"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      }
+    ],
+    "network_flows": [
+      {
+        "t_ms": 898,
+        "method": "GET",
+        "url": "http://###.###.##.##:####/ig#bi.php/",
+        "host": "###.###.##.##:####",
+        "req_headers": {},
+        "req_body_preview": "",
+        "req_body_sha256": null,
+        "status": null,
+        "resp_body_preview": null,
+        "synthesised": false,
+        "tls_intercepted": false
+      }
+    ],
+    "decrypted_blobs": [
+      {
+        "t_ms": 0,
+        "algorithm": null,
+        "plaintext_preview": "\u0013{\u001e\ufffd|\ufffd#\ufffdY\u0006\ufffddL,\u0011D\ufffd_]\ufffd\ufffd\ufffdk,\u0015j\f\ufffd#j\u0001\ufffd",
+        "plaintext_sha256": null,
+        "length_bytes": 32,
+        "contains_url": false,
+        "contains_dex_magic": false,
+        "occurrences": 13
+      }
+    ],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T06:34:23.379928+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

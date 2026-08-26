@@ -9,6 +9,9 @@
     "captured_from_image": "m3-detonator-manual-20260826"
   },
   "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
     "run_id": "run_db5afa6ebd4f",
     "source": "live",
     "detonated": true,
@@ -21,6 +24,9 @@
         "args": [
           "added a window over other apps"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 3
       },
       {
@@ -29,6 +35,9 @@
         "args": [
           "loaded dex path=/data/user/#/get.baby.pregnancy.ovulation.tracker/cache/#############.jar"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 1
       },
       {
@@ -37,6 +46,9 @@
         "args": [
           "queried provider content://com.google.android.gms.chimera/api/com.google.android.gms.ads.dynamite"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 10
       },
       {
@@ -45,6 +57,9 @@
         "args": [
           "queried package=get.baby.pregnancy.ovulation.tracker"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 83
       },
       {
@@ -53,6 +68,9 @@
         "args": [
           "crypto op plaintext=\u0017\ufffd\ufffd\ufffd_j\ufffd\ufffdlyD%\ufffd\ufffd\u0017\ufffd\ufffd\ufffd\u000e\ufffdO\ufffd`\ufffdD\ufffd\u04fd=\ufffd\ufffdPB\ufffd#\u0006V\ufffd\u000f\ufffd|\ufffd\ufffdym\ufffd\ufffdK+\u0001\u0564n\u001b\ufffd\ufffd#]\u00ba\ufffd\ufffdY\ufffd.uUY\ufffd\u0005zq\\\ufffd[\u0014{\u0005\ufffd#kw\ufffd\ufffd\u0010\ufffd\ufffd'e#\ufffd\u0007\ufffd\u0012\ufffd\ufffd#MV..."
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 57
       },
       {
@@ -61,17 +79,61 @@
         "args": [
           "opened connection to=https://settings.crashlytics.com/spi/v#<b64>.baby.pregnancy.ovulation.tracker/settings?instance=..."
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 11
       }
     ],
+    "network_flows": [
+      {
+        "t_ms": 168,
+        "method": "GET",
+        "url": "https://settings.crashlytics.com/spi/v#<b64>.baby.pregnancy.ovulation.tracker/settings?instance=...",
+        "host": "settings.crashlytics.com",
+        "req_headers": {},
+        "req_body_preview": "",
+        "req_body_sha256": null,
+        "status": null,
+        "resp_body_preview": null,
+        "synthesised": false,
+        "tls_intercepted": false
+      }
+    ],
+    "decrypted_blobs": [
+      {
+        "t_ms": 778,
+        "algorithm": null,
+        "plaintext_preview": "\u0017\ufffd\ufffd\ufffd_j\ufffd\ufffdlyD%\ufffd\ufffd\u0017\ufffd\ufffd\ufffd\u000e\ufffdO\ufffd`\ufffdD\ufffd\u04fd=\ufffd\ufffdPB\ufffd#\u0006V\ufffd\u000f\ufffd|\ufffd\ufffdym\ufffd\ufffdK+\u0001\u0564n\u001b\ufffd\ufffd#]\u00ba\ufffd\ufffdY\ufffd.uUY\ufffd\u0005zq\\\ufffd[\u0014{\u0005\ufffd#kw\ufffd\ufffd\u0010\ufffd\ufffd'e#\ufffd\u0007\ufffd\u0012\ufffd\ufffd#MV...",
+        "plaintext_sha256": null,
+        "length_bytes": 99,
+        "contains_url": false,
+        "contains_dex_magic": false,
+        "occurrences": 57
+      }
+    ],
+    "dex_loads": [
+      {
+        "t_ms": 785,
+        "loader": "DexClassLoader.$init",
+        "path": "/data/user/#/get.baby.pregnancy.ovulation.tracker/cache/#############.jar",
+        "sha256": null,
+        "size_bytes": null,
+        "in_original_apk": false,
+        "dumped_to": null
+      }
+    ],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
     "emulator_image": "m3-detonator-manual-20260826",
     "vm_instance_id": "7382052279419138339",
     "harness_version": "m3-harness-2.0.0",
     "containment_verified": true,
     "captured_at": "2026-08-26T04:13:23.165275+00:00",
-    "synthetic": false,
-    "errors": [],
-    "partial": false
+    "synthetic": false
   },
   "post_morph": {}
 }

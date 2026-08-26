@@ -18,6 +18,7 @@ So the assertions here are about provenance, not about parsing:
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -49,6 +50,11 @@ def converted(tmp_path_factory: pytest.TempPathFactory) -> Path:
         check=True,
         capture_output=True,
         cwd=REPO,
+        # Pin the subprocess to the tree under test: `python scripts/x.py` puts
+        # `scripts/` on sys.path, not the repo root, so without this it imports
+        # whichever `drishti` the venv installed — a different checkout entirely
+        # when running from a git worktree.
+        env={**os.environ, "PYTHONPATH": str(REPO)},
     )
     return out
 
