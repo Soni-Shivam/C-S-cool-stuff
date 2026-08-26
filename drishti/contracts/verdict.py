@@ -32,7 +32,7 @@ from __future__ import annotations
 from typing import Literal
 
 from drishti.contracts.base import DrishtiModel
-from drishti.contracts.dynamic_trace import DynamicTrace, TraceSourceKind
+from drishti.contracts.dynamic_trace import DynamicTrace, NetworkFlow, TraceSourceKind
 from drishti.contracts.genai_verdict import GenAIVerdict
 from drishti.contracts.score import CompositeScore, SeverityBand
 from drishti.contracts.static_report import FileMeta, StaticReport
@@ -210,6 +210,13 @@ def _plain_harm(genai: GenAIVerdict | None) -> str:
     return "It behaves like an app built to steal money."
 
 
+def _flow_note(flow: NetworkFlow) -> str:
+    """The provenance suffix for one flow on the demo screen."""
+    if flow.injected_destination:
+        return "  [lab infrastructure]"
+    return "  [reply synthesised]" if flow.synthesised else ""
+
+
 def _dynamic_view(trace: DynamicTrace | None) -> DynamicTraceView | None:
     """Flatten the trace for display, redacting anything recovered from the sample."""
     if trace is None:
@@ -227,9 +234,12 @@ def _dynamic_view(trace: DynamicTrace | None) -> DynamicTraceView | None:
         for blob in trace.decrypted_blobs[:20]
         if getattr(blob, "plaintext_preview", None)
     )
+    # Two provenance facts, never collapsed into one label: `[reply synthesised]` says
+    # we wrote the response body to a destination the SAMPLE chose (which stays a
+    # finding); `[lab infrastructure]` says the destination is ours — our sinkhole or
+    # our proxy — and is not the sample contacting anybody.
     captures = tuple(
-        f"{flow.method} {flow.host}{'  [synthesised]' if flow.synthesised else ''}"
-        for flow in trace.network_flows[:40]
+        f"{flow.method} {flow.host}{_flow_note(flow)}" for flow in trace.network_flows[:40]
     )
     return DynamicTraceView(
         detonated=trace.detonated,

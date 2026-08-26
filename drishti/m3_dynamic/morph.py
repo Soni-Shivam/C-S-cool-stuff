@@ -28,9 +28,11 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+from drishti.contracts.dynamic_trace import SyntheticC2Response
 from drishti.contracts.frontier import Morph, MorphKind, MorphPlan
 from drishti.logging import get_logger
 
@@ -379,6 +381,56 @@ def diff_traces(before: Any, after: Any) -> TraceDelta:
         detonated_before=det_b,
         detonated_after=det_a,
         woke_up=woke,
+    )
+
+
+def measure_behaviour_change(
+    responses: Sequence[SyntheticC2Response],
+    *,
+    before: Any,
+    after: Any,
+) -> tuple[SyntheticC2Response, ...]:
+    """Fill `behaviour_changed` on each served response from a real pass-1/pass-2 diff.
+
+    This is the honest "did answering the dead C2 work" metric, and it is the one field
+    on `SyntheticC2Response` a reader would most like to be flattered by. So it is
+    measured, never asserted: `diff_traces` decides, and a morph or a synthesised reply
+    that changed nothing comes back `False`. `None` is reserved for *nobody looked* —
+    with no second pass there is no measurement, and claiming `False` would itself be a
+    claim about a run that never happened.
+
+    Attribution is run-level and says so. A trace diff cannot tell which of three served
+    responses moved the sample, so every response gets the same verdict and every
+    response's `reasoning` records how many shared it. Silently repeating one observation
+    across three records would read as three independent confirmations.
+    """
+    if after is None or not responses:
+        return tuple(responses)
+
+    delta = diff_traces(before, after)
+    detail = (
+        f"new technique(s) {', '.join(delta.new_techniques)}"
+        if delta.new_techniques
+        else f"no new techniques; {delta.events_before} -> {delta.events_after} event(s)"
+    )
+    note = (
+        f"behaviour_changed={delta.woke_up}, measured by trace diff: {detail}. "
+        f"Attribution is run-level across {len(responses)} response(s) served."
+    )
+    log.info(
+        "c2_behaviour_measured",
+        behaviour_changed=delta.woke_up,
+        new_techniques=delta.new_techniques,
+        responses=len(responses),
+    )
+    return tuple(
+        response.model_copy(
+            update={
+                "behaviour_changed": delta.woke_up,
+                "reasoning": f"{response.reasoning} {note}".strip(),
+            }
+        )
+        for response in responses
     )
 
 

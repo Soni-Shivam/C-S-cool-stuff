@@ -18,6 +18,7 @@ from drishti.contracts.dynamic_trace import DynamicTrace
 from drishti.contracts.genai_verdict import GenAIVerdict
 from drishti.contracts.score import CompositeScore, SeverityBand
 from drishti.contracts.static_report import FileMeta, StaticReport
+from drishti.m3_dynamic.ingest import bare_host, indicator_kind
 
 #: Fixed namespace for UUIDv5 derivation. Arbitrary but frozen: changing it would
 #: renumber every object in every previously exported bundle.
@@ -191,28 +192,35 @@ def build_bundle(
                 objects.append(pattern)
             _relate("uses", malware["id"], pattern["id"])
 
-    # ── C2 infrastructure, only from OBSERVED flows ──────────────────────────
+    # ── C2 infrastructure, only from destinations the SAMPLE chose ───────────
     # Static URL strings are not published as infrastructure: a string in a DEX is a
     # string, and shipping it as a C2 indicator is how blocklists acquire false
     # positives that outlive the sample.
     seen_hosts: set[str] = set()
     for flow in dynamic.network_flows if dynamic else ():
-        # `synthesised` means the Generative C2 served that response, not the
-        # attacker. Publishing it as infrastructure would attribute our own test
-        # harness to the adversary — a provenance lie that outlives the bundle.
-        if flow.synthesised:
+        # NOT keyed on `synthesised`. That flag says we authored the RESPONSE, and the
+        # detonator's proxy stamps it on everything it serves — sinkhole included — so
+        # keying on it would empty this section for every real run. A dead C2 the sample
+        # beaconed to is real infrastructure; answering it does not make it ours.
+        # `injected_destination` is the flag that says the DESTINATION is ours, and the
+        # host is re-classified here regardless, because the hook path builds flows with
+        # `synthesised=False` hardcoded and would otherwise export our own sinkhole.
+        if flow.injected_destination:
             continue
-        host = flow.host
-        if not host or host in seen_hosts:
+        host = bare_host(flow.host)
+        kind = indicator_kind(host)
+        if kind is None or host in seen_hosts:
             continue
         seen_hosts.add(host)
-        domain = {
-            "type": "domain-name",
+        # An IP published as a `domain-name` matches nothing in a recipient's tooling.
+        sco_type = {"domain": "domain-name", "ipv4": "ipv4-addr", "ipv6": "ipv6-addr"}[kind]
+        observable = {
+            "type": sco_type,
             "spec_version": SPEC_VERSION,
-            "id": _sdo_id("domain-name", host),
+            "id": _sdo_id(sco_type, host),
             "value": host,
         }
-        objects.append(domain)
+        objects.append(observable)
         c2_indicator: dict[str, Any] = {
             "type": "indicator",
             "spec_version": SPEC_VERSION,
@@ -222,13 +230,17 @@ def build_bundle(
             "modified": stamp,
             "name": f"Contacted by {meta.package or meta.sha256[:12]}",
             "indicator_types": ["malicious-activity"] if malicious else ["anomalous-activity"],
-            "pattern": f"[domain-name:value = '{host}']",
+            "pattern": f"[{sco_type}:value = '{host}']",
             "pattern_type": "stix",
             "valid_from": stamp,
             "x_drishti_observed_live": dynamic is not None and not dynamic.synthetic,
+            # Disclosed rather than hidden: the destination is the sample's, but the
+            # reply it got there was ours, and a recipient correlating payloads needs
+            # to know that before they read anything into the response.
+            "x_drishti_response_synthesised": flow.synthesised,
         }
         objects.append(c2_indicator)
-        _relate("based-on", c2_indicator["id"], domain["id"])
+        _relate("based-on", c2_indicator["id"], observable["id"])
 
     # ── verified claims as notes ─────────────────────────────────────────────
     for index, claim in enumerate(genai.verified_claims if genai else ()):

@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 from drishti.config import Settings
+from drishti.contracts.dynamic_trace import SyntheticC2Response
 from drishti.contracts.evidence import EvidenceType
 from drishti.contracts.frontier import Morph, MorphKind, MorphPlan
 from drishti.ledger.store import LedgerStore
@@ -22,6 +23,7 @@ from drishti.m3_dynamic.morph import (
     MorphValidationError,
     apply_morphs,
     diff_traces,
+    measure_behaviour_change,
     render_morph_config,
     validate_morph,
 )
@@ -217,6 +219,67 @@ def test_a_morph_that_changed_nothing_reads_as_nothing() -> None:
     delta = diff_traces(before, after)
     assert delta.woke_up is False
     assert delta.new_techniques == ()
+
+
+# ── behaviour_changed is MEASURED from that diff, never asserted ─────────────
+# `SyntheticC2Response.behaviour_changed` is the honest "did serving this work" metric.
+# A default of True would make every synthesised response look effective; a default of
+# False would hide a real result. It is filled from a trace diff or left None.
+def _served() -> SyntheticC2Response:
+    return SyntheticC2Response(
+        t_ms=4200,
+        host="gate.evil.tk",
+        url="http://gate.evil.tk/api/poll",
+        response_kind="command_poll",
+        served_body='{"status": "ok", "cmd": "noop"}',
+        provably_inert=True,
+        reasoning="Answered the beacon with an inert command poll.",
+    )
+
+
+def test_behaviour_changed_is_false_when_pass_two_showed_nothing_new() -> None:
+    """A negative result recorded is the point. It must not read as unmeasured."""
+    before = _Trace(12, ("T1418",), True)
+    after = _Trace(12, ("T1418",), True)
+    (response,) = measure_behaviour_change((_served(),), before=before, after=after)
+    assert response.behaviour_changed is False
+
+
+def test_behaviour_changed_is_true_when_pass_two_revealed_a_new_technique() -> None:
+    before = _Trace(12, ("T1418",), True)
+    after = _Trace(31, ("T1418", "T1407"), True)
+    (response,) = measure_behaviour_change((_served(),), before=before, after=after)
+    assert response.behaviour_changed is True
+
+
+def test_behaviour_changed_records_how_it_was_measured() -> None:
+    """The number in the reasoning is what a reader checks the claim against."""
+    before = _Trace(12, ("T1418",), True)
+    after = _Trace(31, ("T1418", "T1407"), True)
+    (response,) = measure_behaviour_change((_served(),), before=before, after=after)
+    assert "T1407" in response.reasoning
+    assert response.reasoning.startswith("Answered the beacon"), "the original reasoning is kept"
+
+
+def test_with_no_second_pass_behaviour_changed_stays_unmeasured() -> None:
+    """`None` means nobody looked. Claiming False would be claiming a measurement."""
+    (response,) = measure_behaviour_change((_served(),), before=_Trace(12, (), True), after=None)
+    assert response.behaviour_changed is None
+
+
+def test_attribution_across_several_responses_is_disclosed() -> None:
+    """A run-level diff cannot say WHICH of three responses moved the sample.
+
+    Recording the same verdict on each without saying so would read as three
+    independent confirmations of a single observation.
+    """
+    before = _Trace(12, ("T1418",), True)
+    after = _Trace(31, ("T1418", "T1407"), True)
+    responses = measure_behaviour_change(
+        (_served(), _served(), _served()), before=before, after=after
+    )
+    assert all(r.behaviour_changed is True for r in responses)
+    assert all("3 response" in r.reasoning for r in responses)
 
 
 # ── the morph scripts themselves ─────────────────────────────────────────────

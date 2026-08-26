@@ -101,6 +101,44 @@ def test_a_sample_that_did_nothing_is_inconclusive_never_benign(job, meta, score
     assert "INCONCLUSIVE, not benign" in body
 
 
+def test_a_synthesised_reply_is_disclosed_as_ours_not_as_c2_behaviour(job, meta, score) -> None:
+    """We answered a dead C2. The report may never let that read as the C2 answering."""
+    trace = _trace(
+        detonated=True,
+        outcome="completed",
+        network_flows=(
+            NetworkFlow(
+                t_ms=10,
+                method="POST",
+                url="http://gate.evil.tk/api",
+                host="gate.evil.tk",
+                synthesised=True,
+            ),
+        ),
+    )
+    body = html.render(job=job, meta=meta, score=score, trace=trace)
+    assert "1 network response(s) were synthesised by DRISHTI" in body
+
+
+def test_destinations_withheld_from_the_ioc_export_are_disclosed(job, meta, score) -> None:
+    """A caveat derived from a flag, not a sentence someone remembered to paste in."""
+    trace = _trace(
+        detonated=True,
+        outcome="completed",
+        network_flows=(
+            NetworkFlow(
+                t_ms=10,
+                method="GET",
+                url="http://127.0.0.1:9/inert",
+                host="127.0.0.1",
+                injected_destination=True,
+            ),
+        ),
+    )
+    body = html.render(job=job, meta=meta, score=score, trace=trace)
+    assert "1 network destination(s) were DRISHTI lab infrastructure" in body
+
+
 def test_unverified_containment_is_disclosed(job, meta, score) -> None:
     trace = _trace(detonated=True, outcome="completed", containment_verified=False)
     body = html.render(job=job, meta=meta, score=score, trace=trace)
@@ -138,8 +176,14 @@ def test_mock_provider_is_disclosed(job, meta, score) -> None:
 
 
 # ── STIX must not launder our own output into intelligence ──────────────────
-def test_stix_excludes_synthesised_flows(meta, score) -> None:
-    """A response our Generative C2 served is not attacker infrastructure."""
+def test_stix_excludes_destinations_we_injected(meta, score) -> None:
+    """A destination WE put in front of the sample is not attacker infrastructure.
+
+    The exclusion keys on the provenance of the destination, not on who answered:
+    `synthesised` says only that we authored the response body, and the on-VM proxy
+    stamps that on every response it serves — sinkhole included. Keying on it would
+    empty the bundle the moment a real detonation ran.
+    """
     trace = _trace(
         detonated=True,
         outcome="completed",
@@ -151,6 +195,7 @@ def test_stix_excludes_synthesised_flows(meta, score) -> None:
                 url="http://ours.test/y",
                 host="ours.test",
                 synthesised=True,
+                injected_destination=True,
             ),
         ),
     )
@@ -267,7 +312,7 @@ def test_dossier_gates_reporting_on_the_band(meta) -> None:
     assert "below the reporting threshold" in low.reason
 
 
-def test_dossier_lists_only_observed_infrastructure(meta, score) -> None:
+def test_dossier_lists_only_infrastructure_the_sample_chose(meta, score) -> None:
     trace = _trace(
         detonated=True,
         outcome="completed",
@@ -279,6 +324,7 @@ def test_dossier_lists_only_observed_infrastructure(meta, score) -> None:
                 url="http://ours.test/b",
                 host="ours.test",
                 synthesised=True,
+                injected_destination=True,
             ),
         ),
     )
@@ -286,6 +332,25 @@ def test_dossier_lists_only_observed_infrastructure(meta, score) -> None:
     joined = " ".join(pack.indicators)
     assert "real.test" in joined
     assert "ours.test" not in joined, "our own harness is not attacker infrastructure"
+
+
+def test_dossier_discloses_what_it_withheld_from_the_indicator_list(meta, score) -> None:
+    """Failing toward not-publishing is only honest if the reader is told it happened."""
+    trace = _trace(
+        detonated=True,
+        outcome="completed",
+        network_flows=(
+            NetworkFlow(
+                t_ms=1,
+                method="GET",
+                url="http://127.0.0.1:9/inert",
+                host="127.0.0.1",
+                injected_destination=True,
+            ),
+        ),
+    )
+    pack = dossier.build(meta=meta, score=score, dynamic=trace)
+    assert any("DRISHTI" in c and "infrastructure" in c for c in pack.caveats)
 
 
 def test_dossier_carries_its_caveats_into_the_text(meta) -> None:

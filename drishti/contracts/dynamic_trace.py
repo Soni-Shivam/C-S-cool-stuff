@@ -48,11 +48,29 @@ class ApiEvent(DrishtiModel):
 
 
 class NetworkFlow(DrishtiModel):
-    """A request/response pair from mitmproxy.
+    """A request/response pair, from mitmproxy or from a `URL.open*` hook.
 
-    `synthesised=True` means *we* served this response from the Generative C2, not
-    real attacker infrastructure. The distinction has to survive into the report:
-    a dead C2 stays dead, and claiming otherwise would be a lie about provenance.
+    Two different provenance questions live on this model and conflating them breaks
+    the report in opposite directions:
+
+    * `synthesised=True` means **we authored the response body** — the Generative C2 or
+      its sinkhole answered, not real attacker infrastructure. A dead C2 stays dead, and
+      presenting our own reply as observed attacker behaviour would be a lie.
+    * `injected_destination=True` means **the destination itself is ours** — the
+      `http://127.0.0.1:9/inert` sinkhole `assert_inert` rewrites URLs to, the emulator's
+      `10.0.2.2` alias for the analysis host, any loopback/RFC1918/link-local address, or
+      a host that appears only inside a body we wrote.
+
+    IOC publication keys on the second, never on the first. Keying it on `synthesised`
+    empties the STIX bundle and the dossier the moment the proxy runs (it stamps every
+    response it serves); ignoring `injected_destination` exports our own injected string
+    to a SOC as adversary infrastructure. The sample *chose* to beacon at a host;
+    answering it does not make the host ours.
+
+    `occurrences` exists for the same reason `DecryptedBlob.occurrences` does — CLAUDE.md
+    rule 11. A beaconing sample emits thousands of identical requests in a 120s
+    detonation; they are grouped by `(host, path, method)` so the rate stays visible to a
+    human without putting a row per request into the ledger or the prompt budget.
     """
 
     t_ms: int
@@ -66,6 +84,10 @@ class NetworkFlow(DrishtiModel):
     resp_body_preview: str | None = None
     synthesised: bool = False
     tls_intercepted: bool = False
+    #: True when the DESTINATION is DRISHTI's own, whoever answered. Never published.
+    injected_destination: bool = False
+    #: How many requests to this `(host, path, method)` were folded into this row.
+    occurrences: int = 1
 
 
 class DecryptedBlob(DrishtiModel):

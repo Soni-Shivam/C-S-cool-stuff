@@ -321,13 +321,15 @@ class ApiEvent(DrishtiModel):
     stack: tuple[str, ...] = ()   # top 5 frames
 
 class NetworkFlow(DrishtiModel):
-    t_ms: int
+    t_ms: int                     # offset from the run's start, NEVER an epoch (A19)
     method: str; url: str; host: str
     req_headers: dict; req_body_preview: str; req_body_sha256: str
     status: int | None
     resp_body_preview: str | None
-    synthesised: bool = False     # True when we served a Generative C2 response
+    synthesised: bool = False     # we authored the RESPONSE BODY
     tls_intercepted: bool = False
+    injected_destination: bool = False   # the DESTINATION is ours — see A19
+    occurrences: int = 1          # requests folded into this row (rule 11)
 
 class EvasionObservation(DrishtiModel):
     probe_kind: str
@@ -1175,3 +1177,63 @@ Four properties are load-bearing:
 * **The bundle is data, never code.** It carries status, content type and body — no
   URL to fetch, no expression to evaluate. The proxy reads it and answers; it has no
   path that would let a bundle field reach a command surface.
+
+---
+
+### A19. `NetworkFlow.injected_destination` and `.occurrences` (ingest of captured flows)
+
+A17 covers what the proxy wrote down; this covers what happens when
+`m3_dynamic.ingest.artifact_to_trace` lifts those `CapturedFlow`s into the trace, next
+to the flows the `URL.open*` hooks produced. Three additive changes, each fixing
+something the lift would otherwise break.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `injected_destination` | `bool` | `True` when the **destination** is DRISHTI's own, whoever answered it. Default `False`. |
+| `occurrences` | `int` | How many requests to this `(host, path, method)` were folded into this row. Default `1`. |
+
+**1. `synthesised` is not a statement about the destination.** The on-VM proxy stamps
+`synthesised` on every response it serves — the sinkhole answers unhinted hosts too, so
+after a real detonation *every* captured flow carries it. Keying the IOC exclusion on
+that flag empties the STIX bundle (§stix `domain-name`/indicator SDOs) and the
+law-enforcement dossier's observed-infrastructure list. The sample chose the
+destination; we only chose the reply. So `synthesised` keeps its meaning — *we authored
+the response body* — and `injected_destination` carries the separate fact that the
+destination is ours. Publication keys on the second, never on the first.
+
+`injected_destination` is derived at ingest, never asserted, and is `True` when:
+
+* the host is loopback, RFC1918, link-local (including the `169.254.169.254` metadata
+  address), or otherwise not a routable public destination — `10.0.2.2` is the emulator's
+  alias for the analysis host and `127.0.0.1:9` is where `assert_inert` rewrites every
+  URL-shaped value it sanitises; **or**
+* the host appears inside a body we authored — the `resp_body_preview` of a synthesised
+  flow. If the sample went there, it went because of something we told it.
+
+A host that appears in a body the *attacker* sent is not ours, and stays publishable.
+
+**2. The hook path needs the same guard.** `ingest._structured` builds hook-derived
+flows with `synthesised=False` hardcoded, so a sample that follows the sinkhole bait
+produces `NetworkFlow(host="127.0.0.1", synthesised=False)` — our own injected string,
+which a naive exporter would publish as adversary infrastructure *and* as a
+`domain-name` SDO holding an IP, which is also a type error. The exporters therefore
+re-derive host provenance themselves rather than trusting the flag, publish a routable
+IP as `ipv4-addr`/`ipv6-addr` rather than `domain-name`, and **fail toward not
+publishing** anything they cannot classify (a single-label host, an unparseable one).
+What was withheld is disclosed in the report's Limitations and the dossier's caveats,
+generated from the flags — never hardcoded.
+
+**3. Flows are aggregated and capped (CLAUDE.md rule 11).** A beaconing sample in a 120s
+detonation emits thousands of flows; the same rule that turned 1,925 `Cipher.doFinal`
+events into one group applies here. Flows are grouped by `(host, path, method)` with an
+occurrence count, capped at `ingest.MAX_CAPTURED_FLOWS`, which mirrors
+`normaliser.MAX_OBSERVATION_GROUPS`. A drop is recorded in `DynamicTrace.errors` and
+sets `partial`, exactly as a dropped observation group does.
+
+**`t_ms` is run-relative on both paths.** `CapturedFlow.t_ms_epoch` is wall-clock;
+`NetworkFlow.t_ms` is an offset from the run's start, and the lift converts. Without the
+conversion the two sources can never share a dedupe key, and one beacon renders twice —
+once "observed" at 4.2s and once "synthesised" in 2026. Where the proxy and the hook saw
+the same `(host, path)`, the proxy's row wins (it has the real verb, the status and the
+body) and the counts are merged with `max`, not summed: two views of one request are
+still one request.

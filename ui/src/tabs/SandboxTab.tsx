@@ -274,10 +274,20 @@ export function SandboxTab({
                         <span className="font-mono text-xs text-fg">{flow.method}</span>
                         <span className="font-mono text-[11px] break-all text-muted">{flow.url}</span>
                         {flow.status != null && <Tag>{flow.status}</Tag>}
-                        {flow.synthesised && (
-                          <Tag tone="warn" title="We served this response from the Generative C2 — not real attacker infrastructure">
-                            synthesised response
+                        {flow.occurrences > 1 && <Tag title="Requests to this host, path and method">{`×${flow.occurrences}`}</Tag>}
+                        {/* Two different facts. `synthesised` says we wrote the reply to a
+                            destination the SAMPLE chose — still a finding. `injected_destination`
+                            says the destination is ours, and is never exported as an IOC. */}
+                        {flow.injected_destination ? (
+                          <Tag tone="warn" title="This destination is DRISHTI's own — our sinkhole or our proxy. It is not attacker infrastructure and is excluded from the exported indicators.">
+                            lab infrastructure
                           </Tag>
+                        ) : (
+                          flow.synthesised && (
+                            <Tag tone="warn" title="The destination did not answer, so DRISHTI served this response. The host is the sample's; the reply is ours.">
+                              reply synthesised by DRISHTI
+                            </Tag>
+                          )
                         )}
                         {flow.tls_intercepted && <Tag tone="accent">TLS intercepted</Tag>}
                       </div>
