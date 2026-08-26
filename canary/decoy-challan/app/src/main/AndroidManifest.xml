@@ -48,9 +48,15 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 
+    <!-- android:icon below is a RASTER icon, not the vector drawable, and that is the
+         whole point. m4_genai/vision.py reads the launcher icon out of the APK zip to
+         hash it and to show it to the vision model; a vector compiles to XML, so a
+         decoy with only res/drawable/ic_challan.xml gives the impersonation layer
+         nothing to look at. See tools/make_launcher_icon.py — the artwork is a
+         lookalike (navy + red + rupee), never a real institution's logo. -->
     <application
         android:allowBackup="true"
-        android:icon="@drawable/ic_challan"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@android:style/Theme.Material.Light">
 
