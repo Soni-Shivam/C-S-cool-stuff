@@ -46,7 +46,11 @@ log = get_logger(__name__)
 
 #: Interpretations we will keep. Matches `retrieval.MAX_CHAINS` in spirit: more than
 #: this and the answers get shorter rather than the coverage getting better.
-MAX_METHODS_INTERPRETED = 6
+#: Cap on interpretations kept from one response. Raised from 6 alongside the
+#: provider-aware workspace: capping below the number of methods actually SENT would
+#: discard readings the model was explicitly asked to produce, and the RE tab would keep
+#: reporting them as uninterpreted.
+MAX_METHODS_INTERPRETED = 16
 
 _PROMPTS = Path(__file__).resolve().parents[1] / "prompts"
 

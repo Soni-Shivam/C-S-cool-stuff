@@ -40,7 +40,7 @@ from drishti.ledger.verifier import NON_BEHAVIOURAL_TYPES, Verifier
 from drishti.logging import get_logger
 from drishti.m4_genai.client import LLMClient
 from drishti.m4_genai.resources import UiString, extract_ui_strings, record_ui_strings
-from drishti.m4_genai.retrieval import select
+from drishti.m4_genai.retrieval import select, workspace_budget
 from drishti.m4_genai.safety import (
     BEHAVIOUR_WEIGHTS,
     CONTEXT_WEIGHTS,
@@ -384,7 +384,10 @@ def analyse(
     # Code-graph RAG: walk backwards from the sinks, keep the highest-risk chains, and
     # send only those. Selected once and shared, so the workspace the model reads is
     # exactly the workspace the report and the UI describe.
-    pack = select(static)
+    # Sized to the provider rather than to a constant. A 1M-token model was being shown
+    # the same 1,800 tokens of code as an 8k one, which is why a job with 12 recovered
+    # methods reported ten of them as uninterpreted.
+    pack = select(static, token_budget=workspace_budget(settings))
     log.info(
         "retrieval_selected",
         chains=len(pack.chains),

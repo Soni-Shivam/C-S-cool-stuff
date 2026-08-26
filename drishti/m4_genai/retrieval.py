@@ -29,6 +29,11 @@ usually `onCreate` doing nothing but delegating.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from drishti.config import Settings
+
 from dataclasses import dataclass, field
 
 from drishti.contracts.static_report import CallPath, DecompiledMethod, Severity, StaticReport
@@ -42,6 +47,47 @@ from drishti.m4_genai.safety import wrap_untrusted
 #: pack is only round 0's cost, and round 1 carries the tool results as well. The binding
 #: constraint is the provider's per-request ceiling, not the prompt budget in config.
 DEFAULT_TOKEN_BUDGET = 1_800
+
+#: Room the tool loop needs on top of the workspace itself, in tokens. Measured against
+#: the live endpoint: the system prompt and six tool declarations cost ~1,400, and round 1
+#: carries every tool result back on top of round 0's prompt.
+_LOOP_OVERHEAD_TOKENS = 2_600
+
+#: Room for the tool results round 1 carries back. Bounded by `MAX_TOOL_CALLS` x
+#: `MAX_TOOL_RESULT_CHARS`, so it is a constant rather than a share of the ceiling.
+_TOOL_RESULT_RESERVE = 1_500
+
+
+def workspace_budget(settings: Settings) -> int:
+    """How much decompiled code to put in front of the model, given the provider.
+
+    `DEFAULT_TOKEN_BUDGET` was cut from 5,000 to 1,800 so the tool loop would fit Groq's
+    8,000-token-per-minute ceiling, where prompt plus reserved output share one budget.
+    That was correct for Groq and became the thing starving the reverse-engineering
+    layer the moment the provider changed: on Gemini the ceiling is 1,048,576 and the
+    workspace was still 1,800, so a job with 12 sink-reachable methods showed the model
+    about three of them and reported the other nine as uninterpreted.
+
+    Two ceilings bind, and the smaller wins:
+
+      * the PROVIDER's per-request limit (`llm_max_request_tokens`), which is a hard
+        rejection — exceed it and the round carrying the tool results is refused;
+      * OUR prompt budget (`llm_max_prompt_tokens`), which is a deliberate assert, not a
+        provider constraint. CLAUDE.md rule 10 fixes it at 12k, and a bigger provider is
+        not a reason to spend more of a job's tokens on one stage.
+    """
+    ceiling = min(
+        getattr(settings, "llm_max_request_tokens", 8_000),
+        getattr(settings, "llm_max_prompt_tokens", 12_000),
+    )
+    # Reserve the pieces that actually compete for the ceiling, rather than a flat
+    # fraction. Tool results do NOT grow with the ceiling — they are capped by
+    # MAX_TOOL_CALLS x MAX_TOOL_RESULT_CHARS — so treating them as a proportion wastes
+    # most of a large provider's headroom, which is how a 1M-token model ended up reading
+    # three method bodies.
+    answer = min(3_000, ceiling // 5)
+    return max(500, ceiling - _LOOP_OVERHEAD_TOKENS - answer - _TOOL_RESULT_RESERVE)
+
 
 #: Never send more than this many chains however small they are — a model given
 #: twenty shallow chains produces twenty shallow answers.
