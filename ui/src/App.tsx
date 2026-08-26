@@ -31,6 +31,7 @@ import {
   getScore,
   getStatic,
 } from './api/client'
+import { DeviceFeed } from './components/DeviceFeed'
 import { Header } from './components/Header'
 import { LiveLog } from './components/LiveLog'
 import { ScoreRail } from './components/ScoreRail'
@@ -139,6 +140,7 @@ export default function App() {
     <EvidenceNavContext.Provider value={nav}>
       <div className="flex h-full min-w-0 flex-col overflow-hidden bg-ink">
         <Header job={job} streaming={streaming} onJobCreated={selectJob} version={version} />
+        <DeviceFeed currentJobId={jobId} onSelectJob={selectJob} />
         {job && <StageStrip events={events} current={job.stage} />}
 
         <main className="flex min-h-0 flex-1">

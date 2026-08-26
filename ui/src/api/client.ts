@@ -113,6 +113,8 @@ export async function submitApk(file: File): Promise<string> {
   return body.job_id
 }
 
+export const listJobs = () => request<Job[]>('/api/jobs')
+
 export const getJob = (jobId: string) => request<Job>(`/api/jobs/${jobId}`)
 
 export const getHealth = () => request<{ status: string; version: string }>('/api/health')

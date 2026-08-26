@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DRISHTI Shield</string>
+    <string name="admin_description">DRISHTI Shield enforces the install veto. When the
+        analysis backend returns a malicious verdict, installation from unknown sources is
+        disabled until an analyst releases it.</string>
+</resources>
