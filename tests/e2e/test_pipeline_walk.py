@@ -54,7 +54,7 @@ def settings(tmp_path) -> Settings:
         db_path=tmp_path / "drishti.db",
         ledger_key_path=tmp_path / "key.pem",
         log_path=tmp_path / "log.jsonl",
-        llm_provider="mock",
+        groq_api_key="gsk-test",
         job_workers=2,
     )
 

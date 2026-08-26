@@ -40,7 +40,7 @@ log = get_logger(__name__)
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 #: Roughly 4 characters per token. Deliberately crude: the point is to refuse an
 #: obviously oversized prompt before paying for it, not to bill anyone accurately.
@@ -135,7 +135,7 @@ def parse_and_validate(text: str, model: type[ModelT]) -> ModelT | None:
 
 
 class LLMClient:
-    """Provider-agnostic completion with caching, budgets and validation."""
+    """Groq completion with caching, budgets and validation."""
 
     def __init__(self, settings: Settings, *, use_cache: bool | None = None) -> None:
         self._settings = settings
@@ -368,109 +368,18 @@ class LLMClient:
             log.error("llm_output_invalid_after_repair", model=self._model)
         return repaired
 
-    def complete_with_tools_as(
-        self,
-        *,
-        system: str,
-        user: str,
-        tools: list[dict[str, Any]],
-        execute: Callable[[str, str | dict[str, Any]], dict[str, Any]],
-        schema: type[ModelT],
-        max_rounds: int = 3,
-        max_output_tokens: int = 3000,
-        purpose: str = "tool_loop",
-    ) -> ModelT | None:
-        """Run a bounded OpenRouter tool loop and validate its final JSON response.
-
-        Other providers retain the ordinary structured completion path until their
-        native adapters are implemented. The analysis tools themselves remain useful
-        and tested independently; provider availability never fails the pipeline.
-        """
-        if self._provider != "openrouter":
-            return self.complete_as(
-                system=system,
-                user=user,
-                schema=schema,
-                max_output_tokens=max_output_tokens,
-                purpose=purpose,
-            )
-
-        messages: list[dict[str, Any]] = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ]
-        for round_index in range(max_rounds + 1):
-            prompt = json.dumps(messages, ensure_ascii=True)
-            self._check_budgets(prompt)
-            started = time.monotonic()
-            self._last_usage = None
-            try:
-                message, attempts = self._exchange_with_retry(
-                    messages=messages,
-                    tools=tools,
-                    max_output_tokens=max_output_tokens,
-                )
-            except Exception as exc:
-                log.error("llm_tool_round_failed", round=round_index, error=str(exc))
-                self._record(
-                    f"{purpose}:round{round_index}",
-                    prompt,
-                    started,
-                    MAX_TRANSPORT_ATTEMPTS,
-                    outcome="failed",
-                )
-                return None
-            self.calls_made += 1
-            self._record(f"{purpose}:round{round_index}", prompt, started, attempts)
-            tool_calls = message.get("tool_calls") or []
-            if tool_calls:
-                if round_index >= max_rounds:
-                    log.error("llm_tool_round_budget_exhausted", rounds=max_rounds)
-                    return None
-                messages.append(
-                    {
-                        "role": "assistant",
-                        "content": message.get("content") or "",
-                        "tool_calls": tool_calls,
-                    }
-                )
-                for call in tool_calls:
-                    function = call.get("function") or {}
-                    name = str(function.get("name") or "")
-                    arguments = function.get("arguments") or "{}"
-                    result = execute(name, arguments)
-                    messages.append(
-                        {
-                            "role": "tool",
-                            "tool_call_id": str(call.get("id") or "missing"),
-                            "name": name,
-                            "content": json.dumps(result, ensure_ascii=True),
-                        }
-                    )
-                continue
-            return parse_and_validate(str(message.get("content") or ""), schema)
-        return None
-
-    # ── providers ────────────────────────────────────────────────────────────
+    # ── Groq transport ───────────────────────────────────────────────────────
     def _dispatch(
         self, system: str, user: str, max_output_tokens: int, json_mode: bool = False
     ) -> str | None:
-        if self._provider == "mock":
-            return self._mock(system, user)
-        if self._provider == "openrouter":
-            return self._openrouter(system, user, max_output_tokens, json_mode)
-        raise LLMError(
-            f"provider {self._provider!r} is configured but not implemented. "
-            "openrouter and mock are verified working; gemini and anthropic are not "
-            "wired because neither could be tested (see STATUS.md)."
-        )
+        return self._groq(system, user, max_output_tokens, json_mode)
 
-    def _openrouter(
+    def _groq(
         self, system: str, user: str, max_output_tokens: int, json_mode: bool = False
     ) -> str | None:
-        key = self._settings.openrouter_api_key
+        key = self._settings.groq_api_key
         if key is None:
-            raise LLMError("openrouter selected but DRISHTI_OPENROUTER_API_KEY is unset")
+            raise LLMError("groq selected but GROQ_API_KEY is unset")
         body: dict[str, Any] = {
             "model": self._model,
             "messages": [
@@ -480,20 +389,9 @@ class LLMClient:
             "max_tokens": max_output_tokens,
         }
         if json_mode:
-            # Reasoning models emit their chain of thought as `content`. Measured on this
-            # model: the real analysis prompt came back as 7,669 characters of prose with
-            # the JSON buried inside, and response_format alone did NOT stop it — that
-            # only held on a trivial probe. Disabling reasoning is what actually produces
-            # clean JSON (1,360 chars, parses first time), and it stops the completion
-            # budget being spent on thinking tokens as well.
-            #
-            # Scraping the object out of the prose was the alternative, and it is the
-            # thing 00_GUIDING_MAP 9.4 warns against. Fixing the request beats parsing
-            # around the answer.
-            body["reasoning"] = {"enabled": False}
             body["response_format"] = {"type": "json_object"}
         response = httpx.post(
-            OPENROUTER_URL,
+            GROQ_CHAT_COMPLETIONS_URL,
             headers={
                 "Authorization": f"Bearer {key.get_secret_value()}",
                 "Content-Type": "application/json",
@@ -510,99 +408,3 @@ class LLMClient:
         if not choices:
             return None
         return str(choices[0]["message"].get("content") or "")
-
-    def _capture_usage(self, payload: dict[str, Any]) -> None:
-        """Keep the provider's own token counts. An estimate is a fallback, not a figure."""
-        usage = payload.get("usage")
-        if isinstance(usage, dict) and isinstance(usage.get("prompt_tokens"), int):
-            self._last_usage = {
-                "prompt_tokens": int(usage["prompt_tokens"]),
-                "completion_tokens": int(usage.get("completion_tokens") or 0),
-            }
-
-    def _exchange_with_retry(
-        self,
-        *,
-        messages: list[dict[str, Any]],
-        tools: list[dict[str, Any]],
-        max_output_tokens: int,
-    ) -> tuple[dict[str, Any], int]:
-        """One tool round, retried on the overloaded-upstream shapes only."""
-        last: Exception | None = None
-        for attempt in range(1, MAX_TRANSPORT_ATTEMPTS + 1):
-            try:
-                message = self._openrouter_exchange(
-                    messages=messages, tools=tools, max_output_tokens=max_output_tokens
-                )
-                return message, attempt
-            except httpx.HTTPStatusError as exc:
-                if exc.response.status_code not in RETRYABLE_STATUS:
-                    raise
-                last = exc
-            except (httpx.TimeoutException, httpx.TransportError) as exc:
-                last = exc
-            if attempt < MAX_TRANSPORT_ATTEMPTS:
-                delay = BACKOFF_BASE_S * (2 ** (attempt - 1)) + random.uniform(0, 0.25)
-                log.warning("llm_tool_retrying", attempt=attempt, delay_s=round(delay, 2))
-                time.sleep(delay)
-        raise LLMError(f"tool round failed after {MAX_TRANSPORT_ATTEMPTS} attempts: {last}")
-
-    def _openrouter_exchange(
-        self,
-        *,
-        messages: list[dict[str, Any]],
-        tools: list[dict[str, Any]],
-        max_output_tokens: int,
-    ) -> dict[str, Any]:
-        """One OpenRouter message exchange for the bounded tool loop."""
-        key = self._settings.openrouter_api_key
-        if key is None:
-            raise LLMError("openrouter selected but DRISHTI_OPENROUTER_API_KEY is unset")
-        response = httpx.post(
-            OPENROUTER_URL,
-            headers={
-                "Authorization": f"Bearer {key.get_secret_value()}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": self._model,
-                "messages": messages,
-                "tools": tools,
-                "tool_choice": "auto",
-                "reasoning": {"enabled": False},
-                "response_format": {"type": "json_object"},
-                "max_tokens": max_output_tokens,
-            },
-            timeout=120.0,
-        )
-        response.raise_for_status()
-        payload: dict[str, Any] = response.json()
-        if "error" in payload:
-            raise LLMError(str(payload["error"])[:200])
-        self._capture_usage(payload)
-        choices = payload.get("choices") or []
-        if not choices:
-            raise LLMError("provider returned no choices")
-        message = choices[0].get("message") or {}
-        if not isinstance(message, dict):
-            raise LLMError("provider returned an invalid message")
-        return message
-
-    def _mock(self, system: str, user: str) -> str:
-        """Deterministic offline stand-in.
-
-        It asserts no behaviours. Mock mode exists to exercise contracts and UI states,
-        not to generate plausible-looking risk signals that could be mistaken for a
-        model result during an offline presentation.
-        """
-        from drishti.m4_genai.safety import BEHAVIOUR_WEIGHTS
-
-        names = sorted(BEHAVIOUR_WEIGHTS)
-        behaviours = dict.fromkeys(names, False)
-        return json.dumps(
-            {
-                "behaviours": behaviours,
-                "summary": "Deterministic mock verdict; no model was called.",
-                "claims": [],
-            }
-        )

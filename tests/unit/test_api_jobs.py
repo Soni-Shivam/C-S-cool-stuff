@@ -26,7 +26,7 @@ def client(tmp_path):
         db_path=tmp_path / "drishti.db",
         ledger_key_path=tmp_path / "key.pem",
         log_path=tmp_path / "log.jsonl",
-        llm_provider="mock",
+        groq_api_key="gsk-test",
     )
     runner = JobRunner(settings)
     deps.set_runner(runner)
@@ -107,7 +107,7 @@ def test_oversized_upload_is_rejected_on_bytes_received(tmp_path) -> None:
         db_path=tmp_path / "d.db",
         ledger_key_path=tmp_path / "k.pem",
         log_path=tmp_path / "l.jsonl",
-        llm_provider="mock",
+        groq_api_key="gsk-test",
         max_upload_bytes=1024,
     )
     runner = JobRunner(settings)

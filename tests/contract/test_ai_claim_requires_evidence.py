@@ -41,7 +41,7 @@ def test_claim_with_no_refs_is_refused(store) -> None:
     with pytest.raises(UngroundedClaimError, match="at least one evidence node"):
         store.append(
             type=EvidenceType.AI_CLAIM,
-            source_tool="gemini:code_interpreter",
+            source_tool="groq:code_interpreter",
             content={"claim": "This app steals OTPs.", "evidence_refs": []},
         )
 
@@ -51,7 +51,7 @@ def test_claim_with_missing_evidence_refs_key_is_refused(store) -> None:
     with pytest.raises(UngroundedClaimError):
         store.append(
             type=EvidenceType.AI_CLAIM,
-            source_tool="gemini:code_interpreter",
+            source_tool="groq:code_interpreter",
             content={"claim": "This app steals OTPs."},
         )
 
@@ -61,7 +61,7 @@ def test_claim_citing_a_hallucinated_id_is_refused(store) -> None:
     with pytest.raises(UngroundedClaimError, match="does not exist"):
         store.append(
             type=EvidenceType.AI_CLAIM,
-            source_tool="gemini:code_interpreter",
+            source_tool="groq:code_interpreter",
             content={"claim": "It forwards SMS.", "evidence_refs": ["ev_01932deadbeef"]},
         )
 
@@ -80,7 +80,7 @@ def test_claim_citing_another_jobs_node_is_refused(store, tmp_path) -> None:
     with pytest.raises(UngroundedClaimError, match="does not exist"):
         store.append(
             type=EvidenceType.AI_CLAIM,
-            source_tool="gemini:code_interpreter",
+            source_tool="groq:code_interpreter",
             content={"claim": "Borrowed evidence.", "evidence_refs": [foreign.id]},
         )
 
@@ -88,7 +88,7 @@ def test_claim_citing_another_jobs_node_is_refused(store, tmp_path) -> None:
 def test_grounded_claim_is_accepted(store, real_node) -> None:
     node = store.append(
         type=EvidenceType.AI_CLAIM,
-        source_tool="gemini:code_interpreter",
+        source_tool="groq:code_interpreter",
         content={
             "claim": "Sends SMS to a number the user did not enter.",
             "evidence_refs": [real_node.id],
