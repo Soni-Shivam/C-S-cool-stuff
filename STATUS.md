@@ -1448,3 +1448,36 @@ tokens is a real cost to the RE layer — fewer method bodies reach the model �
 recorded here as a deviation rather than presented as a tuning improvement. Raising
 `llm_max_request_tokens` after an upgrade restores it automatically.
 
+
+### `0 methods interpreted` on every app was a signature-dialect join failure in the stored verdict — fixed 2026-08-26
+
+The dashboard rendered `0 methods interpreted` and "No validated model interpretation
+exists for this method in this run" for **every** sample, while the backend logs on the
+analysis VM showed `code_interpreter_done interpretations=4` (and 1/2/3/6 on other jobs)
+with the LLM round completing in one call. The model had done the work; the UI could not
+find it.
+
+**Root cause, verified against the live API on the VM** (`job_3f29046f7b68`, the same job
+the dashboard screenshot came from): `interpret_methods` resolves the model's spelling of
+a signature back to a catalogue method (`resolve_signature`, added for exactly this
+dialect problem) — but then stored the **model's own spelling** in
+`CodeInterpretation.method_signature`:
+
+    verdict stored   Lcom/b/a/c/a;->a(Landroid/content/Context;Ljava/lang/String;)V
+    catalogue key    Lcom/b/a/c/a;->a
+
+Both dashboard views join by exact string — `CodeGraphTab` against call-graph node ids,
+`ReverseEngineeringTab` against `decompiled_methods[].signature` — so every join missed
+and the flagship RE layer read as empty. The earlier fix moved the join failure from the
+backend lookup into every consumer instead of removing it.
+
+**Fix:** store the resolved catalogue signature (`slice_.signature` / `method.signature`)
+instead of the model's spelling. One line plus a regression test
+(`test_stored_interpretation_carries_the_catalogue_spelling`) that fakes the observed
+live answer and asserts the stored key equals the catalogue key. `make test` green:
+1649 passed, 1 skipped.
+
+**Separately, and not a defect:** `0 retrieval tool calls` is accurate and expected under
+the current design — the method bodies ship in the first user turn and tools exist only
+for drill-down, so a run where the model had no ambiguity to resolve legitimately makes
+zero tool calls. The tile reads as an indictment but is the honest number.

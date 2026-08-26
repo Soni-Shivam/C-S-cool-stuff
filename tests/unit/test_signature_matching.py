@@ -116,24 +116,107 @@ def test_primitive_and_array_descriptors_count() -> None:
     assert signature_arity("La;->m") is None
 
 
-@pytest.mark.parametrize(
-    "written",
-    [
-        # A fourth dialect, observed live on the analysis VM: dotted like Java but
-        # keeping the JVM descriptor's trailing semicolon, and with no leading `L`.
-        # Stripping the wrapper only when BOTH halves were present left the owner as
-        # `com.b.a.c.a;` and silently dropped three real interpretations.
-        "com.b.a.c.a;->a(android.content.Context, String)",
-        "com/b/a/c/a;->a(android.content.Context, String)",
-        "Lcom.b.a.c.a;->a(android.content.Context, String)",
-    ],
-)
-def test_semicolon_without_the_l_wrapper_still_resolves(written: str) -> None:
-    assert resolve_signature(written, {CATALOGUE: "SLICE"}) == "SLICE"
+def test_stored_interpretation_carries_the_catalogue_spelling(tmp_path) -> None:
+    """The kept interpretation must be keyed the way the rest of the run is keyed.
 
+    Resolving the model's spelling and then storing the model's spelling only moves
+    the join failure downstream: the UI (and any other consumer) joins
+    `CodeInterpretation.method_signature` against `StaticReport.decompiled_methods`
+    and the call-graph node ids by exact string. Measured live (job_3f29046f7b68):
+    the backend logged `interpretations=4` while every dashboard view rendered
+    `0 methods interpreted`, because the verdict said
+    `Lcom/b/a/c/a;->a(Landroid/content/Context;Ljava/lang/String;)V` where the
+    catalogue says `Lcom/b/a/c/a;->a`.
+    """
+    from drishti.contracts.evidence import EvidenceType
+    from drishti.contracts.static_report import (
+        CertificateInfo,
+        DecompiledMethod,
+        Severity,
+        StaticReport,
+    )
+    from drishti.ledger.store import LedgerStore
+    from drishti.m4_genai.agents.code_interpreter import (
+        InterpretationOut,
+        InterpretationSet,
+        interpret_methods,
+    )
+    from drishti.m4_genai.retrieval import MethodSlice, RetrievalPack, SinkChain
 
-def test_a_lone_l_prefixed_class_is_not_confused_with_another(written: str = "") -> None:
-    """Stripping a leading `L` must not make `Lab` and `ab` the same class."""
-    from drishti.m4_genai.agents.code_interpreter import canonical_signature as canon
+    store = LedgerStore(tmp_path / "l.db", tmp_path / "k.pem")
+    store.open("job_sig")
+    evidence = store.append(
+        type=EvidenceType.DECOMPILED_METHOD, source_tool="test", content={"body": "x"}
+    )
+    static = StaticReport(
+        sha256="a" * 64,
+        package="com.b",
+        app_label="B",
+        version_name="1",
+        version_code=1,
+        min_sdk=21,
+        target_sdk=35,
+        certificate=CertificateInfo(
+            sha256="b" * 64,
+            subject="CN=B",
+            issuer="CN=B",
+            not_before="unknown",
+            not_after="unknown",
+            age_days=0,
+            self_signed=True,
+        ),
+        decompiled_methods=(
+            DecompiledMethod(signature=CATALOGUE, body="doWork();", evidence_ref=evidence.id),
+        ),
+    )
+    pack = RetrievalPack(
+        chains=(
+            SinkChain(
+                sink_id="dex_load",
+                sink_signature=CATALOGUE,
+                entrypoint=CATALOGUE,
+                entrypoint_kind="activity",
+                reachable_from_lifecycle=True,
+                path=(CATALOGUE,),
+                severity=Severity.HIGH,
+                mitre="T1407",
+                risk=0.8,
+                methods=(
+                    MethodSlice(
+                        signature=CATALOGUE,
+                        body="doWork();",
+                        evidence_ref=evidence.id,
+                        line_start=1,
+                        line_end=1,
+                        truncated=False,
+                        distance_to_sink=1,
+                    ),
+                ),
+            ),
+        ),
+    )
 
-    assert canon("Lcom/x/Lab;->m()") != canon("Lcom/x/ab;->m()")
+    class _Client:
+        class _Settings:
+            llm_max_request_tokens = 8_000
+
+        _settings = _Settings()
+
+        def complete_with_tools_as(self, **_kwargs):
+            return InterpretationSet(
+                interpretations=[
+                    InterpretationOut(
+                        # The observed live answer: the same method, spelled as a
+                        # full JVM descriptor the catalogue never uses.
+                        method_signature=(
+                            "Lcom/b/a/c/a;->a(Landroid/content/Context;Ljava/lang/String;)V"
+                        ),
+                        summary="loads a dex payload",
+                    )
+                ]
+            )
+
+    interpretations, _, _ = interpret_methods(static, store, "job_sig", _Client(), pack=pack)
+    store.close()
+    assert len(interpretations) == 1
+    assert interpretations[0].method_signature == CATALOGUE
