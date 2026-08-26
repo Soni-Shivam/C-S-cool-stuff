@@ -17,8 +17,9 @@ static report intact, because losing M2's work to an LLM timeout would be absurd
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
@@ -31,6 +32,8 @@ from drishti.ledger.store import LedgerStore
 from drishti.ledger.verifier import NON_BEHAVIOURAL_TYPES, Verifier
 from drishti.logging import get_logger
 from drishti.m4_genai.client import LLMClient
+from drishti.m4_genai.resources import UiString, extract_ui_strings, record_ui_strings
+from drishti.m4_genai.retrieval import select
 from drishti.m4_genai.safety import BEHAVIOUR_WEIGHTS, behavioural_risk, wrap_untrusted
 
 log = get_logger(__name__)
@@ -191,14 +194,54 @@ def build_user_turn(static: StaticReport) -> str:
     return "\n".join(parts)
 
 
+T = TypeVar("T")
+
+
+def _guarded(name: str, run: Callable[[], T], *, default: T) -> T:
+    """Run one sub-analyser; a failure inside it degrades the verdict, never the job.
+
+    CLAUDE.md rule 2. The rule names a `@degrades_gracefully` decorator that does not
+    exist anywhere in this repository — every module implements the property inline
+    instead. This is that property at the one boundary where it matters most: the
+    agents are the newest code in the system and the demo runs at hour 71.
+    """
+    try:
+        return run()
+    except Exception as exc:
+        log.error("subagent_failed", agent=name, error=f"{type(exc).__name__}: {exc}"[:300])
+        return default
+
+
+def _ui_strings(apk_path: Path | None, ledger: LedgerStore) -> tuple[UiString, ...]:
+    """Extract and record the sample's user-facing strings, or return nothing.
+
+    Absence is reported by the victim profile being `None`; it is never filled in with
+    DEX constants pretending to be UI text.
+    """
+    if apk_path is None:
+        return ()
+    strings, errors = extract_ui_strings(apk_path)
+    for error in errors:
+        log.warning("ui_strings_unavailable", error=error)
+    if not strings:
+        return ()
+    return record_ui_strings(strings, ledger)
+
+
 def analyse(
     static: StaticReport,
     ledger: LedgerStore,
     settings: Settings,
     *,
     client: LLMClient | None = None,
+    apk_path: Path | None = None,
 ) -> GenAIVerdict:
     """Run the behaviour checklist over a static report and ground the result.
+
+    `apk_path` is optional and read-only. It exists so the Social-Engineering Analyst
+    can reach the resource table for UI strings, which M2 does not surface — parsing
+    only, never execution (CLAUDE.md, execution environment table). Without it the
+    victim profile is simply absent, and the report says so.
 
     Returns a `partial` verdict rather than raising when the provider is unavailable —
     the static report is worth far more than the LLM layer and must survive its failure.
@@ -206,6 +249,12 @@ def analyse(
     llm = client or LLMClient(settings)
     static_refs = tuple(static.ledger_refs)
     job_id = ledger._job_id or ""
+
+    # UI strings are extracted and recorded BEFORE the catalogue is built, so the ids
+    # the model is offered include the strings the victim profile will cite. Building
+    # the catalogue first would offer nodes that do not exist yet and hide nodes that
+    # do — the same class of bug as 7cd1997.
+    ui_strings = _ui_strings(apk_path, ledger)
     catalogue, citable = build_evidence_catalogue(ledger, job_id)
 
     # No static evidence means any claim would be ungrounded, and ledger.append() refuses
@@ -261,11 +310,35 @@ def analyse(
     # Two agents, per 00_GUIDING_MAP 10 item 6, which pre-agreed collapsing six to
     # interpreter + mapper when time is short. Two that work beat six that are stubs.
     from drishti.m4_genai.agents.code_interpreter import interpret_methods
+    from drishti.m4_genai.agents.social_engineering import profile_victim
     from drishti.m4_genai.agents.technique_mapper import map_techniques
 
     techniques = map_techniques(static, ledger, job_id)
 
-    interpretations, tool_calls, verified_strings = interpret_methods(static, ledger, job_id, llm)
+    # Code-graph RAG: walk backwards from the sinks, keep the highest-risk chains, and
+    # send only those. Selected once and shared, so the workspace the model reads is
+    # exactly the workspace the report and the UI describe.
+    pack = select(static)
+    log.info(
+        "retrieval_selected",
+        chains=len(pack.chains),
+        considered=pack.chains_considered,
+        methods=pack.method_count,
+        estimated_tokens=pack.estimated_tokens,
+        budget=pack.token_budget,
+    )
+
+    interpretations, tool_calls, verified_strings = _guarded(
+        "code_interpreter",
+        lambda: interpret_methods(static, ledger, job_id, llm, pack=pack),
+        default=((), (), ()),
+    )
+
+    victim = _guarded(
+        "social_engineering",
+        lambda: profile_victim(static, ui_strings, ledger, job_id, llm),
+        default=None,
+    )
     verified_interpretations = []
     for interpretation in interpretations:
         checked = tuple(
@@ -292,6 +365,12 @@ def analyse(
         "claims_total": len(claims),
         "claims_verified": len(verified),
         "techniques": [t.technique_id for t in techniques],
+        "retrieval": {
+            "chains_selected": len(pack.chains),
+            "chains_considered": pack.chains_considered,
+            "methods_read": pack.method_count,
+            "estimated_prompt_tokens": pack.estimated_tokens,
+        },
         # The static nodes this rests on. ledger.append() rejects an AI_CLAIM whose
         # evidence_refs are empty or unresolvable — that rejection IS the product.
         "evidence_refs": list(static_refs),
@@ -312,6 +391,7 @@ def analyse(
         interpretations=tuple(verified_interpretations),
         tool_calls=tool_calls,
         verified_strings=verified_strings,
+        victim=victim,
         behavioural_risk_B=b_value,
         B_rationale=(
             f"{len(contributing)} enumerated behaviours asserted: {', '.join(contributing)}"
