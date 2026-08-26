@@ -158,6 +158,19 @@ class GenAIVerdict(AnalyserResult):
     summary: str = ""
     claims: tuple[GroundedClaim, ...] = ()
     behavioural_risk_B: float = 0.0
+    #: The SIGNED log-likelihood ratio behind `behavioural_risk_B`, in log-odds.
+    #:
+    #: `behavioural_risk_B` is that quantity squashed into [0,1] for display, which
+    #: throws away the sign — and the sign is the whole point: negative evidence means
+    #: the behavioural layer found the app's use of a risky capability *legitimate*.
+    #: `m6_score.engine` adds this to the classifier's log-odds, so exculpatory evidence
+    #: can pull the fused score BELOW `p_calibrated`. Under the previous noisy-OR fusion
+    #: that was arithmetically impossible.
+    #:
+    #: `None` means the verdict predates this field and must be scored the old way;
+    #: `0.0` means the layer ran and found nothing to say, which leaves the classifier
+    #: untouched. Those are different states and are deliberately not collapsed.
+    behavioural_evidence: float | None = None
     B_rationale: str = ""
     behaviours: dict[str, bool] = Field(default_factory=dict)
     #: Context flags that shifted `B` — deterministic static facts (signer stability,

@@ -198,3 +198,37 @@ def behavioural_risk(
         if context is not None and context.get(name) is True:
             z += weight
     return round(_sigmoid(z), 6), tuple(contributing)
+
+
+def behavioural_evidence(
+    findings: dict[str, object],
+    context: dict[str, object] | None = None,
+) -> float:
+    """The SIGNED log-likelihood ratio behind `B`, for log-odds fusion in the scorer.
+
+    `behavioural_risk` returns `sigmoid(B_BASE + Σw)`, which is bounded and displayable
+    but discards the sign. The sign is what lets the behavioural layer *exonerate*: a
+    trusted publisher and a signer key stable for years are negative evidence, and the
+    scorer adds this number to the classifier's log-odds so that evidence can pull the
+    fused score BELOW `p_calibrated`.
+
+    `B_BASE` is excluded deliberately. It is a prior offset that calibrates B for display
+    on its own; the classifier already supplies the prior in the fusion, so including it
+    again would double-count and shift every score by a constant.
+
+    Returns exactly 0.0 when no positively-weighted behaviour was asserted — the same
+    "no claim" rule `behavioural_risk` uses. Context alone never creates evidence, in
+    either direction: exonerating an app nobody accused is not a finding.
+    """
+    contributing = [
+        name
+        for name, weight in BEHAVIOUR_WEIGHTS.items()
+        if findings.get(name) is True and weight > 0
+    ]
+    if not contributing:
+        return 0.0
+    z = sum(BEHAVIOUR_WEIGHTS[name] for name in contributing)
+    for name, weight in CONTEXT_WEIGHTS.items():
+        if context is not None and context.get(name) is True:
+            z += weight
+    return round(z, 6)

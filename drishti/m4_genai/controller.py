@@ -45,6 +45,7 @@ from drishti.m4_genai.safety import (
     BEHAVIOUR_WEIGHTS,
     CONTEXT_WEIGHTS,
     LLM_CONTEXT_KEYS,
+    behavioural_evidence,
     behavioural_risk,
     wrap_untrusted,
 )
@@ -350,6 +351,9 @@ def analyse(
     }
     checklist = {k: v for k, v in response.behaviours.items() if k not in LLM_CONTEXT_KEYS}
     b_value, contributing = behavioural_risk(dict(checklist), context=behaviour_context)
+    # The signed form of the same sum. `B` is for display; this is what the scorer
+    # fuses, because it can be negative and therefore lower the score.
+    b_evidence = behavioural_evidence(dict(checklist), context=behaviour_context)
     context_fired = tuple(name for name in CONTEXT_WEIGHTS if behaviour_context.get(name) is True)
 
     # Every claim is checked against the ledger. Rejected claims are RETAINED, not
@@ -446,6 +450,7 @@ def analyse(
         "behaviours_true": list(contributing),
         "behaviour_context": list(context_fired),
         "behavioural_risk_B": b_value,
+        "behavioural_evidence": b_evidence,
         "summary": response.summary[:2000],
         "model": settings.resolved_llm_model,
         "claims_total": len(claims),
@@ -479,6 +484,7 @@ def analyse(
         verified_strings=verified_strings,
         victim=victim,
         behavioural_risk_B=b_value,
+        behavioural_evidence=b_evidence,
         B_rationale=_b_rationale(contributing, context_fired),
         behaviours=dict(checklist),
         behaviour_context=behaviour_context,
