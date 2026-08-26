@@ -81,6 +81,14 @@ from drishti.contracts.static_report import (
     StaticReport,
     ThreatIntel,
 )
+from drishti.contracts.verdict import (
+    DynamicTraceView,
+    Provenance,
+    RecommendedAction,
+    Verdict,
+    VictimProfileView,
+    build_verdict,
+)
 
 CONTRACT_VERSION = "1.3.0"
 
@@ -110,6 +118,7 @@ __all__ = [
     "DexLoadEvent",
     "DrishtiModel",
     "DynamicTrace",
+    "DynamicTraceView",
     "EvasionObservation",
     "EvidenceNode",
     "EvidenceType",
@@ -135,6 +144,8 @@ __all__ = [
     "ObservationEvent",
     "PermissionCombo",
     "ProposedAction",
+    "Provenance",
+    "RecommendedAction",
     "SandboxPlan",
     "ScoreFactor",
     "Severity",
@@ -149,8 +160,11 @@ __all__ = [
     "ThreatIntel",
     "ToolCallRecord",
     "TraceSourceKind",
+    "Verdict",
     "VerifiedString",
     "VerifierStatus",
     "VictimProfile",
+    "VictimProfileView",
     "VisionMatch",
+    "build_verdict",
 ]

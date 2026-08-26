@@ -4,7 +4,7 @@
 > If you need a field that isn't here, add it here first, update the version stamp,
 > then implement. All models live in `drishti/contracts/` as pydantic v2 models.
 >
-> Contract version: `1.5.0` — bump minor for additive, major for breaking.
+> Contract version: `1.6.0` — bump minor for additive, major for breaking.
 > See the Addendum at the end of this file for versioned additions.
 
 ---
@@ -967,3 +967,43 @@ inference:
 profile cites. Every non-null field must cite at least one such node or the field is
 dropped — `PHASE_3 §T3.8` is explicit that a segment inferred from a package name is
 astrology.
+
+### A15. Contract version 1.6.0 — the shared `Verdict` projection
+
+`Verdict` is added in `drishti/contracts/verdict.py`, with `VictimProfileView`,
+`DynamicTraceView`, and `build_verdict()`.
+
+**It is a PROJECTION, not a new source of truth.** Five workstreams — the consumer
+Android screen, the analyst portal, the static pipeline, the sandbox, and the
+elicitation layer — need one agreed shape to build against. The failure mode is each of
+them defining its own near-identical verdict object and drifting apart, which is exactly
+what rule 1 of `CLAUDE.md` exists to prevent. So the shape is defined once, every field
+is copied from an artefact that already computed it, and `build_verdict()` is the only
+way to produce one. **Do not add a second `Verdict` shape anywhere** — a JSON schema, a
+TypeScript interface, or a Kotlin data class that is hand-maintained alongside this one
+is the same defect wearing a different hat. Generate from this, or import it.
+
+Three properties are load-bearing and pinned by
+`tests/contract/test_verdict_projection.py`:
+
+* **`provenance` is derived from the trace, never declared.** `STATIC_ONLY` when no
+  detonation ran, `REPLAY` when the trace is a fixture *or* carries `synthetic=True`,
+  `LIVE` only for a real run. `synthetic` beats `source`, so a hand-authored trace can
+  never present as live no matter what it claims.
+* **Silence is not innocence.** `detonated=True` with three empty lists is a distinct
+  state from "never ran", and the two are not collapsed into a null trace. Environment
+  aware malware stalls and looks exactly like a clean app; erasing that distinction
+  would erase the reason the frontier layer exists.
+* **Recovered plaintext is redacted on the way in.** `decrypted_strings` passes through
+  `redact_text(..., message_body=True)`, and `api_calls` carries the API name only,
+  never the hooked `args`. Both can contain a victim's OTP, card number or credentials,
+  and this object is rendered on a phone screen and in a browser.
+
+`consumer_summary` is templated from grounded findings, never generated. It is the one
+sentence a frightened non-technical person reads and acts on, and a free-form model
+sentence there would sit outside the ledger's grounding rule while carrying the most
+weight of anything on the screen. A test asserts it contains no jargon.
+
+`recommended_action` collapses the severity band to the three outcomes a consumer
+surface has (`BLOCK` / `REVIEW` / `MONITOR`). It is deliberately not read from
+`CompositeScore.actions_proposed`, which is the richer analyst-facing list.

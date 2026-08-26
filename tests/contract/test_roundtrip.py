@@ -90,6 +90,40 @@ def _lookalike() -> C.LookalikeAssessment:
     )
 
 
+def _victim_profile_view() -> C.VictimProfileView:
+    return C.VictimProfileView(language="Hindi", tactic="KYC urgency", segment="retail banking")
+
+
+def _dynamic_trace_view() -> C.DynamicTraceView:
+    return C.DynamicTraceView(
+        detonated=True,
+        api_calls=("SmsManager.sendTextMessage",),
+        decrypted_strings=("[REDACTED]",),
+        network_captures=("POST c2.example.test",),
+    )
+
+
+def _verdict() -> C.Verdict:
+    return C.Verdict(
+        sha256=SHA,
+        package_name="in.rto.challan",
+        threat_score=92,
+        severity_band=C.SeverityBand.CRITICAL,
+        confidence=0.83,
+        provenance="LIVE",
+        impersonated_target="SBI",
+        victim_profile=_victim_profile_view(),
+        behaviors_detected=("reads_sms",),
+        attack_techniques=("T1582",),
+        evidence_refs=("ev_000000000001",),
+        consumer_summary="This app is pretending to be SBI. Do not install it.",
+        recommended_action="BLOCK",
+        dynamic_trace=_dynamic_trace_view(),
+        adversarial_elicitation_deployed=("Generative_C2_Emulation",),
+        limitations=("ML prediction unavailable",),
+    )
+
+
 FACTORIES: dict[str, Any] = {
     # ── containment ──
     "ContainmentChecks": lambda: C.ContainmentChecks(
@@ -158,6 +192,9 @@ FACTORIES: dict[str, Any] = {
         mitre="T1582",
     ),
     "CertificateInfo": _certificate,
+    "Verdict": _verdict,
+    "VictimProfileView": _victim_profile_view,
+    "DynamicTraceView": _dynamic_trace_view,
     "LookalikeSignal": _lookalike_signal,
     "LookalikeAssessment": _lookalike,
     "CallPath": lambda: C.CallPath(
