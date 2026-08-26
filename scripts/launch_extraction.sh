@@ -14,6 +14,15 @@
 #    parsing and GIL-bound within a process. Measured on n2-standard-8: 4 shards gave
 #    440 rec/hr. Resizing to n2-standard-16 and running 14 shards gave 1,489 rec/hr.
 #
+# 0. ANDROZOO THROTTLES ON CONCURRENCY, AND IT LOOKS LIKE A DEAD NETWORK. Running
+#    14 shards x 3 threads = 42 concurrent downloads earned 32,869 HTTP 403s and
+#    31,651 HTTP 429s, with NIC receive at 0 KB/s while every shard still reported
+#    `active`. A single-connection probe with the same key returned 206 throughout, so
+#    it is a concurrency limit and not a ban or an expired key. Keep TOTAL concurrent
+#    downloads (shards x threads) in single digits. 8x1 is the tested safe setting.
+#    Worse, the throttled samples were recorded as ok=false and would then have been
+#    skipped forever by resume -- see the transient-failure requeue below.
+#
 # 2. MEMORY IS THE REAL CEILING, AND IT IS COUNTED IN THREADS. AnalyzeAPK holds the
 #    whole DEX plus its call graph in memory and EVERY THREAD does so concurrently,
 #    so in-flight analyses = shards x threads, not shards. At 14x4=56 the 64 GB VM
@@ -57,17 +66,49 @@ mkdir -p features
 # would be re-downloaded under a 14-way one. Collect every sha256 completed by ANY
 # previous shard and drop those rows before re-splitting.
 python3 - "$LIST" "$N" <<'PY'
-import csv, glob, json, sys
+import csv, glob, json, re, sys
 list_path, n = sys.argv[1], int(sys.argv[2])
 
+# A sample that failed for a TRANSIENT reason must not be treated as done.
+#
+# corpus_extract.py writes a record for every outcome, including failures, and its
+# resume logic keys on sha256 regardless of `ok`. That is correct for an APK androguard
+# genuinely cannot parse -- retrying it forever buys nothing. It is wrong for a
+# connection reset, which is what AndroZoo returns when it throttles us: those samples
+# would be silently and permanently dropped from the corpus, and the only symptom would
+# be a slightly smaller n that nobody could explain.
+#
+# So failed records matching a transient pattern are STRIPPED from the jsonl before the
+# resume set is computed, which makes both this splitter and corpus_extract.py's own
+# resume retry them. Permanent parse failures are kept and stay skipped.
+_TRANSIENT = re.compile(
+    r"connection reset|broken pipe|network is unreachable|timed? ?out|timeout"
+    r"|temporarily|429|too many requests|403|forbidden|ssl|remote end closed",
+    re.IGNORECASE,
+)
+
 done = set()
+retryable = 0
 for path in glob.glob("features/shard-*.jsonl"):
+    kept = []
+    changed = False
     with open(path) as fh:
         for line in fh:
             try:
-                done.add(json.loads(line)["sha256"].lower())
+                record = json.loads(line)
+                sha = record["sha256"].lower()
             except (json.JSONDecodeError, KeyError, AttributeError):
                 continue
+            if not record.get("ok") and _TRANSIENT.search(str(record.get("error") or "")):
+                changed = True
+                retryable += 1
+                continue  # drop it, so it is retried
+            kept.append(line)
+            done.add(sha)
+    if changed:
+        with open(path, "w") as fh:
+            fh.writelines(kept)
+print(f"requeued {retryable} transient failure(s) for retry")
 
 with open(list_path, newline="") as fh:
     reader = csv.DictReader(fh)
