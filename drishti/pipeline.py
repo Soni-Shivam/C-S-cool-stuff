@@ -367,9 +367,15 @@ def _genai_full(ctx: Context, sha256: str) -> GenAIVerdict:
             errors=("no static-pass verdict to build on",),
             ledger_refs=(node.id,),
         )
+    # `partial` is deliberately NOT set here. Reusing a complete static verdict is
+    # not a degradation of it, and m6_score drops B from the fused term for any
+    # partial GenAI report — so stamping it cost every un-detonated run its whole
+    # behavioural signal. What actually happened is disclosed in `errors`, in the
+    # ledger node above, and in the STATIC_ONLY provenance; gamma carries the
+    # confidence penalty. A static pass that really did degrade stays partial,
+    # because this preserves whatever `existing` already carried.
     updated: GenAIVerdict = existing.model_copy(
         update={
-            "partial": True,
             "errors": (
                 *existing.errors,
                 "full pass reused the static verdict: no dynamic evidence available",
@@ -569,8 +575,7 @@ def _frontier(ctx: Context, trace: DynamicTrace, job_id: str) -> MorphPlan:
                 "queried": obs.queried,
                 "occurrences": 1,
                 "detail": (
-                    f"{obs.result} then "
-                    f"{'stalled' if obs.followed_by_stall else 'continued'}"
+                    f"{obs.result} then {'stalled' if obs.followed_by_stall else 'continued'}"
                 ),
             }
         )
