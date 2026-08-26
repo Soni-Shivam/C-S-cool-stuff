@@ -4,7 +4,7 @@
 > If you need a field that isn't here, add it here first, update the version stamp,
 > then implement. All models live in `drishti/contracts/` as pydantic v2 models.
 >
-> Contract version: `1.6.0` — bump minor for additive, major for breaking.
+> Contract version: `1.7.0` — bump minor for additive, major for breaking.
 > See the Addendum at the end of this file for versioned additions.
 
 ---
@@ -1007,3 +1007,38 @@ weight of anything on the screen. A test asserts it contains no jargon.
 `recommended_action` collapses the severity band to the three outcomes a consumer
 surface has (`BLOCK` / `REVIEW` / `MONITOR`). It is deliberately not read from
 `CompositeScore.actions_proposed`, which is the richer analyst-facing list.
+
+### A16. Contract version 1.7.0 — the `Verdict` route and its generated TS binding
+
+`GET /api/jobs/{job_id}/verdict` is added to the T0.6 frozen route surface. It is
+additive: no existing route moves, changes shape, or changes status code. It follows the
+same two conventions as every other per-job artefact route — **404 +
+`{"reason": "not_produced_yet", "stage": ...}`** until the pipeline has produced both an
+`ingest` and a `score` artefact, never a zero-filled body.
+
+The route is a **projection endpoint, not a computation**. Its whole body is a call to
+`build_verdict()` over artefacts the runner already holds. Nothing is computed here, and
+the route must never grow a branch that decides a field — a second place that decides
+`provenance` is exactly the drift A15 exists to prevent.
+
+One mapping decision belongs to the route rather than to the projection:
+
+* **An `UNAVAILABLE` trace is passed as `trace=None`.** `_sandbox()` records a declared
+  stub trace (`source=unavailable`, `synthetic=True`, `partial=True`) when no trace
+  source could produce anything, so that "we could not observe it" is expressed in data
+  rather than as an empty result. Forwarding that stub as a real trace would project
+  `provenance="REPLAY"` over a run in which nothing was ever replayed, and a
+  `dynamic_trace` view reading `detonated=false` with three empty lists — which the
+  contract defines as *the app ran and did nothing observable*. Neither statement is
+  true. `STATIC_ONLY` with a null trace is. The stub itself remains fully visible, with
+  its `partial` flag and its errors, on `GET /api/jobs/{job_id}/dynamic`.
+
+**The TypeScript binding is generated, never hand-maintained.**
+`ui/src/api/verdict.gen.ts` is emitted from `Verdict.model_json_schema()` by
+`ui/scripts/gen_verdict_types.py`, and `tests/contract/test_api_surface.py` fails if the
+checked-in file differs from a fresh generation. A16 is therefore the mechanical
+enforcement of A15's "generate from this, or import it": the analyst portal cannot drift
+from `drishti/contracts/verdict.py` without a red test.
+
+The dashboard consumes this route; it never produces a `Verdict`. No scoring, banding,
+or provenance logic exists in `ui/`.

@@ -33,6 +33,7 @@ FROZEN_ROUTES: set[tuple[str, str]] = {
     ("GET", "/api/jobs/{job_id}/genai"),
     ("GET", "/api/jobs/{job_id}/dynamic"),
     ("GET", "/api/jobs/{job_id}/score"),
+    ("GET", "/api/jobs/{job_id}/verdict"),
     ("GET", "/api/jobs/{job_id}/ledger"),
     ("GET", "/api/jobs/{job_id}/ledger/verify"),
     ("GET", "/api/jobs/{job_id}/ledger/export"),
@@ -188,7 +189,7 @@ def test_stix_export_is_deterministic(client, finished_job) -> None:
 
 
 # ── artefacts after a full run ───────────────────────────────────────────────
-@pytest.mark.parametrize("kind", ["ingest", "static", "ml", "genai", "dynamic", "score"])
+@pytest.mark.parametrize("kind", ["ingest", "static", "ml", "genai", "dynamic", "score", "verdict"])
 def test_artefacts_are_served_after_the_run(client, finished_job, kind) -> None:
     response = client.get(f"/api/jobs/{finished_job}/{kind}")
     assert response.status_code == 200, response.text
@@ -219,6 +220,77 @@ def test_score_reports_gamma_so_the_ui_can_show_evidence_quality(client, finishe
     body = client.get(f"/api/jobs/{finished_job}/score").json()
     assert 0.0 <= body["gamma"] <= 1.0
     assert body["gamma"] < 1.0, "nothing detonated, so confidence must not read as complete"
+
+
+# ── the shared Verdict projection (A15/A16) ──────────────────────────────────
+def test_verdict_is_the_projection_and_agrees_with_the_score(client, finished_job) -> None:
+    """The route must not decide anything the score already decided.
+
+    Every surface reads this one shape, so a `Verdict` that disagreed with the artefact
+    it was projected from would be a second answer to "how bad is this sample".
+    """
+    verdict = client.get(f"/api/jobs/{finished_job}/verdict").json()
+    score = client.get(f"/api/jobs/{finished_job}/score").json()
+    assert verdict["threat_score"] == score["S"]
+    assert verdict["severity_band"] == score["band"]
+    assert verdict["confidence"] == score["C"]
+    assert verdict["limitations"] == score["limitations"]
+
+
+def test_an_unobserved_sample_is_static_only_not_a_replay(client, finished_job) -> None:
+    """No trace source could produce anything, so nothing was replayed.
+
+    The pipeline records a declared stub trace (`source=unavailable`) so degradation is
+    visible in data. Projecting that stub as a trace would badge the run REPLAY and show
+    an empty `dynamic_trace`, which the contract defines as "it ran and did nothing" —
+    the one reading that is definitely false here.
+    """
+    verdict = client.get(f"/api/jobs/{finished_job}/verdict").json()
+    assert verdict["provenance"] == "STATIC_ONLY"
+    assert verdict["dynamic_trace"] is None
+    assert any("dynamic analysis unavailable" in item for item in verdict["limitations"])
+
+    # …and the stub is still fully visible on its own route, flags intact.
+    trace = client.get(f"/api/jobs/{finished_job}/dynamic").json()
+    assert trace["source"] == "unavailable" and trace["partial"] is True
+
+
+def test_verdict_is_pending_before_a_score_exists(client) -> None:
+    """404 + stage, never a zero-filled verdict. A band cannot be invented."""
+    from drishti.contracts.job import Job
+    from drishti.util import new_id, now
+
+    runner = deps.get_runner()
+    queued = Job(
+        id=new_id("job"), sha256="b" * 64, filename="s.apk", stage=JobStage.QUEUED, created_at=now()
+    )
+    runner._store(queued)
+
+    response = client.get(f"/api/jobs/{queued.id}/verdict")
+    assert response.status_code == 404
+    assert response.json()["detail"]["reason"] == "not_produced_yet"
+
+
+def test_the_dashboard_verdict_type_is_generated_not_hand_written() -> None:
+    """A16: `ui/src/api/verdict.gen.ts` must match `drishti/contracts/verdict.py`.
+
+    Contract addendum A15 forbids a second hand-maintained `Verdict` shape. That rule is
+    only real if something checks it, so this is the check: the TypeScript the analyst
+    portal compiles against is regenerated from the pydantic model and compared byte for
+    byte. Editing the model without regenerating fails here, not in the browser.
+    """
+    import importlib.util
+    from pathlib import Path
+
+    generator = Path(__file__).resolve().parents[2] / "ui" / "scripts" / "gen_verdict_types.py"
+    spec = importlib.util.spec_from_file_location("gen_verdict_types", generator)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.OUTPUT.read_text(encoding="utf-8") == module.render(), (
+        "ui/src/api/verdict.gen.ts is stale — run: python ui/scripts/gen_verdict_types.py"
+    )
 
 
 # ── ledger ───────────────────────────────────────────────────────────────────

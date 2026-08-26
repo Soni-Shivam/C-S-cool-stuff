@@ -17,6 +17,7 @@ import type { Artefact } from '../api/client'
 import { EvidenceChips } from '../components/Evidence'
 import { ArtefactGate, Empty, Panel, Raw, Tag } from '../components/primitives'
 import type { DynamicTrace, EvidenceNode } from '../api/types'
+import type { Verdict } from '../api/verdict.gen'
 
 function passNode(nodes: EvidenceNode[], stage: string): EvidenceNode | undefined {
   return nodes.find((node) => node.type === 'api_trace' && node.content.stage === stage)
@@ -39,9 +40,11 @@ function Delta({ label, before, after }: { label: string; before: unknown; after
 export function FrontierTab({
   nodes,
   dynamic,
+  verdict,
 }: {
   nodes: EvidenceNode[]
   dynamic: Artefact<DynamicTrace> | null
+  verdict: Artefact<Verdict> | null
 }) {
   const morphNodes = nodes.filter((node) => node.type === 'morph_action')
   const c2Nodes = nodes.filter((node) => node.type === 'generative_c2')
@@ -51,6 +54,31 @@ export function FrontierTab({
 
   return (
     <div className="space-y-4">
+      <ArtefactGate artefact={verdict}>
+        {(value) => (
+          <Panel
+            title="0 · Adversarial elicitation deployed"
+            subtitle="verdict.adversarial_elicitation_deployed — what the elicitor actually put in front of this sample"
+          >
+            {value.adversarial_elicitation_deployed.length === 0 ? (
+              <Empty>
+                Nothing was elicited for this sample. The frontier runs only when a pass
+                stalled with an observed environment probe to answer, so an empty list here
+                means the branch never fired — not that it fired and found nothing.
+              </Empty>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {value.adversarial_elicitation_deployed.map((item) => (
+                  <Tag key={item} tone="accent">
+                    {item}
+                  </Tag>
+                ))}
+              </div>
+            )}
+          </Panel>
+        )}
+      </ArtefactGate>
+
       {morphNodes.length === 0 && (
         <div className="rounded border border-line bg-panel px-4 py-3 text-sm text-muted">
           The frontier did not run for this job. It runs only when pass 1 did not detonate{' '}

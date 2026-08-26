@@ -97,7 +97,11 @@ export interface AnalyserResult {
 
 // ─── §5 / §6 ML and score ────────────────────────────────────────────────────
 
-export type SeverityBand = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+// Re-exported from the generated binding rather than restated here. `SeverityBand` is
+// the one enum this file shares with `Verdict`, and two hand-kept copies of it would be
+// the drift contract A15 forbids.
+import type { SeverityBand } from './verdict.gen'
+export type { SeverityBand }
 
 export interface FeatureAttribution {
   feature: string

@@ -26,6 +26,7 @@ import type {
   ProposedAction,
   StaticReport,
 } from './types'
+import type { Verdict } from './verdict.gen'
 
 export type Artefact<T> =
   | { state: 'ready'; value: T }
@@ -127,6 +128,14 @@ export const getMl = (jobId: string) => artefact<MLPrediction>(`/api/jobs/${jobI
 export const getGenai = (jobId: string) => artefact<GenAIVerdict>(`/api/jobs/${jobId}/genai`)
 export const getDynamic = (jobId: string) => artefact<DynamicTrace>(`/api/jobs/${jobId}/dynamic`)
 export const getScore = (jobId: string) => artefact<CompositeScore>(`/api/jobs/${jobId}/score`)
+
+/**
+ * The shared `Verdict` projection (contract A15/A16).
+ *
+ * `Verdict` is generated from `drishti/contracts/verdict.py` — see
+ * `./verdict.gen.ts`. The dashboard consumes this shape; it never builds one.
+ */
+export const getVerdict = (jobId: string) => artefact<Verdict>(`/api/jobs/${jobId}/verdict`)
 
 // ─── ledger ──────────────────────────────────────────────────────────────────
 

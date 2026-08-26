@@ -30,6 +30,7 @@ import {
   getMl,
   getScore,
   getStatic,
+  getVerdict,
 } from './api/client'
 import { DeviceFeed } from './components/DeviceFeed'
 import { Header } from './components/Header'
@@ -80,6 +81,10 @@ export default function App() {
   const dynamic = useArtefact(jobId, getDynamic, revision).artefact
   const score = useArtefact(jobId, getScore, revision).artefact
   const ledger = useArtefact(jobId, (id) => getLedger(id), revision).artefact
+  // The shared projection (contract A15). Fetched alongside the raw artefacts rather
+  // than derived from them: the Verdict every surface reads must be the one the server
+  // built, not one this app assembled from the same parts and hoped matched.
+  const verdict = useArtefact(jobId, getVerdict, revision).artefact
 
   useEffect(() => {
     void getHealth()
@@ -197,10 +202,10 @@ export default function App() {
                   {tab === 'Overview' && (
                     <OverviewTab
                       jobId={jobId}
+                      verdict={verdict}
                       score={score}
                       genai={genai}
                       ingest={ingest}
-                      dynamic={dynamic}
                       staticReport={staticReport}
                     />
                   )}
@@ -208,8 +213,10 @@ export default function App() {
                   {tab === 'Reverse Engineering' && (
                     <ReverseEngineeringTab report={staticReport} genai={genai} ml={ml} />
                   )}
-                  {tab === 'Sandbox' && <SandboxTab dynamic={dynamic} />}
-                  {tab === 'Frontier' && <FrontierTab nodes={nodes} dynamic={dynamic} />}
+                  {tab === 'Sandbox' && <SandboxTab dynamic={dynamic} verdict={verdict} />}
+                  {tab === 'Frontier' && (
+                    <FrontierTab nodes={nodes} dynamic={dynamic} verdict={verdict} />
+                  )}
                   {tab === 'Ledger' && (
                     <LedgerTab
                       jobId={jobId}
