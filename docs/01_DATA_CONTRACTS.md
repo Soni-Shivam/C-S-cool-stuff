@@ -1110,3 +1110,57 @@ Four properties are load-bearing:
   does not claim TLS interception (the system-CA step is deliberately deferred —
   `CLAUDE.md` verified lab fact 7). A field that could only ever read `False` would
   invite someone to set it.
+
+---
+
+### A18. `C2Bundle` and `C2BundleEntry` (staged Generative C2 responses)
+
+A17 covers what the proxy *saw*. This section covers what the proxy is *allowed to
+say back*, and it exists because of one hard constraint: the response has to be
+synthesised somewhere the detonator cannot go.
+
+`SyntheticC2Response` (§3) is the record of one response after it was served — the
+receipt. It is not usable as an instruction to serve, because the on-VM proxy sits on
+`drishti-runtime`, which has no NAT and no route to an LLM (`CLAUDE.md`, GCP layout).
+Anything the proxy answers with must therefore already be on disk when the sample
+starts running. `C2Bundle` is that pre-computed answer set: built on the orchestrator,
+staged across to the detonator as one file, and read — never generated — at run time.
+
+`C2BundleEntry` is a `DrishtiModel` (staged artefact, not a wire message):
+
+| Field | Type | Meaning |
+|---|---|---|
+| `host` | `str` | Host this entry answers for. Matched exactly — a bundle built for one C2 must not silently answer for another. |
+| `path_prefix` | `str` | Path prefix this entry answers for, default `"/"`. A prefix rather than an exact path because a beacon's path usually carries a per-run id we cannot predict off-VM. |
+| `response_kind` | `str` | The response shape (`connectivity_ok`, `command_poll`, `registration_ack`, `config`, `inert_payload_stub`), carried through to `CapturedFlow.served_kind` so the provenance line in A17 survives. |
+| `served_status` | `int` | HTTP status to answer with, default `200`. |
+| `served_content_type` | `str` | Content type to answer with, default `application/json`. |
+| `served_body` | `str` | The body to serve. Already passed the inertness gate before it reached the bundle. |
+| `is_payload_url` | `bool` | `True` when this entry stands in for a second-stage download. Flagged because a stub served here is the one entry a reader must not mistake for real attacker content. |
+| `derived_from` | `tuple[str, ...]` | Evidence node ids justifying this response — the pass-1 flows and strings it was inferred from. |
+
+`C2Bundle` is a `DrishtiModel`:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `sha256` | `Sha256` | The sample the bundle was built for. A bundle is sample-specific; serving one sample's answers to another would fabricate behaviour. |
+| `entries` | `tuple[C2BundleEntry, ...]` | The staged responses, in build order. |
+| `built_at` | `str` | When the bundle was synthesised, so a stale bundle is visible rather than assumed fresh. |
+| `synthesis_client` | `str` | Which model/provider produced it, recorded for the report's provenance. Empty when unknown. |
+
+Three properties are load-bearing:
+
+* **An entry with empty `derived_from` is never emitted by the builder.** Grounding is
+  the product (`CLAUDE.md` rule 5): a response we cannot trace to observed evidence is
+  a guess we would then attribute to the attacker's infrastructure. The *contract*
+  does not forbid the empty tuple — the builder must be able to construct a candidate
+  and then reject it, and a validator here would turn that rejection into a crash.
+* **`matches(host, path)` is deterministic, and the tie-break is specified.** Longest
+  `path_prefix` wins. Where two matching entries have prefixes of *equal* length, the
+  earlier entry in `entries` wins — declaration order, not dict or set iteration
+  order. Detonations must be reproducible; a match that depended on ordering accident
+  would make two runs of the same bundle diverge and there would be nothing in the
+  trace to explain why.
+* **The bundle is data, never code.** It carries status, content type and body — no
+  URL to fetch, no expression to evaluate. The proxy reads it and answers; it has no
+  path that would let a bundle field reach a command surface.

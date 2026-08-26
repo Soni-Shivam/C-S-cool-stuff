@@ -11,6 +11,7 @@ Contract version: 1.3.0 (additive containment admission contracts).
 from __future__ import annotations
 
 from drishti.contracts.base import AnalyserResult, DrishtiModel
+from drishti.contracts.c2_bundle import C2Bundle, C2BundleEntry
 from drishti.contracts.containment import ContainmentChecks, ContainmentManifest
 from drishti.contracts.corpus import (
     MALWARE_MIN_VT,
@@ -104,6 +105,8 @@ __all__ = [
     "AnalyserResult",
     "ApiEvent",
     "BenignLookalikeVerdict",
+    "C2Bundle",
+    "C2BundleEntry",
     "CallPath",
     "CapturedFlow",
     "CertificateInfo",

@@ -139,7 +139,27 @@ def _verdict() -> C.Verdict:
     )
 
 
+def _c2_bundle_entry() -> C.C2BundleEntry:
+    return C.C2BundleEntry(
+        host="gate.evil.tk",
+        path_prefix="/reg",
+        response_kind="registration_ack",
+        served_status=200,
+        served_content_type="application/json",
+        served_body='{"status": "ok"}',
+        derived_from=("ledger://0x1",),
+    )
+
+
 FACTORIES: dict[str, Any] = {
+    # ── staged generative C2 ──
+    "C2BundleEntry": _c2_bundle_entry,
+    "C2Bundle": lambda: C.C2Bundle(
+        sha256=SHA,
+        entries=(_c2_bundle_entry(),),
+        built_at="2026-08-26T00:00:00.000Z",
+        synthesis_client="anthropic/claude",
+    ),
     # ── containment ──
     "ContainmentChecks": lambda: C.ContainmentChecks(
         probe_trustworthy=True,
