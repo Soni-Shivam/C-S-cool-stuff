@@ -66,8 +66,19 @@ def test_module_and_script_agree(artifact: ObservationArtifact, tmp_path: Path) 
         # tree's module against another tree's script.
         env={**os.environ, "PYTHONPATH": str(REPO)},
     )
-    written = json.loads((tmp_path / f"{artifact.sha256}.json").read_text(encoding="utf-8"))
-    assert written["pre_morph"] == artifact_to_trace(artifact).model_dump(mode="json")
+    produced = artifact_to_trace(artifact)
+    target = tmp_path / f"{artifact.sha256}.json"
+
+    if not produced.api_events:
+        # Parity still holds, and this is the interesting half: when every observation
+        # was dropped as untrustworthy the module yields an empty trace and the script
+        # writes no fixture at all. A fixture with nothing in it would replay as a
+        # sample that did nothing — a different claim from "we could not observe it".
+        assert not target.exists(), "an empty conversion must not become a replayable fixture"
+        return
+
+    written = json.loads(target.read_text(encoding="utf-8"))
+    assert written["pre_morph"] == produced.model_dump(mode="json")
 
 
 @pytest.mark.parametrize("artifact", _with_observations(), ids=lambda a: a.sha256[:12])

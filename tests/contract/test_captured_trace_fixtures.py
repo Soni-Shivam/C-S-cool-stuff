@@ -59,13 +59,26 @@ def converted(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return out
 
 
-def test_every_artifact_with_observations_becomes_a_fixture(converted: Path) -> None:
+def test_every_artifact_with_trustworthy_observations_becomes_a_fixture(
+    converted: Path,
+) -> None:
+    """Having observations is not the same as having something worth replaying.
+
+    Four captured artifacts recorded only a T1417 overlay from a hook that could not
+    read `LayoutParams.type`, so every Activity's own content view looked like an
+    overlay attack. `artifact_to_trace` declines to carry that claim forward, which
+    leaves those artifacts with nothing — and a fixture with nothing in it replays as a
+    sample that did nothing, which is the dangerous half of the distinction this file
+    exists to protect.
+    """
+    from drishti.m3_dynamic.ingest import artifact_to_trace
+
     expected = {
         a.sha256
         for a in (ObservationArtifact.model_validate_json(p.read_text()) for p in _artifacts())
-        if a.observations
+        if a.observations and artifact_to_trace(a).api_events
     }
-    assert expected, "no captured artifact carries observations — nothing to replay"
+    assert expected, "no captured artifact survives conversion — nothing to replay"
     assert {p.stem for p in converted.glob("*.json")} == expected
 
 
