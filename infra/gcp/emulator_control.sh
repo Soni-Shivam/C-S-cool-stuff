@@ -5,6 +5,14 @@ AVD_NAME="${DRISHTI_AVD_NAME:-drishti}"
 SERIAL="${DRISHTI_EMULATOR_SERIAL:-emulator-5554}"
 SNAPSHOT="${DRISHTI_SNAPSHOT:-clean}"
 PID_FILE="${DRISHTI_EMULATOR_PID_FILE:-/run/drishti-emulator.pid}"
+# MEASURED 2026-08-26 on the hand-provisioned m3-detonator: without this the emulator
+# dies with `Unknown AVD name [drishti]`, because detonator_provision.sh creates the AVD
+# under ${DRISHTI_ROOT}/avd while the emulator searches $ANDROID_AVD_HOME,
+# $ANDROID_SDK_HOME/avd and $HOME/.android/avd — none of which is that path by default.
+# The Packer image puts it in /root/.android/avd, so this only bites the manual lab,
+# which is exactly the lab the first live runs used. Exported, not just set, because the
+# emulator reads it from the environment.
+export ANDROID_AVD_HOME="${ANDROID_AVD_HOME:-/opt/drishti/avd}"
 
 health() {
   adb -s "$SERIAL" wait-for-device

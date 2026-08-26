@@ -876,6 +876,75 @@ is still never populated by M2 — that half of `D` is untouched and still a rea
 one — `tests/lab/` is where a live-marked test belongs and none has been written yet.
 Until that runs, T4.9 is "wired and unit-tested", not "proven live".
 
+### T4.9 is now PROVEN LIVE — 2026-08-26, `m3-detonator`, instance 7382052279419138339
+
+The paragraph above is superseded. `stage → detonate → collect → gate` ran end to end
+from the pipeline against the real sealed VM, both passes, and **the frontier loop
+closed live for the first time**: pass 2 was detonated with `morphs=install_packages`,
+chosen by the adversarial elicitor from pass 1's observation, not by a fixture.
+
+Run provenance, from the artifacts rather than from a config flag:
+
+| | pass 1 | pass 2 |
+|---|---|---|
+| `outcome` | failed | failed |
+| `containment_verified` | true | true |
+| snapshot before / after / package absent | passed / passed / true | passed / passed / true |
+| `diagnostics` | `pass=1; morphs=none` | `pass=2; morphs=install_packages` |
+
+Sample was `fea05c73…` (Adobe Lightroom MOD, `com.adobe.lrmobile`). It cannot produce
+observations here and never will: it ships `lib/arm64-v8a/` only, so the x86_64 emulator
+answers `INSTALL_FAILED_NO_MATCHING_ABIS … res=-113`. That is runbook finding #1 hit for
+real, from the pipeline. **A live trace with observations is still unproven** — the 50
+corpus artifacts that did produce observations were driven by hand, not through
+`LiveSandboxSource`.
+
+**Four defects were found by running it, all fixed, all with a regression test:**
+
+1. **`collect()` could never read its own artifact.** `dynamic_analyze.py` runs under
+   `as_root`, so the artifact lands `root:root 0600`; `collect()` used a plain `cat` and
+   got `PermissionError`. `detonator_collect.sh` chowns the directory before its batch
+   read, which is why the hand-driven path never saw this.
+2. **rc 2 was read as an unreachable detonator.** `dynamic_analyze.py:125` returns 2 when
+   a run completed but is not `safe_for_ingestion`. `_run` treated any non-zero as
+   transport failure, so `detonate()` raised *before* `collect()`, `run()`'s specific gate
+   was unreachable, and the pipeline substituted a synthetic stub asserting
+   `containment_verified=False` **over a signed manifest that said the opposite**. This is
+   the honesty failure the project exists to prevent and it sat on the happy path for any
+   sample that fails to install. `_run` now takes `ok_returncodes`; rc 3 still raises.
+3. **`_run` truncated stderr from the head** (`[:400]`). Every IAP call opens stderr with
+   a ~200-char "consider installing NumPy" banner, so the boilerplate survived and the
+   reason was discarded — two consecutive failures logged only
+   `DetonatorUnreachableError: WARNING:`. Now takes the tail.
+4. **The refusal named a failure that had not happened.** `safe_for_ingestion` failed
+   only on `outcome`, and the message still read "snapshot lifecycle incomplete" while
+   the snapshot had restored cleanly both times. `_unsafe_reasons()` now enumerates only
+   the predicates that actually failed.
+
+**Two deployment defects, also fixed:** `emulator_control.sh` never exported
+`ANDROID_AVD_HOME`, so on the hand-provisioned layout (`/opt/drishti/avd`) the emulator
+died with `Unknown AVD name [drishti]`; and `detonator_deploy.sh` does not ship
+`runtime_prepare.sh`, which in turn calls a `/opt/drishti/runtime_lockdown.sh` that does
+not exist on this VM (only `detonator_lockdown.sh` does). The second is **not fixed** —
+see *Still open* below.
+
+**Still open after this session:**
+
+- **The stub still contradicts the manifest.** With all four fixes in, an
+  install-failure is refused for the right reason and logged accurately — but
+  `pipeline._sandbox` still falls back to `_stub_trace`, whose
+  `containment_verified=False` and `synthetic=True` produce the three UI limitation
+  lines. For a sample the emulator physically cannot run, the honest disclosure is
+  "the sample could not be installed on this emulator (ABI mismatch)", not "containment
+  was not verified". Changing that touches `_limitations` and the report, so it was left
+  as a decision rather than taken unilaterally.
+- **mitmproxy is not installed on the detonator and cannot be**, so the branch's
+  flow-capture / C2-bundle work is untestable there. The runtime VPC has no NAT, and
+  `uv pip install mitmproxy` times out against PyPI. It belongs in the Packer build.
+  The `-http-proxy 127.0.0.1:8080` launch flag currently points at nothing.
+- `runtime_prepare.sh` is not deployed and references a script that does not exist.
+- No `tests/lab/` GCP-marked test was written; the proof above is a manual run.
+
 ## P5 — FRONTIER (H44→H58)
 
 - [x] T5.1 Morph applicator                        DONE  2026-08-26 · 5 Frida morph scripts: build_props, sim_locale,

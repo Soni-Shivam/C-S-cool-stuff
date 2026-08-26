@@ -42,7 +42,12 @@ def sent(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
     """Capture argv instead of running `gcloud`."""
     calls: list[list[str]] = []
 
-    def fake_run(args: list[str], *, timeout: int) -> subprocess.CompletedProcess[str]:
+    def fake_run(
+        args: list[str],
+        *,
+        timeout: int,
+        ok_returncodes: frozenset[int] = frozenset({0}),
+    ) -> subprocess.CompletedProcess[str]:
         calls.append(args)
         return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
 
@@ -144,3 +149,82 @@ def test_staging_without_a_lab_refuses(tmp_path: Path, sent: list[list[str]]) ->
     with pytest.raises(DetonatorUnreachableError, match="no detonator configured"):
         RemoteDetonatorClient(target=None).stage(tmp_path / "x.apk", "f" * 64)
     assert sent == []
+
+
+def test_collect_reads_a_root_owned_artifact(
+    sent: list[list[str]], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`dynamic_analyze.py` runs under `as_root`, so its artifact lands root:root 0600.
+
+    MEASURED 2026-08-26 on `m3-detonator`: the first live run through the pipeline
+    staged and detonated correctly, then `collect()` came back
+    `PermissionError: [Errno 13] ... /opt/drishti/results/<sha>.json`. The batch path
+    never hit it because `detonator_collect.sh` chowns the directory first; this path
+    reads one file directly and must elevate for itself.
+    """
+    client = RemoteDetonatorClient(TARGET)
+    with pytest.raises(DetonatorUnreachableError):  # empty stdout -> no artifact
+        client.collect("e" * 64, morphed=False)
+    assert _command(sent).startswith("sudo cat "), (
+        "collect() must read the artifact as root; a plain cat is a permission error"
+    )
+
+
+def test_a_failure_message_keeps_the_end_of_stderr(monkeypatch: pytest.MonkeyPatch) -> None:
+    """gcloud puts boilerplate first and the actual error last.
+
+    MEASURED 2026-08-26: every IAP call prints a ~200-character "consider installing
+    NumPy" banner on stderr before anything useful. Truncating the *head* to 400 chars
+    kept the banner and discarded the reason, so two consecutive failed detonations
+    both surfaced as `DetonatorUnreachableError: WARNING:` and the real message —
+    "another detonation is already running" — never reached the log.
+
+    Exercises the real `_run`, so it deliberately does not take the `sent` fixture.
+    """
+    banner = "WARNING: \n\nTo increase the performance of the tunnel, " + "x" * 380
+    real = "another detonation is already running"
+
+    def fake_run(args, **kwargs):  # noqa: ANN001, ANN003, ARG001
+        return subprocess.CompletedProcess(args, 1, stdout="", stderr=f"{banner}\n{real}\n")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(DetonatorUnreachableError) as excinfo:
+        RemoteDetonatorClient(TARGET).detonate("a" * 64, morphs=(), duration_s=1)
+    assert real in str(excinfo.value), "the end of stderr is where the reason lives"
+
+
+def test_an_unsafe_artifact_is_not_an_unreachable_detonator(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`dynamic_analyze.py` exits 2 for a run that happened but is unsafe to ingest.
+
+    MEASURED 2026-08-26 on `m3-detonator` with an ARM64-only APK: containment verified,
+    the artifact written with an honest `install_unsupported` failure, snapshot restored
+    clean before and after — and `dynamic_analyze.py:125` still returned 2, because
+    `safe_for_ingestion` requires `outcome in {completed, inconclusive}`.
+
+    Treating that as a transport failure raised `DetonatorUnreachableError` before
+    `collect()` ever ran, so `LiveSandboxSource.run`'s specific gate — the one that
+    names `outcome=failed` — was unreachable, and the pipeline substituted a synthetic
+    stub asserting `containment_verified=False` over a signed manifest that said the
+    opposite. rc 2 must return normally and let the gates read the artifact.
+    """
+    seen: list[int] = []
+
+    def fake_run(args, **kwargs):  # noqa: ANN001, ANN003, ARG001
+        seen.append(1)
+        return subprocess.CompletedProcess(args, 2, stdout="artifact=... outcome=failed\n", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    # Must not raise: the detonation ran, and only the artifact can say whether it counts.
+    RemoteDetonatorClient(TARGET).detonate("a" * 64, morphs=(), duration_s=1)
+    assert len(seen) == 1, "rc 2 must not be retried as a transport failure"
+
+
+def test_a_real_transport_failure_still_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Only rc 2 is special. rc 3 (`sample not staged`) is still a failure."""
+
+    def fake_run(args, **kwargs):  # noqa: ANN001, ANN003, ARG001
+        return subprocess.CompletedProcess(args, 3, stdout="", stderr="sample not staged")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(DetonatorUnreachableError, match="sample not staged"):
+        RemoteDetonatorClient(TARGET).detonate("a" * 64, morphs=(), duration_s=1)
