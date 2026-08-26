@@ -184,16 +184,45 @@ Throwaway DB and key, safe to run live and repeatedly.
   demo was deliberately unbuilt is now superseded — it is built honestly, against real
   SQL and real chain verification, not simulated in the browser.
 
-### Still unproven as of this entry
+### Paper idea → proof-of-concept status (updated 2026-08-26, later in the day)
 
-- **No live detonation has succeeded.** The detonator VM exists with nested virt; the
-  emulator, frida pinning, containment verification, and the first real trace are all
-  still in progress.
-- **No trained model has shipped a reportable metric.** Pilot runs exist on a few
-  hundred samples and are stamped PILOT; the harness refuses to write reportable
-  numbers below 25 per class.
-- The Android Shield app and the Device-Owner install veto are being built and have not
-  been demonstrated end to end.
+The team's ideation paper (`REPORT/main.tex`, §17) tracks each novel claim as
+validated-vs-designed. This is the operational mirror of that table, updated as PoCs
+land. The bar for this hackathon is a working PoC per idea, not a finished product.
+
+**Newly proven since the morning entry:**
+
+- **First live detonation SUCCEEDED** (`12ac2a2`, `151d59a`). A real corpus sample was
+  detonated on the sealed `m3-detonator` (Android 33 x86_64 under KVM, frida 16.7.19
+  matched). Containment was proven non-vacuous: the guest reached 8.8.8.8, 1.1.1.1 and
+  the metadata server *before* lockdown and none of them *after*. This clears the
+  paper's §17 "GenAI-synthesised sandbox — awaits the detonator" blocker.
+- **First reportable model comparison SHIPPED** (`b432c31`, `cbc781d`). Five models,
+  both splits, every n stated; winner random_forest by CV, time-split PR-AUC 0.954 on
+  n=107 (57 malware). Past the 25-per-class gate — no longer PILOT-only. `docs/ML_RESULTS.md`.
+- **Benign-lookalike discriminator** (`048eef6`, `e9f3d9e`) — the Truecaller problem.
+  Separates a banking trojan from an app with the same permissions. Found and fixed two
+  real defects by measuring on real samples (certificate dates never parsed;
+  `package_strings` never surfaced). Real-sample validation on 80+ samples is in flight;
+  **if it does not discriminate at scale it will be cut, not shipped.**
+- **Icon impersonation detection** (`dd40f15`) — the "it wears the bank's face" beat.
+  Perceptual-hash floor + VLM semantic layer; verified live (synthetic blue-rupee icon →
+  "imitates HDFC Bank, 0.92", grounded). VLM claims are dropped unless the named brand is
+  checkable — the ledger's grounding rule applied to vision.
+- **Report / STIX 2.1 / YARA / dossier exports** (`be678a3`, `691ffb3`) — M7 was empty;
+  all four now built, honesty properties test-enforced.
+
+**Still genuinely unproven / designed-only:**
+
+- **The lookalike discriminator's real-sample performance.** It works on fixtures; the
+  80-sample validation had not returned at this entry. Treat as unproven until it does.
+- **Generative C2 emulation** remains designed, not built, and is bounded by CLAUDE.md's
+  hard boundary — a PoC is only legitimate if the synthesised response is provably inert.
+- **Environment morph → re-detonation (the D3 "sandbox-aware sample" demo)**: the morph
+  *proposals* and the applicator are built and unit-tested; a live morph-then-wake on a
+  real evasive sample has not been captured.
+- **The end-to-end judge demo** (good-app-passes / bad-app-blocked on the emulator, with
+  the Device-Owner veto) is being built by a dedicated worker and not yet rehearsed cold.
 
 ---
 
