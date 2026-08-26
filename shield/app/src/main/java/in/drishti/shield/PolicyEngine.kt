@@ -106,6 +106,39 @@ object PolicyEngine {
         }.onFailure { Log.w(TAG, "quarantine failed", it) }.getOrDefault(false)
     }
 
+    /**
+     * Lift every quarantine this app is currently holding, and report what was freed.
+     *
+     * Needed because a quarantine is deliberately hard to undo: Layer 4 calls
+     * [setUninstallBlocked][DevicePolicyManager.setUninstallBlocked], and from that
+     * moment `adb uninstall` returns `DELETE_FAILED_OWNER_BLOCKED`. That is correct
+     * behaviour against a real sample and wrong behaviour for a demo that has to be
+     * rerunnable — after one rehearsal in which the decoy actually installed, every
+     * later run's reset failed to remove it and the beat started from a dirty device.
+     *
+     * There is no "list what I have blocked" API, so this asks per package. Bounded by
+     * the installed-package count and only ever reached from the debug-gated reset.
+     */
+    fun releaseAllQuarantines(context: Context): List<String> {
+        if (!isDeviceOwner(context)) return emptyList()
+        val dpm = dpm(context)
+        val admin = admin(context)
+        val freed = mutableListOf<String>()
+        val installed = runCatching {
+            context.packageManager.getInstalledPackages(0).map { it.packageName }
+        }.getOrDefault(emptyList())
+        for (name in installed) {
+            if (name == context.packageName) continue
+            runCatching {
+                if (dpm.isUninstallBlocked(admin, name)) {
+                    release(context, name)
+                    freed += name
+                }
+            }
+        }
+        return freed
+    }
+
     /** Lift a quarantine so the package can be removed by the user. */
     fun release(context: Context, packageName: String): Boolean {
         if (!isDeviceOwner(context)) return false

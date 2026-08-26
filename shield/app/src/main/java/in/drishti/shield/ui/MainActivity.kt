@@ -37,6 +37,9 @@ class MainActivity : Activity() {
     companion object {
         /** Boolean extra that returns the device to the demo's starting state. */
         const val EXTRA_DEMO_RESET = "drishti_demo_reset"
+
+        /** Boolean extra that fires the Layer 3 self-test. See [handleVetoSelfTest]. */
+        const val EXTRA_VETO_SELFTEST = "drishti_veto_selftest"
     }
 
     private lateinit var body: LinearLayout
@@ -75,12 +78,60 @@ class MainActivity : Activity() {
         ScanBus.subscribe(listener)
         probeBackend()
         handleDemoReset(intent)
+        handleVetoSelfTest(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         handleDemoReset(intent)
+        handleVetoSelfTest(intent)
+    }
+
+    /**
+     * Prove Layer 3 actually works, right now, before anybody is watching.
+     *
+     * WHY THIS EXISTS. `dpm list-owners` reporting this package is a CLAIM, not a test,
+     * and the two came apart in rehearsal in the worst possible way. `demo_up.sh`
+     * reinstalls Shield on every run; the reinstall drops the *active admin* record
+     * while the *device owner* record survives, so `dpm list-owners` kept saying
+     * "DeviceOwner" while `addUserRestriction` threw
+     *
+     *     SecurityException: Admin ComponentInfo{…DrishtiAdminReceiver} does not exist
+     *     or is not owned by uid 10192
+     *
+     * The result was a demo that armed cleanly, announced "Layer 3 device owner HELD",
+     * and then quietly failed to block anything — the veto engaged on the first
+     * provisioning of an AVD and never again. Nothing in the setup path noticed,
+     * because nothing in the setup path had ever engaged the veto.
+     *
+     * So this does: engage it, read the restriction back out of `UserManager`, and
+     * release it. Three states, one log line, and `demo_up.sh` refuses to hand over a
+     * stage-ready demo unless the middle one came back true. It is the same reasoning
+     * `verify_containment.py` applies to the network — a security property you have not
+     * exercised is a security property you do not have.
+     *
+     * **Guarded on [FLAG_DEBUGGABLE]**, for the reason spelled out on [handleDemoReset]:
+     * this activity is exported, so an unguarded extra would let any installed app
+     * toggle a device-owner restriction.
+     */
+    private fun handleVetoSelfTest(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_VETO_SELFTEST, false) != true) return
+        val debuggable =
+            (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        if (!debuggable) return
+
+        val owner = PolicyEngine.isDeviceOwner(this)
+        val engaged = PolicyEngine.engageVeto(this)
+        // Read the restriction back from UserManager rather than trusting engageVeto's
+        // return: the whole point is to confirm the OS agrees the veto is in force.
+        val observed = PolicyEngine.vetoEngaged(this)
+        val released = PolicyEngine.releaseVeto(this)
+        android.util.Log.i(
+            "DrishtiShield",
+            "veto_selftest owner=$owner engaged=$engaged observed=$observed released=$released",
+        )
+        render()
     }
 
     /**
@@ -110,9 +161,15 @@ class MainActivity : Activity() {
         }
         VerdictStore.clear(this)
         val released = PolicyEngine.releaseVeto(this)
+        // Layer 4's quarantine sets setUninstallBlocked, which makes `adb uninstall`
+        // return DELETE_FAILED_OWNER_BLOCKED — so without this sweep a single rehearsal
+        // where the decoy installed left it permanently stuck on the device and every
+        // later reset silently failed to clear it.
+        val freed = PolicyEngine.releaseAllQuarantines(this)
         android.util.Log.i(
             "DrishtiShield",
-            "demo_reset veto_released=$released store_cleared=true",
+            "demo_reset veto_released=$released store_cleared=true " +
+                "quarantines_released=${freed.size}${if (freed.isEmpty()) "" else " [${freed.joinToString(",")}]"}",
         )
         Toast.makeText(
             this,
