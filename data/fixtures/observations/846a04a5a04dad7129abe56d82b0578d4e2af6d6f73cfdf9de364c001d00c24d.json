@@ -1,0 +1,392 @@
+{
+  "schema_version": "1.0",
+  "sha256": "846a04a5a04dad7129abe56d82b0578d4e2af6d6f73cfdf9de364c001d00c24d",
+  "package": "com.riverfront8",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Download new code at runtime",
+      "mitre": "T1407",
+      "detail": "loaded dex path=/data/user/#/com.riverfront#/cache/ngzvnyttctwi",
+      "source_hook": "DexClassLoader.$init",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:45.066972+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "enumerated installed packages",
+      "source_hook": "PackageManager.getInstalledPackages",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:45.199834+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:45.858737+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.riverfront#",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:46.402031+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:46.500489+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.riverfront#",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:46.508156+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:46.524855+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=projekt.substratum",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:46.526936+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:46.555570+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:46.580164+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:46.864632+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:47.149558+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:47.226036+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:47.577082+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:47.778082+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:48.045683+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:48.509821+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:48.580422+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:02:48.871373+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:05.491839+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:15.559751+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:16.328213+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:25.611837+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getLine1Number -> +###########",
+      "source_hook": "TelephonyManager.getLine1Number",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:35.377375+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getLine1Number -> +###########",
+      "source_hook": "TelephonyManager.getLine1Number",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:35.378510+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getSimOperatorName -> T-Mobile",
+      "source_hook": "TelephonyManager.getSimOperatorName",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:35.392093+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:35.438685+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"e###a##b###f###d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:35.446323+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:35.677165+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:45.473688+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"e###a##b###f###d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:45.483528+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"e###a##b###f###d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:45.487625+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:46.491214+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:03:55.493599+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:04:00.499527+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:04:05.482475+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"e###a##b###f###d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:04:05.506346+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:04:05.511378+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:04:10.534378+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "bcc0acdc9a8a322733a80caab45296eb02e9d16804491d39f44298b51d0b334c",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T06:02:11.630328+00:00"
+  },
+  "started_at": "2026-08-26T06:02:21.991006+00:00",
+  "finished_at": "2026-08-26T06:04:18.478296+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": [
+    "T1407",
+    "T1417",
+    "T1418",
+    "T1426",
+    "T1521"
+  ]
+}

@@ -1,0 +1,301 @@
+{
+  "schema_version": "1.0",
+  "sha256": "841e432a41b9625040704fd636d4fc3814a6d4193fa315cd78cfed9aa3991c04",
+  "package": "com.beginhigh19",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "enumerated installed packages",
+      "source_hook": "PackageManager.getInstalledPackages",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:00:15.069159+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "enumerated installed packages",
+      "source_hook": "PackageManager.getInstalledPackages",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:00:15.348711+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "enumerated installed packages",
+      "source_hook": "PackageManager.getInstalledPackages",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:00:16.636502+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:00:32.362147+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:00:35.633954+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:00:42.482560+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "enumerated installed packages",
+      "source_hook": "PackageManager.getInstalledPackages",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:00:45.145161+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:00:52.595514+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:00:57.620558+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getLine1Number -> +###########",
+      "source_hook": "TelephonyManager.getLine1Number",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:02.131140+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getLine1Number -> +###########",
+      "source_hook": "TelephonyManager.getLine1Number",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:02.131305+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getSimOperatorName -> T-Mobile",
+      "source_hook": "TelephonyManager.getSimOperatorName",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:02.131969+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"###aa#e########d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:02.158904+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:02.460520+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:05.501588+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:07.685324+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"###aa#e########d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:12.181394+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:12.475652+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:17.705047+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:22.490062+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"###aa#e########d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:27.715801+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:27.720795+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:32.496687+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:32.504104+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:35.520346+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:37.734407+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"###aa#e########d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:37.737812+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:37.738511+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:01:42.515723+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "72d6392ea81439f7d9c47c8c07080c4fabd51a018f703757f934c0c4a3546f12",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T05:59:41.592051+00:00"
+  },
+  "started_at": "2026-08-26T05:59:51.957754+00:00",
+  "finished_at": "2026-08-26T06:01:47.748903+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": [
+    "T1417",
+    "T1418",
+    "T1426",
+    "T1521"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "sha256": "d5ca7ba75cfb8fd76929c1b8f6547780d8305a6654b6423124d380ff59b0d1c9",
+  "package": "com.camavoyaxiwokocu.huvusuwi",
+  "simulated": false,
+  "outcome": "failed",
+  "observations": [],
+  "failures": [
+    {
+      "code": "internal_error",
+      "stage": "harness",
+      "message": "NotSupportedError: unable to write to process memory: No such process",
+      "occurred_at": "2026-08-26T06:40:43.361746+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "66a63280c94e8e97a776a19eacce75c56e973f0c64c17e8c7258158febec4fb0",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T06:39:57.528171+00:00"
+  },
+  "started_at": "2026-08-26T06:40:07.933309+00:00",
+  "finished_at": "2026-08-26T06:40:46.004990+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": []
+}
