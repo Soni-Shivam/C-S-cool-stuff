@@ -165,7 +165,7 @@ function Workspace({
           tone="gradient"
           value={graph.paths.length}
           label={plural(graph.paths.length, 'sink path')}
-          hint="Distinct entrypoint→sink chains found by the bounded backward BFS."
+          hint="Distinct chains from a lifecycle entrypoint to a dangerous API, found by walking the call graph backward from each sink."
         />
         <StatTile
           tone="wash"

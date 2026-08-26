@@ -106,12 +106,16 @@ export function ScoreRail({ score, isFinal }: { score: CompositeScore; isFinal: 
   const previous = useRef<number | null>(null)
 
   useEffect(() => {
-    if (previous.current !== null && previous.current !== score.S) {
-      setFlash(true)
-      const timer = window.setTimeout(() => setFlash(false), 1600)
-      return () => window.clearTimeout(timer)
-    }
+    const changed = previous.current !== null && previous.current !== score.S
+    // Recorded on every pass, not only on the quiet one. When the update sat inside
+    // the `else`, the ref froze at the score the ring first rendered with, so a
+    // later return to that value read as "unchanged" and the ring stayed still
+    // through a transition the audience was told to watch for.
     previous.current = score.S
+    if (!changed) return
+    setFlash(true)
+    const timer = window.setTimeout(() => setFlash(false), 1600)
+    return () => window.clearTimeout(timer)
   }, [score.S])
 
   return (

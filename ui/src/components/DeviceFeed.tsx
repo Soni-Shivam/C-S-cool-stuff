@@ -128,7 +128,13 @@ export function DeviceFeed({
               }`}
             >
               <span className="max-w-36 truncate font-medium">{job.filename}</span>
-              <span className="font-mono text-dim tabular-nums">{submittedAt(job.created_at)}</span>
+              {/* Clock plus job id. The clock is what a presenter reads out loud; the id
+                  is what stays unique when two uploads land inside the same second, which
+                  is exactly when the strip used to look like it had drawn one job twice. */}
+              <span className="font-mono text-dim tabular-nums">
+                {submittedAt(job.created_at)}
+                <span className="ml-1 opacity-60">·{job.id.slice(-4)}</span>
+              </span>
               <span className="text-dim">{STAGE_LABELS[job.stage] ?? job.stage}</span>
               {score && (
                 <span
