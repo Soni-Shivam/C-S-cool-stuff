@@ -147,11 +147,24 @@ Java.perform(function () {
     });
 
     /* ── UI abuse ──────────────────────────────────────────────────────── */
+    // An overlay attack is a SYSTEM window drawn over other apps, which is why it needs
+    // SYSTEM_ALERT_WINDOW. Every Activity also reaches addView to attach its ordinary
+    // content view (TYPE_APPLICATION = 2), so emitting T1417 unconditionally reported
+    // 'input capture via overlay' for any app with a UI at all — measured at 90% of
+    // captured artifacts (47 of 52), including the canary, which is forbidden from
+    // drawing an overlay. The window type is the whole signal; without it this hook
+    // asserted the headline banking-trojan behaviour about almost everything.
+    var FIRST_SYSTEM_WINDOW = 2000;
+    var LAST_SYSTEM_WINDOW = 2999;
     safe('WindowManager.addView', function () {
         var WM = Java.use('android.view.WindowManagerImpl');
         WM.addView.implementation = function (view, params) {
-            emit('WindowManager.addView', 'Input capture via overlay', 'T1417',
-                 'added a window over other apps');
+            var type = -1;
+            try { type = params.type.value; } catch (e) { /* unreadable params */ }
+            if (type >= FIRST_SYSTEM_WINDOW && type <= LAST_SYSTEM_WINDOW) {
+                emit('WindowManager.addView', 'Input capture via overlay', 'T1417',
+                     'added a system window over other apps (type=' + type + ')');
+            }
             return this.addView(view, params);
         };
     });

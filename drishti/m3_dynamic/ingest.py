@@ -447,6 +447,27 @@ def _merge_flows(
     return tuple(out), dropped
 
 
+#: Hook versions before this one emitted T1417 on every `WindowManagerImpl.addView`
+#: call without reading `LayoutParams.type`. Every Activity attaches its content view
+#: that way, so "input capture via overlay" was true of almost any app with a UI —
+#: measured at 47 of 52 captured artifacts, including the canary, which CLAUDE.md
+#: forbids from drawing an overlay at all.
+OVERLAY_TYPE_AWARE_HOOKS = "m3-hooks-2.1.0"
+
+#: The one hook that applies to. T1417 from any other source is untouched.
+_OVERLAY_HOOK = "WindowManager.addView"
+
+
+def _overlay_claim_is_trustworthy(artifact: ObservationArtifact) -> bool:
+    """Could this artifact's instrument tell an overlay from an ordinary app window?
+
+    The captured artifact is never rewritten — it faithfully records what the hook
+    emitted. What changes is whether we draw a conclusion the instrument could not
+    support. Declining to assert is not the same as deleting evidence.
+    """
+    return artifact.metadata.hook_version >= OVERLAY_TYPE_AWARE_HOOKS
+
+
 def artifact_to_trace(
     artifact: ObservationArtifact,
     *,
@@ -460,6 +481,15 @@ def artifact_to_trace(
     whatever a fixture file happens to say.
     """
     events = [event.model_dump(mode="json") for event in artifact.observations]
+    dropped_overlay = 0
+    if not _overlay_claim_is_trustworthy(artifact):
+        kept = []
+        for event in events:
+            if event.get("mitre") == "T1417" and event.get("source_hook") == _OVERLAY_HOOK:
+                dropped_overlay += 1
+                continue
+            kept.append(event)
+        events = kept
     normalised = aggregate(events)
 
     start = artifact.observations[0].occurred_at if artifact.observations else artifact.started_at
@@ -491,6 +521,13 @@ def artifact_to_trace(
         _authored_hosts(artifact.captured_flows),
     )
     errors = list(normalised.errors)
+    if dropped_overlay:
+        # Disclosed, not silent: the report's Limitations are generated from this list.
+        errors.append(
+            f"{dropped_overlay} overlay observation(s) were not carried forward — this "
+            f"trace was captured with {artifact.metadata.hook_version}, whose hook could "
+            "not distinguish a system overlay from an ordinary app window."
+        )
     if dropped_flows:
         errors.append(
             f"{dropped_flows} network flow group(s) dropped at the {MAX_CAPTURED_FLOWS} cap"

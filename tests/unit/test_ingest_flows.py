@@ -282,3 +282,31 @@ def test_the_result_still_validates_as_the_contract() -> None:
         )
     )
     DynamicTrace.model_validate(trace.model_dump(mode="json"))
+
+
+def test_overlay_claim_is_dropped_when_the_hook_could_not_tell() -> None:
+    """T1417 from a type-blind hook is not carried forward, and the drop is disclosed.
+
+    Hooks before `m3-hooks-2.1.0` emitted T1417 on every `WindowManagerImpl.addView`
+    call without reading `LayoutParams.type`. Every Activity attaches its content view
+    that way, so the headline banking-trojan behaviour was asserted about 47 of 52
+    captured artifacts — including the canary, which is forbidden from drawing an
+    overlay. The artifact is never rewritten; we decline to draw the conclusion.
+    """
+    from drishti.m3_dynamic.ingest import artifact_to_trace
+    from tests.unit._observation_builders import artifact_with, metadata
+
+    overlay = ("WindowManager.addView", "T1417", "added a window over other apps")
+
+    blind = artifact_with(overlay)
+    blind = blind.model_copy(update={"metadata": metadata(hook_version="m3-hooks-2.0.0")})
+    trace = artifact_to_trace(blind)
+    assert not any(e.api == "WindowManager.addView" for e in trace.api_events)
+    assert any("overlay observation" in e for e in trace.errors), "the drop must be disclosed"
+
+    aware = artifact_with(overlay)
+    aware = aware.model_copy(update={"metadata": metadata(hook_version="m3-hooks-2.1.0")})
+    kept = artifact_to_trace(aware)
+    assert any(e.api == "WindowManager.addView" for e in kept.api_events), (
+        "a type-aware hook's overlay observation must survive"
+    )
