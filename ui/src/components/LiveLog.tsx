@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useLogs } from '../hooks/useLogs'
+import { LogoSpinner } from './Logo'
 
 const LEVEL_CLASS: Record<string, string> = {
   error: 'text-bad',
@@ -29,9 +30,9 @@ export function LiveLog() {
   }, [lines, follow])
 
   return (
-    <div className="flex h-44 shrink-0 flex-col border-t border-line bg-panel">
-      <div className="flex items-center gap-3 border-b border-line-soft px-4 py-1.5">
-        <span className="text-[11px] font-semibold tracking-widest text-muted">LIVE LOG</span>
+    <div className="glass flex h-32 shrink-0 flex-col border-t border-line sm:h-44">
+      <div className="flex items-center gap-3 border-b border-line-soft px-5 py-2">
+        <span className="eyebrow">Live log</span>
         <span
           className={`flex items-center gap-1.5 text-[11px] ${connected ? 'text-good' : 'text-dim'}`}
         >
@@ -54,10 +55,13 @@ export function LiveLog() {
         onWheel={(e) => {
           if (e.deltaY < 0) setFollow(false)
         }}
-        className="flex-1 overflow-auto px-4 py-2 font-mono text-[12px] leading-relaxed"
+        className="flex-1 overflow-auto px-5 py-2.5 font-mono text-[12px] leading-relaxed"
       >
         {lines.length === 0 ? (
-          <p className="text-dim italic">waiting for log output…</p>
+          <div className="flex items-center gap-3 py-2">
+            <LogoSpinner size="xs" />
+            <span className="text-dim italic">waiting for log output…</span>
+          </div>
         ) : (
           lines.map((line) => (
             <div key={line.seq} className="whitespace-pre-wrap">

@@ -93,16 +93,13 @@ install -m 0755 /tmp/emulator_control.sh /opt/drishti/emulator_control.sh
 install -m 0755 /tmp/runtime_lockdown.sh /opt/drishti/runtime_lockdown.sh
 install -m 0755 /tmp/runtime_prepare.sh /opt/drishti/runtime_prepare.sh
 install -m 0644 /tmp/fake_c2.py /opt/drishti/fake_c2.py
-install -d -m 0755 /opt/drishti/inert-banking-fixtures
-install -m 0644 /tmp/bank-one.apk /opt/drishti/inert-banking-fixtures/bank-one.apk
-install -m 0644 /tmp/bank-two.apk /opt/drishti/inert-banking-fixtures/bank-two.apk
 PYTHONPATH=/opt/drishti/harness /opt/drishti/venv/bin/python \
   -c 'import dynamic_analyze; print("harness import OK", dynamic_analyze.HARNESS_VERSION)'
 
 echo no | avdmanager create avd -n drishti \
   -k "system-images;android-30;google_apis;x86_64" --device pixel_4 --force
 
-EMU_ARGS="-no-window -no-audio -no-boot-anim -writable-system -no-snapshot-load -gpu swiftshader_indirect -accel on"
+EMU_ARGS="-no-window -no-audio -no-boot-anim -no-snapshot-load -gpu swiftshader_indirect -accel on"
 
 hard_stop() {
   adb emu kill >/dev/null 2>&1 || true; sleep 3
@@ -128,32 +125,6 @@ timeout 25 /opt/drishti/venv/bin/mitmdump --listen-host 127.0.0.1 --listen-port 
 test -f /root/.mitmproxy/mitmproxy-ca-cert.pem
 
 boot_up
-# FIX 6: on API 30, /system is protected by AVB and `adb remount` only STAGES an
-# overlayfs -- it returns "remount succeeded ... Now reboot your device for settings to
-# take effect" while /system is still read-only, so the CA push failed with
-# "Read-only file system". Verification must be disabled and the device restarted first.
-adb root; sleep 6; adb wait-for-device
-adb shell avbctl disable-verification 2>&1 | tail -2 || true
-adb disable-verity 2>&1 | tail -2 || true
-
-# FIX 7: restart the emulator PROCESS rather than calling `adb reboot`. On a
-# -writable-system emulator `adb reboot` reliably wedges the guest in "offline" state
-# (qemu stays alive, `adb devices` shows emulator-5554 offline, adb never recovers).
-# -no-snapshot-load cold-boots without wiping userdata, so disable-verification sticks.
-hard_stop
-boot_up
-adb root; sleep 6; adb wait-for-device
-adb remount
-
-# Prove writability rather than assuming a success message means writable.
-adb shell 'touch /system/.drishti_wtest && echo WRITABLE' | grep -q WRITABLE
-adb shell 'rm -f /system/.drishti_wtest'
-
-ca_hash="$(openssl x509 -inform PEM -subject_hash_old -in /root/.mitmproxy/mitmproxy-ca-cert.pem | head -1)"
-cp /root/.mitmproxy/mitmproxy-ca-cert.pem "/tmp/${ca_hash}.0"
-adb push "/tmp/${ca_hash}.0" "/system/etc/security/cacerts/${ca_hash}.0"
-adb shell chmod 644 "/system/etc/security/cacerts/${ca_hash}.0"
-adb shell "ls /system/etc/security/cacerts/${ca_hash}.0"
 adb shell settings put global http_proxy 10.0.2.2:8080
 
 # Exercise the inert fixture once so the clean image is a booted, warmed state, then
@@ -163,17 +134,17 @@ adb shell monkey -p in.drishti.fixture.m3 -c android.intent.category.LAUNCHER 1 
 adb uninstall in.drishti.fixture.m3
 test -z "$(adb shell pm path in.drishti.fixture.m3)"
 
-# FIX 8: the clean snapshot is cut AFTER the CA install and fixture removal. Cutting it
-# earlier meant every snapshot-restore in the harness silently reverted the trust store.
-# Snapshots and -writable-system do coexist; this was verified, not assumed.
+# FIX 6: HTTPS system-CA injection is optional and intentionally absent. `Cipher.doFinal`
+# observes plaintext before encryption, while `-writable-system` made clean boots brittle.
+# The snapshot is cut only after the authored fixture is removed.
 adb emu avd snapshot delete clean 2>&1 | tail -1 || true
 sleep 3
 adb emu avd snapshot save clean
 sleep 20
 adb emu avd snapshot list | grep -qi clean
 
-# FIX 9: assert restore SEMANTICS -- transient state must vanish and the CA must
-# survive. A snapshot that saves but restores wrongly would silently void containment.
+# FIX 7: assert restore semantics. A snapshot that saves but restores wrongly would
+# silently allow one sample to contaminate the next.
 adb shell 'touch /data/local/tmp/dirty_marker'
 adb emu avd snapshot load clean
 sleep 25
@@ -182,14 +153,12 @@ for _ in $(seq 1 60); do
   [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && break; sleep 3
 done
 test -z "$(adb shell 'ls /data/local/tmp/dirty_marker 2>/dev/null' | tr -d '\r')"
-test -n "$(adb shell "ls /system/etc/security/cacerts/${ca_hash}.0 2>/dev/null" | tr -d '\r')"
 
 mv /root/.mitmproxy /opt/drishti/mitmproxy
 chmod -R go-rwx /opt/drishti/mitmproxy
-rm -f /tmp/m3-inert-fixture.apk /tmp/bank-one.apk /tmp/bank-two.apk /tmp/*.0 /tmp/tools.zip
+rm -f /tmp/m3-inert-fixture.apk /tmp/tools.zip
 hard_stop
 
-# Image retains only tools, the clean CA-bearing AVD snapshot, the proxy CA, and the
-# explicitly inert banking fixtures. No validation fixture, malware sample, cloud key,
-# or external-service credential is present.
+# Image retains only tools, a clean AVD snapshot, and the local proxy CA. No validation
+# fixture, malware sample, cloud key, or external-service credential is present.
 sync

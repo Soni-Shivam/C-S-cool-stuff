@@ -176,6 +176,26 @@ def test_canary_builder_is_compile_only_and_user_local() -> None:
     )
 
 
+def test_detonator_image_uses_only_the_authored_canary_fixture() -> None:
+    """The immutable image cannot acquire undeclared target-app APK fixtures."""
+    packer = (REPO_ROOT / "infra/gcp/packer/detonator.pkr.hcl").read_text(encoding="utf-8")
+    builder = (REPO_ROOT / "infra/gcp/build_tools_image.sh").read_text(encoding="utf-8")
+    combined = packer + builder
+    assert "bank_one_apk" not in combined
+    assert "bank_two_apk" not in combined
+    assert "backend/" not in packer, "Packer paths must target the current repository layout"
+    assert "canary.apk" in builder
+
+
+def test_live_harness_has_a_local_execution_refusal_gate() -> None:
+    harness = (REPO_ROOT / "drishti/m3_dynamic/harness.py").read_text(encoding="utf-8")
+    admission = (REPO_ROOT / "drishti/m3_dynamic/admission.py").read_text(encoding="utf-8")
+    assert "require_sealed_runtime" in harness
+    assert "DRISHTI_SEALED_RUNTIME" in admission
+    assert 'Path("/dev/kvm")' in admission
+    assert 'Path("/opt/drishti/RUNTIME_IMAGE")' in admission
+
+
 def test_models_gitkeep_survives() -> None:
     """`models/` holds gitignored binaries but must keep its .gitkeep.
 

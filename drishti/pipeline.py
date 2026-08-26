@@ -300,6 +300,47 @@ def _genai(ctx: Context, static: StaticReport, sha256: str, which: JobStage) -> 
     return genai_analyse(static, ctx.ledger, ctx.settings)
 
 
+def _with_impersonation(ctx: Context, verdict: GenAIVerdict, apk_path: Path) -> GenAIVerdict:
+    """Attach the icon-impersonation result (T3.9), and write it to the ledger.
+
+    Called from the pipeline rather than from inside the M4 controller because the
+    controller is handed a `StaticReport`, not the APK, and vision needs the file: the
+    launcher icon is a resource inside the archive. Reading it is the same read-as-data
+    posture the static engine uses — nothing is executed.
+
+    Wrapped: a vision failure degrades the verdict, never the job. An unavailable VLM,
+    a vector-only icon, or a corrupt archive all yield an honest below-threshold result
+    or none at all.
+    """
+    if not ctx.settings.vlm_enabled:
+        return verdict
+    try:
+        from drishti.m4_genai.vision import assess_icon
+
+        match = assess_icon(apk_path, ctx.settings)
+        node = ctx.ledger.append(
+            type=EvidenceType.VISION_MATCH,
+            source_tool=f"m4.vision:{match.method}",
+            content=match.model_dump(mode="json"),
+            # The producer's confidence in its own comparison, not a consensus value.
+            confidence=match.similarity,
+        )
+        return verdict.model_copy(
+            update={
+                "impersonation": match.model_copy(update={"evidence_refs": (node.id,)}),
+                "ledger_refs": (*verdict.ledger_refs, node.id),
+            }
+        )
+    except Exception as exc:  # pragma: no cover - defensive
+        log.info("vision_unavailable", error=f"{type(exc).__name__}: {exc}")
+        return verdict.model_copy(
+            update={
+                "partial": True,
+                "errors": (*verdict.errors, f"vision unavailable: {type(exc).__name__}"),
+            }
+        )
+
+
 def _genai_full(ctx: Context, sha256: str) -> GenAIVerdict:
     """The post-sandbox GenAI pass.
 
@@ -347,15 +388,23 @@ def _score(ctx: Context, which: JobStage) -> CompositeScore:
     Like M2 before it, the scorer existed and was tested but nothing called it: a full
     run reported S=0 on an APK the engine scores perfectly well in isolation.
     """
+    from drishti.m6_score.engine import rule_severity
     from drishti.m6_score.engine import score as m6_score
 
     meta = ctx.artefacts.get("ingest")
+    static_report = ctx.artefacts.get("static")
     result = m6_score(
-        static=ctx.artefacts.get("static"),
+        static=static_report,
         ml=ctx.artefacts.get("ml"),
         genai=ctx.artefacts.get("genai"),
         dynamic=ctx.artefacts.get("dynamic"),
         intel=meta.intel if meta is not None else None,
+        # G was a declared factor with a 0.15 weight that NO caller ever supplied, so
+        # it was permanently 0.0 and a static-only triage could not exceed S=54 however
+        # damning the manifest. Matched permission combinations are the same category of
+        # evidence as a YARA hit -- a deterministic rule fired, with a severity, no model
+        # in the path -- so they feed it.
+        yara_severity=rule_severity(static_report),
     )
     for factor in result.factors:
         ctx.ledger.append(
@@ -476,13 +525,81 @@ def _stub_trace(which: JobStage, *, with_evasion: bool) -> DynamicTrace:
     )
 
 
-def _stub_frontier(ctx: Context, trace: DynamicTrace) -> MorphPlan:
+def _frontier(ctx: Context, trace: DynamicTrace, job_id: str) -> MorphPlan:
+    """Turn pass-1 evasion observations into a validated, grounded morph plan (T5.5).
+
+    This is the paper's §6 loop closing. The Adversarial Elicitor, `validate_morph`,
+    the five Frida morph scripts and the applicator were all built separately while
+    this call site still ran `_stub_frontier` — so the flagship novelty existed in the
+    tree and could not fire.
+
+    The observations are handed over as STRUCTURED records — probe kind, queried
+    target, stall flag, and the `EVASION_CHECK` node id each came from. No raw
+    sample-derived string reaches the prompt, so the injection surface here is
+    essentially nil by construction.
+
+    Degrades rather than fails: a provider outage, a refused morph or an unparseable
+    plan yields the deterministic fallback below, which is the previous stub's logic.
+    The loop still closes when the model is unavailable, which matters because the free
+    endpoint 502s roughly two calls in five.
+    """
+    # Ground each observation FIRST. `plan_morphs` drops any morph whose `derived_from`
+    # does not resolve to a real node, and nothing was writing EVASION_CHECK nodes for
+    # what the sandbox saw — so even with the elicitor wired, every morph it proposed
+    # would have been discarded as ungrounded. Recording them here is also the honest
+    # thing: these are the observations the frontier is responding to, and a reader can
+    # open each one.
+    observations: list[dict[str, Any]] = []
+    for obs in trace.evasion_observations:
+        node = ctx.ledger.append(
+            type=EvidenceType.EVASION_CHECK,
+            source_tool="m3.evasion",
+            content=obs.model_dump(mode="json"),
+            confidence=1.0,
+        )
+        observations.append(
+            {
+                "id": node.id,
+                "probe": obs.probe_kind,
+                "morph": obs.inferred_requirement or "install_packages",
+                "queried": obs.queried,
+                "occurrences": 1,
+                "detail": (
+                    f"{obs.result} then "
+                    f"{'stalled' if obs.followed_by_stall else 'continued'}"
+                ),
+            }
+        )
+
+    if observations:
+        try:
+            from drishti.m4_genai.agents.adversarial_elicitor import plan_morphs
+            from drishti.m4_genai.client import LLMClient
+
+            client = LLMClient(ctx.settings) if ctx.settings.llm_provider != "mock" else None
+            plan = plan_morphs(observations, ctx.ledger, job_id, client)
+            if plan.morphs:
+                log.info(
+                    "frontier_plan_built",
+                    morphs=len(plan.morphs),
+                    source=plan.generated_by,
+                    observations=len(observations),
+                    grounded=all(m.derived_from for m in plan.morphs),
+                )
+                return plan
+        except Exception as exc:
+            log.info("frontier_elicitor_unavailable", error=f"{type(exc).__name__}: {exc}")
+
+    return _fallback_frontier(ctx, trace)
+
+
+def _fallback_frontier(ctx: Context, trace: DynamicTrace) -> MorphPlan:
     """Derive a morph plan from what pass 1 actually observed.
 
-    Even as a stub this reads the evasion observations rather than inventing a plan:
-    a morph with no derivation is a guess, and the frontier's whole claim is that it
-    responds to observed behaviour. P5 replaces the LLM-generated plan; the derivation
-    requirement does not change.
+    The deterministic path, used when the elicitor is unavailable or returns nothing
+    it can ground. It reads the evasion observations rather than inventing a plan: a
+    morph with no derivation is a guess, and the frontier's whole claim is that it
+    responds to observed behaviour.
     """
     wanted = tuple(
         obs.queried
@@ -565,7 +682,8 @@ def run_pipeline(
             ctx.record("ml", _ml(ctx, static))
 
         with stage(run, ctx, JobStage.GENAI_STATIC):
-            ctx.record("genai", _genai(ctx, static, job.sha256, JobStage.GENAI_STATIC))
+            verdict = _genai(ctx, static, job.sha256, JobStage.GENAI_STATIC)
+            ctx.record("genai", _with_impersonation(ctx, verdict, apk_path))
 
         with stage(run, ctx, JobStage.SCORE_PRELIM):
             preliminary = _score(ctx, JobStage.SCORE_PRELIM)
@@ -588,7 +706,7 @@ def run_pipeline(
         # be a guess, which is precisely the claim the frontier is not making.
         if not trace.detonated and trace.evasion_observations:
             with stage(run, ctx, JobStage.FRONTIER):
-                morph_plan = _stub_frontier(ctx, trace)
+                morph_plan = _frontier(ctx, trace, job.id)
 
             with stage(run, ctx, JobStage.SANDBOX_2):
                 trace = _sandbox(

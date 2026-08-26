@@ -11,7 +11,10 @@
  * thing `ledger.append()` exists to reject, and hiding it here would undo that.
  */
 
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
+import { getEvidenceNode } from '../api/client'
+import type { Artefact } from '../api/client'
+import type { EvidenceNode } from '../api/types'
 
 export interface EvidenceNav {
   /** Jump to the Ledger tab, select `nodeId`, expand it. */
@@ -43,9 +46,9 @@ export function EvidenceChip({ nodeId }: { nodeId: string }) {
       type="button"
       onClick={() => showEvidence(nodeId)}
       title={resolvable ? `Open evidence ${nodeId}` : `${nodeId} is not in this job's ledger`}
-      className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[11px] transition-colors ${
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[11px] transition-all duration-200 ${
         resolvable
-          ? 'border-accent/40 bg-accent-soft text-accent hover:border-accent hover:bg-accent/20'
+          ? 'border-v500/45 bg-v500/12 text-v300 hover:border-v400 hover:bg-v500/25 hover:shadow-[0_0_16px_-4px_rgba(168,85,247,0.9)]'
           : 'border-bad/50 bg-bad/10 text-bad line-through'
       }`}
     >
@@ -94,7 +97,7 @@ export function EvidenceChips({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="rounded border border-line px-1.5 py-0.5 text-[11px] text-muted hover:border-accent/60 hover:text-accent"
+          className="rounded-full border border-line-bright bg-ground-2 px-2 py-0.5 text-[11px] text-muted transition-colors hover:border-v400 hover:text-v300"
         >
           +{hidden} more
         </button>
@@ -103,11 +106,88 @@ export function EvidenceChips({
         <button
           type="button"
           onClick={() => setExpanded(false)}
-          className="rounded border border-line px-1.5 py-0.5 text-[11px] text-muted hover:border-accent/60 hover:text-accent"
+          className="rounded-full border border-line-bright bg-ground-2 px-2 py-0.5 text-[11px] text-muted transition-colors hover:border-v400 hover:text-v300"
         >
           show fewer
         </button>
       )}
     </span>
+  )
+}
+
+/**
+ * The authoritative end of the click path: `GET /api/evidence/{node_id}`.
+ *
+ * The ledger table renders from the job's node list, which is a *listing* — filtered,
+ * capped, and fetched at some earlier moment. Resolving a chip against that list alone
+ * means a reference the API can serve perfectly well shows up as unresolvable because
+ * the browser happened not to have it. So the selected chip is resolved against the
+ * drilldown route itself, which is the same answer an auditor with `curl` would get.
+ *
+ * A 404 here is a real finding and is displayed as one. `ledger.append()` refuses to
+ * write a claim whose evidence does not resolve; if one is nonetheless cited on screen
+ * and does not resolve, the interface must say so rather than quietly render nothing.
+ */
+export function EvidenceResolution({ nodeId }: { nodeId: string }) {
+  const [state, setState] = useState<Artefact<EvidenceNode> | null>(null)
+
+  useEffect(() => {
+    let live = true
+    setState(null)
+    void getEvidenceNode(nodeId).then((result) => {
+      if (live) setState(result)
+    })
+    return () => {
+      live = false
+    }
+  }, [nodeId])
+
+  if (state === null) {
+    return <p className="text-sm text-muted">Resolving {nodeId}…</p>
+  }
+
+  if (state.state !== 'ready') {
+    const detail =
+      state.state === 'error'
+        ? state.message
+        : state.state === 'pending'
+          ? `the pipeline is at ${state.stage}`
+          : `${state.what} lands in ${state.task}`
+    return (
+      <div className="rounded border border-bad/40 bg-bad/5 px-3 py-2.5 text-sm">
+        <span className="text-bad">
+          <span className="font-mono">{nodeId}</span> does not resolve.
+        </span>{' '}
+        <span className="text-muted">{detail}</span>
+        <p className="mt-1 text-[11px] text-dim">
+          A cited reference that the ledger cannot serve is a defect in the claim, not in the
+          view. Reported here rather than hidden.
+        </p>
+      </div>
+    )
+  }
+
+  const node = state.value
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-mono text-xs text-accent">{node.id}</span>
+        <span className="rounded border border-line bg-ground-2 px-1.5 py-0.5 font-mono text-[11px] text-muted">
+          {node.type}
+        </span>
+        <span className="text-[11px] text-muted">
+          seq {node.seq} · {node.source_tool} · confidence {node.confidence.toFixed(2)}
+        </span>
+      </div>
+      {node.location && (
+        <div className="font-mono text-[11px] break-all text-muted">{node.location}</div>
+      )}
+      <pre className="max-h-64 overflow-auto rounded bg-ground p-3 font-mono text-xs leading-relaxed text-muted">
+        {JSON.stringify(node.content, null, 2)}
+      </pre>
+      <div className="font-mono text-[10px] break-all text-dim">
+        node_hash {node.node_hash}
+      </div>
+    </div>
   )
 }

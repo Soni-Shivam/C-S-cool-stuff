@@ -1,0 +1,25 @@
+{
+  "sha256": "3f2a91c0d4e5b68713aa0f5c2b9d84e6f70c1a25d38b4e97c6a0f1b2d3e4c5a6",
+  "package_name": "com.instant.loan.approve",
+  "threat_score": 54,
+  "severity_band": "MEDIUM",
+  "confidence": 0.41,
+  "provenance": "STATIC_ONLY",
+  "impersonated_target": null,
+  "victim_profile": {
+    "language": "en",
+    "tactic": null,
+    "segment": null
+  },
+  "behaviors_detected": ["reads_sms"],
+  "attack_techniques": ["T1636.004"],
+  "evidence_refs": ["ev_000000000011"],
+  "consumer_summary": "We could not confirm this app is safe. It asks for permission to read your text messages, which an app like this does not normally need. Install it only if you are certain you trust whoever sent it to you.",
+  "recommended_action": "REVIEW",
+  "dynamic_trace": null,
+  "adversarial_elicitation_deployed": [],
+  "limitations": [
+    "Machine-learning layer unavailable for this sample.",
+    "No detonation was performed; behaviour is inferred from static analysis only."
+  ]
+}

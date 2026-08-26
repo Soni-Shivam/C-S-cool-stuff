@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1.0",
+  "schema_version": "1.2.0",
   "values": {
     "api:AccessibilityService": 0.0,
     "api:Cipher": 0.0,
@@ -34,11 +34,11 @@
     "archive:multi_dex": 1.0,
     "archive:native_lib_count": 0.0,
     "archive:packer_hint_count": 0.0,
-    "cert:age_days": 0.0,
     "cert:brand_mismatch": 0.0,
     "cert:debug": 1.0,
-    "cert:is_fresh": 1.0,
     "cert:known_bad_reuse": 0.0,
+    "cert:validity_days": 10950.0,
+    "cert:validity_over_20y": 1.0,
     "combo:count": 0.0,
     "component:activity:log_count": 0.6931471805599453,
     "component:exported_ratio": 1.0,

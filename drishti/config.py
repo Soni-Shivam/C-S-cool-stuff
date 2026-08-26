@@ -79,6 +79,12 @@ class Settings(BaseSettings):
 
     # ── feature flags ────────────────────────────────────────────────────────
     vlm_enabled: bool = True
+    #: Vision-language model for icon impersonation (T3.9). A free multimodal model on
+    #: the same OpenRouter key as the text provider; the perceptual-hash layer runs
+    #: regardless, so an unavailable VLM degrades to deterministic matching.
+    #: minimax-m3 was the one free VLM that answered reliably on 2026-08-26 — gemma-4
+    #: and nemotron-omni both returned 429/502 from the shared free pool.
+    vlm_model: str = "minimax/minimax-m3:free"
     rag_enabled: bool = False
 
     # ── limits ───────────────────────────────────────────────────────────────

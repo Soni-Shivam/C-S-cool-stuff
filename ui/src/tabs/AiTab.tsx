@@ -17,9 +17,10 @@ import { ArtefactGate, DegradedNotice, Empty, Panel, Tag } from '../components/p
 import type { GenAIVerdict, MLPrediction, VerifierStatus } from '../api/types'
 
 const VERIFIER_TONE: Record<VerifierStatus, 'good' | 'bad' | 'warn'> = {
-  pass: 'good',
-  rejected: 'bad',
-  unverified: 'warn',
+  PASS: 'good',
+  REJECTED_NO_EVIDENCE: 'bad',
+  REJECTED_BAD_REF: 'bad',
+  REJECTED_TYPE_MISMATCH: 'bad',
 }
 
 export function AiTab({
@@ -33,8 +34,7 @@ export function AiTab({
     <div className="space-y-4">
       <ArtefactGate artefact={genai}>
         {(verdict) => {
-          const rejected = verdict.claims.filter((c) => c.verifier_status === 'rejected').length
-          const unverified = verdict.claims.filter((c) => c.verifier_status === 'unverified').length
+          const rejected = verdict.claims.filter((c) => c.verifier_status !== 'PASS').length
           return (
             <div className="space-y-4">
               <DegradedNotice result={verdict} />
@@ -44,7 +44,6 @@ export function AiTab({
                 right={
                   <div className="flex flex-wrap items-center gap-2">
                     <Tag tone={rejected > 0 ? 'bad' : 'good'}>{rejected} rejected</Tag>
-                    {unverified > 0 && <Tag tone="warn">{unverified} unverified</Tag>}
                     <Tag>{verdict.llm_calls} LLM calls</Tag>
                     <Tag tone={verdict.provider === 'mock' ? 'warn' : 'neutral'}>
                       provider: {verdict.provider}
@@ -74,9 +73,9 @@ export function AiTab({
                       <li
                         key={i}
                         className={`rounded border p-2.5 ${
-                          claim.verifier_status === 'rejected'
+                          claim.verifier_status !== 'PASS'
                             ? 'border-bad/40 bg-bad/5'
-                            : 'border-line-soft bg-panel-2'
+                            : 'border-line-soft bg-ground-2'
                         }`}
                       >
                         <div className="flex items-start gap-2">
@@ -85,7 +84,7 @@ export function AiTab({
                         </div>
                         <p
                           className={`mt-1.5 text-sm ${
-                            claim.verifier_status === 'rejected' ? 'text-muted line-through' : 'text-fg'
+                            claim.verifier_status !== 'PASS' ? 'text-muted line-through' : 'text-fg'
                           }`}
                         >
                           {claim.text}
@@ -108,7 +107,7 @@ export function AiTab({
                       {verdict.techniques.map((technique) => (
                         <div
                           key={technique.technique_id}
-                          className="rounded border border-line-soft bg-panel-2 p-2"
+                          className="rounded-[var(--radius-tile)] border border-line-soft bg-ground-2/60 p-2"
                         >
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs text-accent">{technique.technique_id}</span>
@@ -199,7 +198,7 @@ export function AiTab({
 
               {Object.keys(prediction.labels).length > 0 && (
                 <div>
-                  <h4 className="mb-1 text-[11px] tracking-widest text-muted">
+                  <h4 className="eyebrow mb-2">
                     MULTI-LABEL (independent sigmoids)
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
@@ -214,7 +213,7 @@ export function AiTab({
 
               {prediction.top_features.length > 0 ? (
                 <div>
-                  <h4 className="mb-1 text-[11px] tracking-widest text-muted">TOP SHAP CONTRIBUTIONS</h4>
+                  <h4 className="eyebrow mb-2">TOP SHAP CONTRIBUTIONS</h4>
                   <ul className="space-y-1">
                     {prediction.top_features.map((feature) => (
                       <li key={feature.feature} className="flex items-center gap-2 text-xs">

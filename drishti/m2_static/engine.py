@@ -12,6 +12,7 @@ import re
 import time
 import zipfile
 from collections import Counter
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -113,6 +114,13 @@ def analyse(apk_path: Path, ledger: LedgerStore) -> StaticReport:
                 parents=tuple(refs[-1:]),
             )
             refs.append(node.id)
+        from drishti.m2_static.decompile import decompile_sink_methods
+
+        decompiled_methods, decompile_errors = decompile_sink_methods(
+            dalvik, analysis, paths, ledger
+        )
+        errors.extend(decompile_errors)
+        refs.extend(method.evidence_ref for method in decompiled_methods)
         entropy_mean, packer_hints, native_libs, dex_count = _archive_signals(apk_path)
         certificate = _certificate(apk, label, package, errors)
         cert_node = ledger.append(
@@ -137,7 +145,7 @@ def analyse(apk_path: Path, ledger: LedgerStore) -> StaticReport:
                 parents=hypothesis.evidence_refs,
             )
             refs.append(node.id)
-        return StaticReport(
+        report = StaticReport(
             sha256=digest,
             package=package,
             app_label=label,
@@ -157,8 +165,10 @@ def analyse(apk_path: Path, ledger: LedgerStore) -> StaticReport:
             dcl_indicators=dcl,
             reflection_count=reflection_count,
             urls=urls,
+            package_strings=package_strings,
             crypto_constants=crypto,
             call_paths=paths,
+            decompiled_methods=decompiled_methods,
             sink_hits=tuple(sorted(sink_hits)),
             hypotheses=hypotheses,
             ledger_refs=tuple(refs),
@@ -166,6 +176,40 @@ def analyse(apk_path: Path, ledger: LedgerStore) -> StaticReport:
             errors=tuple(errors),
             duration_ms=_duration(started),
         )
+
+        # The benign-lookalike assessment runs LAST, because it reasons over the
+        # assembled report — call paths, extracted strings, the certificate — rather
+        # than over the APK. Permissions alone cannot separate a banking trojan from
+        # Truecaller, which holds the same ones; this is what does.
+        #
+        # Wrapped: a failure here must degrade the report, never lose it. The whole
+        # static analysis is more valuable than this one field.
+        try:
+            from drishti.m2_static.lookalike import assess as _assess_lookalike
+
+            assessment = _assess_lookalike(report)
+            lookalike_node = ledger.append(
+                type=EvidenceType.OVERPRIVILEGE,
+                source_tool="m2.lookalike",
+                content=assessment.model_dump(mode="json"),
+            )
+            report = report.model_copy(
+                update={
+                    "lookalike": assessment,
+                    "ledger_refs": (*report.ledger_refs, lookalike_node.id),
+                }
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            report = report.model_copy(
+                update={
+                    "partial": True,
+                    "errors": (
+                        *report.errors,
+                        f"lookalike assessment failed: {type(exc).__name__}: {exc}",
+                    ),
+                }
+            )
+        return report
     except Exception as exc:
         errors.append(f"static analysis degraded: {type(exc).__name__}: {exc}")
         return _empty_report(digest, errors=tuple(errors), duration_ms=_duration(started))
@@ -347,19 +391,92 @@ def _archive_signals(path: Path) -> tuple[float, tuple[str, ...], tuple[str, ...
     return mean, hints, natives, max(len(dexes), 1)
 
 
+#: Distinguished-name attributes, in the order a reader expects them, mapped from
+#: asn1crypto's `native` keys to conventional short forms.
+_DN_ATTRS = (
+    ("common_name", "CN"),
+    ("organizational_unit_name", "OU"),
+    ("organization_name", "O"),
+    ("locality_name", "L"),
+    ("state_or_province_name", "ST"),
+    ("country_name", "C"),
+)
+
+
+def _distinguished_name(name: Any) -> str:
+    """Render an X.509 name as a readable DN.
+
+    `str()` on an asn1crypto `Name` returns the object repr — literally
+    `<asn1crypto.x509.Name 139086784924624 b'071\\x16...'>` — which is what a real run
+    put into the report and the reporting dossier. Unreadable to an analyst and
+    actively embarrassing in a document that goes to a fraud desk.
+    """
+    try:
+        native = name.native
+        parts = [f"{short}={native[key]}" for key, short in _DN_ATTRS if native.get(key)]
+        if parts:
+            return ", ".join(parts)
+        # A name with only attributes we do not shorten is still better rendered as
+        # its key=value pairs than as a repr.
+        return ", ".join(f"{k}={v}" for k, v in native.items()) or "unknown"
+    except Exception:
+        # Never let cosmetics fail the analysis: a weird certificate must still
+        # produce a StaticReport.
+        text = str(name)
+        return "unknown" if text.startswith("<") else text
+
+
+def _certificate_validity(cert: Any) -> tuple[str, str, int]:
+    """Real validity dates and signing-key age in days.
+
+    These were previously hardcoded to `"unknown"` / `0`, which is worse than missing.
+    A measured run over 18 real APKs produced `age_days == 0` for every single one, so
+    the certificate-freshness rule in `lookalike.py` fired on 100% of samples including
+    the benign ones. A signal that is always true carries no information, and it looked
+    like a working discriminator right up until somebody measured it.
+
+    Age is counted from `not_before`, because the question a fraud analyst asks is "how
+    long has this signer existed". Android forces a publisher to reuse a signing key
+    across upgrades, so a key minted last week on an app claiming to be a bank is the
+    finding.
+    """
+    validity = cert["tbs_certificate"]["validity"]
+    start = validity["not_before"].native
+    end = validity["not_after"].native
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=UTC)
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=UTC)
+    # Clamped at zero: certificates dated in the future are real in this corpus
+    # (ZIP-epoch and clock-skew artefacts) and must not yield a negative age.
+    age_days = max(0, (datetime.now(UTC) - start).days)
+    return (
+        start.isoformat().replace("+00:00", "Z"),
+        end.isoformat().replace("+00:00", "Z"),
+        age_days,
+    )
+
+
 def _certificate(apk: Any, label: str, package: str, errors: list[str]) -> CertificateInfo:
     try:
         cert = apk.get_certificates()[0]
         raw = cert.dump() if hasattr(cert, "dump") else bytes(cert)
-        subject = str(cert.subject)
-        issuer = str(cert.issuer)
+        subject = _distinguished_name(cert.subject)
+        issuer = _distinguished_name(cert.issuer)
+        try:
+            not_before, not_after, age_days = _certificate_validity(cert)
+        except Exception as exc:
+            # Dates are a signal, not the report. Lose them loudly rather than
+            # losing the certificate.
+            errors.append(f"certificate dates unreadable: {type(exc).__name__}")
+            not_before, not_after, age_days = "unknown", "unknown", 0
         return CertificateInfo(
             sha256=hashlib.sha256(raw).hexdigest(),
             subject=subject,
             issuer=issuer,
-            not_before="unknown",
-            not_after="unknown",
-            age_days=0,
+            not_before=not_before,
+            not_after=not_after,
+            age_days=age_days,
             self_signed=subject == issuer,
             debug_cert="Android Debug" in subject,
             brand_mismatch=False,

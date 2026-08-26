@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "sha256": "1dea0a6f3a43ba84e6ee4762ce107cdb4c47d8750ef709e73560934e1df75c85",
+  "package": "fruits.benefits.diary",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:45:08.668896+00:00"
+    }
+  ],
+  "failures": [
+    {
+      "code": "hook_error",
+      "stage": "instrumentation",
+      "message": "spawn retry after: TimedOutError: unexpectedly timed out while waiting for app to launch",
+      "occurred_at": "2026-08-26T03:46:08.507435+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "9e67213c3ea01ce954ad06977b9c5b80a7c2e56097506c259e6ecb8445163fd4",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T03:44:03.835169+00:00"
+  },
+  "started_at": "2026-08-26T03:44:14.183837+00:00",
+  "finished_at": "2026-08-26T03:46:10.808397+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339"
+  ],
+  "mitre_observed": [
+    "T1417"
+  ]
+}

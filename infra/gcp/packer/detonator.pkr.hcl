@@ -8,8 +8,6 @@ variable "project" { type = string }
 variable "zone" { type = string }
 variable "network" { type = string }
 variable "fixture_apk" { type = string }
-variable "bank_one_apk" { type = string }
-variable "bank_two_apk" { type = string }
 
 source "googlecompute" "m3_tools" {
   project_id              = var.project
@@ -31,13 +29,11 @@ source "googlecompute" "m3_tools" {
 build {
   sources = ["source.googlecompute.m3_tools"]
   provisioner "file" { source = var.fixture_apk destination = "/tmp/m3-inert-fixture.apk" }
-  provisioner "file" { source = var.bank_one_apk destination = "/tmp/bank-one.apk" }
-  provisioner "file" { source = var.bank_two_apk destination = "/tmp/bank-two.apk" }
-  provisioner "file" { source = "${path.root}/../../../backend/drishti" destination = "/tmp/drishti" }
-  provisioner "file" { source = "${path.root}/../../../backend/scripts/frida_hooks.js" destination = "/tmp/frida_hooks.js" }
-  provisioner "file" { source = "${path.root}/../../../backend/scripts/dynamic_analyze.py" destination = "/tmp/dynamic_analyze.py" }
-  provisioner "file" { source = "${path.root}/../../../backend/scripts/verify_containment.py" destination = "/tmp/verify_containment.py" }
-  provisioner "file" { source = "${path.root}/../../../backend/scripts/emulator_control.sh" destination = "/tmp/emulator_control.sh" }
+  provisioner "file" { source = "${path.root}/../../../drishti" destination = "/tmp/drishti" }
+  provisioner "file" { source = "${path.root}/../../../drishti/m3_dynamic/scripts/hooks.js" destination = "/tmp/frida_hooks.js" }
+  provisioner "file" { source = "${path.root}/../../../scripts/dynamic_analyze.py" destination = "/tmp/dynamic_analyze.py" }
+  provisioner "file" { source = "${path.root}/../../../scripts/verify_containment.py" destination = "/tmp/verify_containment.py" }
+  provisioner "file" { source = "${path.root}/../emulator_control.sh" destination = "/tmp/emulator_control.sh" }
   provisioner "file" { source = "${path.root}/../runtime_lockdown.sh" destination = "/tmp/runtime_lockdown.sh" }
   provisioner "file" { source = "${path.root}/../runtime_prepare.sh" destination = "/tmp/runtime_prepare.sh" }
   provisioner "file" { source = "${path.root}/../fake_c2.py" destination = "/tmp/fake_c2.py" }

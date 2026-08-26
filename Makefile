@@ -32,6 +32,12 @@ ui: ## Run the dashboard dev server on :5173 (needs `make up` in another shell)
 ui-build: ## Typecheck and build the dashboard to ui/dist
 	cd ui && npm run build
 
+# The code-graph layout is pure, deterministic and not checkable by eye on the
+# canary's two-node graph, so it carries its own tests.
+.PHONY: ui-test
+ui-test: ## Dashboard unit tests (vitest)
+	cd ui && npm test
+
 .PHONY: ui-preview
 ui-preview: ui-build ## Serve the production build on :4173. Use this for the demo.
 	cd ui && npm run preview
@@ -65,6 +71,26 @@ check: lint test ## What CI runs
 .PHONY: ledger
 ledger: ## Verify a job's hash chain: make ledger JOB=job_xxx
 	uv run python -m drishti.ledger.cli verify --job $(JOB)
+
+# ─── Stage demos ─────────────────────────────────────────────────────────────
+# Both run against a throwaway database and key, so they are safe to run live,
+# repeatedly, in any order, without touching a real job.
+
+.PHONY: demo-reject
+demo-reject: ## Live: an AI claim citing no resolvable evidence is REFUSED
+	uv run python scripts/demo_integrity.py reject
+
+.PHONY: demo-tamper
+demo-tamper: ## Live: an edited ledger is detected at an exact seq
+	uv run python scripts/demo_integrity.py tamper
+
+.PHONY: demo-integrity
+demo-integrity: ## Both integrity demos, back to back
+	uv run python scripts/demo_integrity.py both
+
+.PHONY: demo-containment
+demo-containment: ## The containment gate: accepts a sealed net, rejects the v1 nc -z probe
+	uv run python scripts/demo_containment_gate.py
 
 # ─── GCP lab ─────────────────────────────────────────────────────────────────
 # The ONLY place a real sample is ever executed. Targets are deliberately

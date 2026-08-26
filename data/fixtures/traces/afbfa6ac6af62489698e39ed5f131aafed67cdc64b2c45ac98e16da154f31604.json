@@ -1,0 +1,53 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "afbfa6ac6af62489698e39ed5f131aafed67cdc64b2c45ac98e16da154f31604",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.exlivinapps.capitalfmscotlandradioappuk on the sealed GCE detonator, containment manifest 2ae4ab4b5890d66cf068f8d8136180251f3f1e96a37d906027fa47d33aa86821.",
+    "authored_at": "2026-08-26T04:04:26.526421+00:00",
+    "source_sha256": "afbfa6ac6af62489698e39ed5f131aafed67cdc64b2c45ac98e16da154f31604",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_afbfa6ac6af6",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "30 instrumented observations across 3 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 580,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "count": 2
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.exlivinapps.<b64>"
+        ],
+        "count": 17
+      },
+      {
+        "t_ms": 2612,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=https://api.creator.kodular.io/ads/################/check/v#"
+        ],
+        "count": 11
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T04:04:26.526421+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

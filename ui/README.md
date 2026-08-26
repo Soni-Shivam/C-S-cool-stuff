@@ -14,6 +14,7 @@ the thing that will actually be on screen:
 
 ```bash
 make ui-preview      # builds, then serves on :4173
+make ui-test         # vitest — the code-graph layout
 ```
 
 Both `dev` and `preview` proxy `/api` to `http://127.0.0.1:8080`. Override with
@@ -26,12 +27,57 @@ into a file whose whole point is that its routes do not move.
 Four regions (T0.8) plus the stage strip (T6.4):
 
 ```
-header: identity · drop APK · job id + live badge
+header: logo lockup · drop APK · job id + live badge
 stage strip: 11 pipeline stages, timings, VERDICT ▸ async marker at SCORE_PRELIM
+├── numbered rail: 01–08, riding a violet arc; collapses to numbers under 1280px
 ├── score rail: ring, band, C, γ, R/F_AI/G/D factor bars, limitations
-└── tabs: Overview · Static · AI · Sandbox · Frontier · Ledger · Report
+└── views: 01 Overview · 02 Code Graph · 03 Reverse Engineering · 04 Static
+          05 Sandbox · 06 Frontier · 07 Ledger · 08 Report
 live log: tailed from GET /api/logs/stream, throttled ~150 ms
 ```
+
+## Design system
+
+Tokens live in `src/index.css` under `@theme`. Three card tiers, used by a rule
+that keeps the theme legible for a long session: **violet gradient** and **lilac
+wash** / **white** carry summary surfaces (a verdict, a headline number), while
+code, tables, the graph and the log stay on the dark ground. Severity colours are
+deliberately *not* on the violet ramp — `high` is orange, not magenta — so a band
+stays readable when a projector eats saturation.
+
+The logo is the app's single loading indicator. Every wait renders `LogoSpinner`
+at one of four sizes; there is no second spinner and no bare "Loading…" string.
+`BootSequence` plays once per browser session, is skipped by any key or click, and
+collapses to a single frame under `prefers-reduced-motion`.
+
+### Fonts
+
+Space Grotesk (display), Inter (UI), JetBrains Mono (code) are **vendored** into
+`src/fonts/` rather than linked from Google Fonts: the demo runs from a production
+build on a projector with no guaranteed network, and a `<link>` would silently fall
+back to system sans at exactly the wrong moment. To refresh them, re-download the
+latin and latin-ext subsets for those three families and rewrite `fonts.css` to
+point at the local files.
+
+## `02 Code Graph` — Code-Graph RAG Navigation
+
+`src/graph/layout.ts` is pure: no React, no DOM, no clock. It builds the graph from
+`StaticReport.call_paths` — every edge is a call the analyser actually walked, and
+there is no inferred edge anywhere — then lays it out with longest-path layering
+and a fixed number of barycentre sweeps with a stable tie-break. Deterministic on
+purpose: a force simulation settles differently on every mount, which would make a
+graph screenshot in a report unreproducible.
+
+Node fill encodes retrieval, which is the point of the view: hollow-and-dashed
+means no body was ever recovered for that method, so nothing said about it could
+have been grounded. `nodesTouchedBy` attributes a model tool call to graph nodes
+through its validated arguments and its shared evidence refs only — never by fuzzy
+name — so a call that reached nothing says so.
+
+It is the one part of the UI with its own tests (`src/graph/layout.test.ts`, 14
+cases), because the only sample available on a developer machine is the canary,
+whose call graph is two nodes on one path and exercises none of the layering,
+ordering or cycle handling.
 
 ## What this code will not do
 

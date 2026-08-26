@@ -8,13 +8,9 @@ test "${DRISHTI_APPLY:-}" = "YES" || {
 : "${GCP_NETWORK:?required}"
 : "${GCP_ZONE:?required}"
 : "${DRISHTI_FIXTURE_APK:?path to inert M3 fixture APK required}"
-: "${DRISHTI_BANK_ONE_APK:?path to inert bank-one APK required}"
-: "${DRISHTI_BANK_TWO_APK:?path to inert bank-two APK required}"
 test -f "$DRISHTI_FIXTURE_APK"
-test -f "$DRISHTI_BANK_ONE_APK"
-test -f "$DRISHTI_BANK_TWO_APK"
-case "$DRISHTI_FIXTURE_APK" in *m3-inert-fixture*|*m3_fixture*) ;; *)
-  echo "builder accepts only the named inert fixture" >&2; exit 2;; esac
+case "$DRISHTI_FIXTURE_APK" in *canary.apk|*m3-inert-fixture*|*m3_fixture*) ;; *)
+  echo "builder accepts only the authored canary or named inert fixture" >&2; exit 2;; esac
 
 ALLOW_RULE="drishti-builder-https-${USER:-operator}"
 DENY_RULE="drishti-builder-deny-${USER:-operator}"
@@ -39,7 +35,5 @@ export PKR_VAR_project="$GCP_PROJECT"
 export PKR_VAR_zone="$GCP_ZONE"
 export PKR_VAR_network="$GCP_NETWORK"
 export PKR_VAR_fixture_apk="$DRISHTI_FIXTURE_APK"
-export PKR_VAR_bank_one_apk="$DRISHTI_BANK_ONE_APK"
-export PKR_VAR_bank_two_apk="$DRISHTI_BANK_TWO_APK"
 packer init "$(dirname "$0")/packer"
 packer build "$(dirname "$0")/packer/detonator.pkr.hcl"

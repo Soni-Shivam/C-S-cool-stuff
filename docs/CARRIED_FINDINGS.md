@@ -173,3 +173,83 @@ Inherit these; they were thought through and they are defensible.
   **never executes** an APK. Inference: real time, one APK, **never executes** an APK.
   Detonation is a *third* thing, in the sealed lab only, never inside the API. The model does
   not learn per sample at request time. → `CLAUDE.md`, T0.5
+
+---
+
+## Part 5 — Measured on 2026-08-26, during the demo build
+
+Four traps found by running things at scale rather than by reading code. Each cost real
+time and each presents as something other than what it is.
+
+### F1 — `AnalyzeAPK` memory is counted in THREADS, and 56 of them will take the box down
+
+androguard holds the whole DEX plus its call graph in memory for the duration of an
+analysis, and **every worker thread does so concurrently**. So the in-flight memory
+footprint of a sharded extractor is `shards × threads`, not `shards`.
+
+Running 14 shards × 4 threads on an `n2-standard-16` (64 GB) put the VM into sustained
+`Under memory pressure, flushing caches`, starved `sshd`, and made the instance
+unreachable over both direct SSH and IAP for ~20 minutes. Throughput collapsed from
+1,489 rec/hr to roughly 200 before it stopped responding entirely.
+
+**It does not present as a memory problem.** It presents as "the VM is down" — every
+`gcloud compute ssh` hangs and times out, while `instances describe` cheerfully reports
+`RUNNING`. The diagnosis came from `get-serial-port-output`, which needs no SSH.
+
+Fix, in `scripts/launch_extraction.sh`: per-unit `MemoryHigh` / `MemoryMax` plus
+`Restart=on-failure`, so one greedy shard is throttled and then killed **alone** and
+resume brings it straight back, instead of the whole box thrashing. Cap threads, not
+just shards. → T2.2
+
+### F2 — `n_jobs=-1` on XGBoost is ~700× slower than `n_jobs=8` on a busy box
+
+Measured on the same data with the same seed, one fit:
+
+| `n_jobs` | time |
+|---|---|
+| 1 | 0.12 s |
+| 4 | 0.16 s |
+| 8 | 0.15 s |
+| 16 | 81.25 s |
+| −1 | 103.92 s |
+
+OpenMP's spin-wait fights everything else on the machine: 1030% CPU, load average 35,
+fifty threads, no forward progress. **It presents exactly as a hang**, which is why it
+cost an hour before anyone benchmarked it instead of assuming contention.
+
+Cap every model at `min(4, cpu_count)` and pin `OMP_NUM_THREADS` / `OPENBLAS_NUM_THREADS`
+/ `MKL_NUM_THREADS` / `NUMEXPR_NUM_THREADS` **before numpy is imported** — after import
+is too late. Anyone running training on a shared box will hit this. → T2.3
+
+### F3 — Permutation importance that forgets to restore the column still looks plausible
+
+A permutation-importance loop that permutes a column and never restores it measures every
+subsequent column against an already-degraded matrix and understates it. **The failure
+mode is a believable ranking, not an exception** — nothing crashes and the numbers look
+reasonable, which is exactly why it survives review.
+
+Pinned by a test that plants signal in exactly two of eighty columns and asserts those
+two rank first with the remainder at zero. → T2.6
+
+### F4 — A generated YARA rule keyed on Kotlin boilerplate matches most of the Play Store
+
+The first rule the generator produced over a real APK had as its strongest string the
+Kotlin reflection warning — `"Kotlin reflection is not yet supported for synthetic Java
+properties. Please follow/upvote https://youtrack.jetbrains.com/issue/KT-55980"` — which
+ships in every Kotlin application ever built.
+
+Two causes. M2's URL extractor returns the surrounding string literal, so a prose
+sentence that merely *mentions* a link arrives looking like a hardcoded endpoint; URLs
+now have to match a scheme with no whitespace. And the boring-substring filter covered
+Android and Google hosts but no toolchain or third-party library boilerplate.
+
+The general lesson: a generated detection artefact must be evaluated against **what else
+it would match**, not only against whether it matches the sample it was built from.
+→ T6.1
+
+### F5 — `str()` on an asn1crypto `Name` is an object repr, and it reached a fraud desk
+
+`str(cert.subject)` returns `<asn1crypto.x509.Name 139086784924624 b'071\x16\x30...'>`,
+not a distinguished name. That string was written into the investigation report and into
+the reporting dossier — a document whose entire purpose is to be read by a bank's fraud
+team or a cyber cell. Use `.native` and render `CN=…, O=…, C=…`. → T1.2

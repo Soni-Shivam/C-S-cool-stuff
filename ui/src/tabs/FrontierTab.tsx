@@ -15,8 +15,9 @@
 
 import type { Artefact } from '../api/client'
 import { EvidenceChips } from '../components/Evidence'
-import { ArtefactGate, Empty, Panel, Raw, Tag } from '../components/primitives'
+import { ArtefactGate, count, Empty, Panel, Raw, SectionHead, Tag } from '../components/primitives'
 import type { DynamicTrace, EvidenceNode } from '../api/types'
+import type { Verdict } from '../api/verdict.gen'
 
 function passNode(nodes: EvidenceNode[], stage: string): EvidenceNode | undefined {
   return nodes.find((node) => node.type === 'api_trace' && node.content.stage === stage)
@@ -39,9 +40,11 @@ function Delta({ label, before, after }: { label: string; before: unknown; after
 export function FrontierTab({
   nodes,
   dynamic,
+  verdict,
 }: {
   nodes: EvidenceNode[]
   dynamic: Artefact<DynamicTrace> | null
+  verdict: Artefact<Verdict> | null
 }) {
   const morphNodes = nodes.filter((node) => node.type === 'morph_action')
   const c2Nodes = nodes.filter((node) => node.type === 'generative_c2')
@@ -50,9 +53,48 @@ export function FrontierTab({
   const stubbed = morphNodes.some((node) => node.source_tool.endsWith(':stub'))
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <SectionHead
+        eyebrow="Frontier"
+        title="Answering an evasive sample"
+        lede="When pass 1 stalls on an environment check, the frontier synthesises what the sample demanded to see and runs it again. Everything below is reconstructed from the ledger, not from a UI-side cache."
+        right={
+          <>
+            <Tag tone={morphNodes.length > 0 ? 'accent' : 'neutral'}>
+              {count(morphNodes.length, 'morph action')}
+            </Tag>
+            {stubbed && <Tag tone="warn">stub generator</Tag>}
+          </>
+        }
+      />
+
+      <ArtefactGate artefact={verdict}>
+        {(value) => (
+          <Panel
+            title="0 · Adversarial elicitation deployed"
+            subtitle="verdict.adversarial_elicitation_deployed — what the elicitor actually put in front of this sample"
+          >
+            {value.adversarial_elicitation_deployed.length === 0 ? (
+              <Empty>
+                Nothing was elicited for this sample. The frontier runs only when a pass
+                stalled with an observed environment probe to answer, so an empty list here
+                means the branch never fired — not that it fired and found nothing.
+              </Empty>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {value.adversarial_elicitation_deployed.map((item) => (
+                  <Tag key={item} tone="accent">
+                    {item}
+                  </Tag>
+                ))}
+              </div>
+            )}
+          </Panel>
+        )}
+      </ArtefactGate>
+
       {morphNodes.length === 0 && (
-        <div className="rounded border border-line bg-panel px-4 py-3 text-sm text-muted">
+        <div className="rounded-[var(--radius-card)] border border-line bg-ground-1/70 px-5 py-4 text-sm leading-relaxed text-muted">
           The frontier did not run for this job. It runs only when pass 1 did not detonate{' '}
           <em>and</em> pass 1 recorded an evasion observation — morphing without an observation would
           be a guess, not a response.
@@ -61,9 +103,13 @@ export function FrontierTab({
 
       {stubbed && (
         <div className="rounded border border-warn/40 bg-warn/5 px-4 py-3 text-sm text-warn">
-          This plan came from the <span className="font-mono">stub</span> generator. It is derived from
-          real pass-1 observations, but no model synthesised it and no morph was applied to a device —
-          the LLM-generated plan and the applicator land in P5 (T5.1–T5.3).
+          This plan came from the <span className="font-mono">stub</span> generator in{' '}
+          <span className="font-mono">pipeline.py</span>, not from the Adversarial Elicitor. It is
+          derived from real pass-1 observations, but no model synthesised it and no morph was
+          applied to a device. The elicitor and the JIT applicator do exist —{' '}
+          <span className="font-mono">m4_genai/agents/adversarial_elicitor.py</span> and{' '}
+          <span className="font-mono">m3_dynamic/morph.py</span> — this pipeline path simply does
+          not call them.
         </div>
       )}
 
@@ -78,7 +124,7 @@ export function FrontierTab({
             ) : (
               <ul className="space-y-2">
                 {trace.evasion_observations.map((observation, i) => (
-                  <li key={i} className="rounded border border-line-soft bg-panel-2 p-2.5 text-sm">
+                  <li key={i} className="rounded-[var(--radius-tile)] border border-line-soft bg-ground-2/60 p-2.5 text-sm">
                     <div className="flex flex-wrap items-center gap-2">
                       <Tag tone="warn">{observation.result}</Tag>
                       <span className="text-muted">{observation.probe_kind}</span>
@@ -106,7 +152,7 @@ export function FrontierTab({
         ) : (
           <ul className="space-y-2">
             {morphNodes.map((node) => (
-              <li key={node.id} className="rounded border border-line-soft bg-panel-2 p-2.5">
+              <li key={node.id} className="rounded-[var(--radius-tile)] border border-line-soft bg-ground-2/60 p-2.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs text-accent">{String(node.content.plan_id ?? node.id)}</span>
                   <Tag>{node.source_tool}</Tag>
@@ -127,13 +173,15 @@ export function FrontierTab({
       <Panel title="3 · Generative C2" subtitle="Synthesised responses served to a dead or geo-fenced C2">
         {c2Nodes.length === 0 ? (
           <Empty>
-            No Generative C2 exchange. Emulation lands in P5 (T5.4); until then no synthesised response
-            has ever been served to a sample.
+            No Generative C2 exchange for this job. The emulation is built
+            (<span className="font-mono">m3_dynamic/generative_c2.py</span>, behind its inertness
+            gate) but it only serves a response to a sample that is actually running, and nothing
+            detonated here. No synthesised response was served.
           </Empty>
         ) : (
           <ul className="space-y-2">
             {c2Nodes.map((node) => (
-              <li key={node.id} className="rounded border border-line-soft bg-panel-2 p-2.5">
+              <li key={node.id} className="rounded-[var(--radius-tile)] border border-line-soft bg-ground-2/60 p-2.5">
                 <Raw value={node.content} />
               </li>
             ))}

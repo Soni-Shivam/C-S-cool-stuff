@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "sha256": "d0c32e4c17de29509486482e515956033a27982c41c54392f9e0ce826840daec",
+  "package": "com.dream.caution",
+  "simulated": false,
+  "outcome": "failed",
+  "observations": [],
+  "failures": [
+    {
+      "code": "internal_error",
+      "stage": "harness",
+      "message": "NotSupportedError: unable to find a front-door activity",
+      "occurred_at": "2026-08-26T06:37:21.537972+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "aaeb12c70cd398124355b73860cba61d78e04eb123063a476216869094ddce05",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T06:36:39.921261+00:00"
+  },
+  "started_at": "2026-08-26T06:36:50.363612+00:00",
+  "finished_at": "2026-08-26T06:37:24.041718+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": []
+}

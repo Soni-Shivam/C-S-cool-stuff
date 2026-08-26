@@ -13,9 +13,20 @@
  */
 
 import type { Artefact } from '../api/client'
-import { ProvenanceBadge } from '../components/ProvenanceBadge'
-import { ArtefactGate, DegradedNotice, Empty, Panel, Tag } from '../components/primitives'
+import { ProvenanceBadge, VerdictProvenanceBadge } from '../components/ProvenanceBadge'
+import {
+  ArtefactGate,
+  count,
+  plural,
+  DegradedNotice,
+  Empty,
+  Panel,
+  SectionHead,
+  StatTile,
+  Tag,
+} from '../components/primitives'
 import type { ApiEvent, DynamicTrace, TraceOutcome } from '../api/types'
+import type { Verdict } from '../api/verdict.gen'
 
 const OUTCOME_TONE: Record<TraceOutcome, 'good' | 'warn' | 'bad'> = {
   completed: 'good',
@@ -31,12 +42,12 @@ function Timeline({ events }: { events: ApiEvent[] }) {
 
   return (
     <div className="space-y-2">
-      <div className="relative h-10 overflow-hidden rounded border border-line-soft bg-ink">
+      <div className="relative h-10 overflow-hidden rounded-[var(--radius-tile)] border border-line-soft bg-ground">
         {events.map((event, i) => (
           <span
             key={i}
             title={`${event.t_ms} ms · ${event.api}${event.count > 1 ? ` ×${event.count}` : ''}`}
-            className="absolute top-0 h-full w-0.5 bg-accent/70 hover:bg-accent"
+            className="absolute top-0 h-full w-0.5 bg-v400/70 transition-colors hover:bg-magenta"
             style={{ left: `${(event.t_ms / span) * 98}%` }}
           />
         ))}
@@ -44,7 +55,7 @@ function Timeline({ events }: { events: ApiEvent[] }) {
       </div>
       <div className="max-h-72 overflow-auto">
         <table className="w-full text-left text-xs">
-          <thead className="sticky top-0 bg-panel text-muted">
+          <thead className="sticky top-0 bg-ground-1 text-muted">
             <tr>
               <th className="py-1 pr-2 font-medium">t</th>
               <th className="py-1 pr-2 font-medium">api</th>
@@ -68,12 +79,158 @@ function Timeline({ events }: { events: ApiEvent[] }) {
   )
 }
 
-export function SandboxTab({ dynamic }: { dynamic: Artefact<DynamicTrace> | null }) {
+/** The `[synthesised]` marker `build_verdict()` appends to a capture it did not observe. */
+const SYNTHESISED = '  [synthesised]'
+
+/**
+ * `verdict.dynamic_trace` — what the sandbox contributed to the shared verdict.
+ *
+ * Three states, kept distinct on purpose:
+ *
+ *   null            nothing ever ran this sample. There is no trace, and the panel says
+ *                   that rather than drawing three empty lists.
+ *   detonated=false the sample was put in front of a sandbox and did not detonate.
+ *   detonated=true  it ran. The lists may still be empty, and an empty list here is a
+ *                   real observation — "it ran and did nothing we could see" — which is
+ *                   NOT a clean bill of health, because that is also what an
+ *                   environment-aware sample looks like.
+ */
+function VerdictTracePanel({ verdict }: { verdict: Verdict }) {
+  const trace = verdict.dynamic_trace
+
+  if (trace === null) {
+    return (
+      <Panel title="Sandbox contribution to the verdict">
+        <div className="space-y-2">
+          <VerdictProvenanceBadge provenance={verdict.provenance} withBlurb />
+          <p className="rounded border border-bad/30 bg-bad/5 px-3 py-2.5 text-sm text-fg">
+            <strong className="text-bad">Not yet detonated.</strong> No trace source produced
+            anything for this sample, so no runtime behaviour contributed to the verdict —
+            every finding on this job was read out of the file. This is not evidence that the
+            app is inert; it is the absence of evidence either way.
+          </p>
+        </div>
+      </Panel>
+    )
+  }
+
+  const lists: [string, string[], string][] = [
+    ['API calls', trace.api_calls, 'Hooked API names only — arguments are withheld, they can carry a victim OTP'],
+    ['Decrypted strings', trace.decrypted_strings, 'Recovered before encryption, redacted on the way into the verdict'],
+    ['Network captures', trace.network_captures, 'Method and host'],
+  ]
+
   return (
-    <ArtefactGate artefact={dynamic}>
+    <Panel
+      title="Sandbox contribution to the verdict"
+      subtitle="Read from the shared Verdict (contract A15) — the same three lists the phone screen sees"
+      right={<VerdictProvenanceBadge provenance={verdict.provenance} />}
+    >
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Tag tone={trace.detonated ? 'bad' : 'warn'}>
+            {trace.detonated ? 'detonated' : 'did not detonate'}
+          </Tag>
+          {trace.detonated &&
+            trace.api_calls.length === 0 &&
+            trace.decrypted_strings.length === 0 &&
+            trace.network_captures.length === 0 && (
+              <span className="text-xs text-warn">
+                It ran and produced nothing observable — silence is not innocence.
+              </span>
+            )}
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          {lists.map(([label, values, note]) => (
+            <div key={label}>
+              <div className="text-[10px] tracking-widest text-dim uppercase">
+                {label} ({values.length})
+              </div>
+              <p className="mt-0.5 text-[11px] text-dim">{note}</p>
+              {values.length === 0 ? (
+                <p className="mt-1.5 text-sm text-muted italic">none recorded</p>
+              ) : (
+                <ul className="mt-1.5 max-h-56 space-y-1 overflow-auto font-mono text-[11px] break-all text-muted">
+                  {values.map((value, i) => {
+                    const synthesised = value.endsWith(SYNTHESISED)
+                    return (
+                      <li key={i} className="flex flex-wrap items-center gap-1.5">
+                        <span>{synthesised ? value.slice(0, -SYNTHESISED.length) : value}</span>
+                        {synthesised && (
+                          <Tag
+                            tone="warn"
+                            title="Our own Generative C2 served this response. It is not attacker infrastructure and must never be reported as such."
+                          >
+                            synthesised by us
+                          </Tag>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </Panel>
+  )
+}
+
+export function SandboxTab({
+  dynamic,
+  verdict,
+}: {
+  dynamic: Artefact<DynamicTrace> | null
+  verdict: Artefact<Verdict> | null
+}) {
+  return (
+    <div className="space-y-4">
+      <ArtefactGate artefact={verdict}>
+        {(value) => <VerdictTracePanel verdict={value} />}
+      </ArtefactGate>
+
+      <ArtefactGate artefact={dynamic}>
       {(trace) => (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <DegradedNotice result={trace} />
+
+          <SectionHead
+            eyebrow="Dynamic analysis"
+            title="What the sample did"
+            lede="Behaviour observed while the package ran under instrumentation. Provenance is read from the trace itself — a replayed capture and a live detonation are never presented as the same thing."
+            right={<ProvenanceBadge trace={trace} />}
+          />
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatTile
+              tone="gradient"
+              value={trace.api_events.length}
+              label={plural(trace.api_events.length, 'API event group')}
+              hint="Aggregated by (technique, hook) before reaching the ledger or a prompt."
+            />
+            <StatTile
+              tone="wash"
+              value={trace.network_flows.length}
+              label={plural(trace.network_flows.length, 'network flow')}
+              hint={`${count(trace.decrypted_blobs.length, 'decrypted blob')} recovered before encryption`}
+            />
+            <StatTile
+              value={trace.dex_loads.length}
+              label={plural(trace.dex_loads.length, 'dex load')}
+              hint={`${count(trace.file_writes.length, 'file write')} observed`}
+            />
+            <StatTile
+              value={trace.evasion_observations.length}
+              label={plural(trace.evasion_observations.length, 'evasion probe')}
+              hint={
+                trace.evasion_observations.length === 0
+                  ? 'The sample made no environment probe that the harness recognised.'
+                  : 'Environment questions the sample asked before deciding what to do.'
+              }
+            />
+          </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
             <Panel title="Outcome">
@@ -89,7 +246,7 @@ export function SandboxTab({ dynamic }: { dynamic: Artefact<DynamicTrace> | null
                 </p>
               )}
               {trace.outcome === 'inconclusive' && (
-                <p className="mt-2 rounded border border-warn/30 bg-warn/5 px-2.5 py-2 text-xs text-warn">
+                <p className="mt-2 rounded-[var(--radius-tile)] border border-warn/30 bg-warn/[0.07] px-2.5 py-2 text-xs text-warn">
                   Inconclusive is <strong>not</strong> a clean result. Environment-aware stalling is
                   indistinguishable from a benign app without further interrogation.
                 </p>
@@ -112,7 +269,7 @@ export function SandboxTab({ dynamic }: { dynamic: Artefact<DynamicTrace> | null
               ) : (
                 <ul className="max-h-72 space-y-2 overflow-auto">
                   {trace.network_flows.map((flow, i) => (
-                    <li key={i} className="rounded border border-line-soft bg-panel-2 p-2">
+                    <li key={i} className="rounded-[var(--radius-tile)] border border-line-soft bg-ground-2/60 p-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-xs text-fg">{flow.method}</span>
                         <span className="font-mono text-[11px] break-all text-muted">{flow.url}</span>
@@ -125,7 +282,7 @@ export function SandboxTab({ dynamic }: { dynamic: Artefact<DynamicTrace> | null
                         {flow.tls_intercepted && <Tag tone="accent">TLS intercepted</Tag>}
                       </div>
                       {flow.req_body_preview && (
-                        <pre className="mt-1 overflow-auto rounded bg-ink p-1.5 font-mono text-[10px] text-muted">
+                        <pre className="mt-1 overflow-auto rounded bg-ground p-1.5 font-mono text-[10px] text-muted">
                           {flow.req_body_preview}
                         </pre>
                       )}
@@ -141,7 +298,7 @@ export function SandboxTab({ dynamic }: { dynamic: Artefact<DynamicTrace> | null
               ) : (
                 <ul className="max-h-72 space-y-2 overflow-auto">
                   {trace.evasion_observations.map((observation, i) => (
-                    <li key={i} className="rounded border border-line-soft bg-panel-2 p-2 text-xs">
+                    <li key={i} className="rounded-[var(--radius-tile)] border border-line-soft bg-ground-2/60 p-2 text-xs">
                       <div className="flex flex-wrap items-center gap-2">
                         <Tag tone={observation.result === 'MISS' ? 'warn' : 'bad'}>{observation.result}</Tag>
                         <span className="text-muted">{observation.probe_kind}</span>
@@ -171,7 +328,7 @@ export function SandboxTab({ dynamic }: { dynamic: Artefact<DynamicTrace> | null
               ) : (
                 <ul className="max-h-56 space-y-1.5 overflow-auto text-xs">
                   {trace.decrypted_blobs.map((blob, i) => (
-                    <li key={i} className="rounded bg-panel-2 p-1.5">
+                    <li key={i} className="rounded bg-ground-2 p-1.5">
                       <div className="flex flex-wrap gap-1.5">
                         {blob.algorithm && <Tag>{blob.algorithm}</Tag>}
                         <Tag>{blob.length_bytes} B</Tag>
@@ -194,7 +351,7 @@ export function SandboxTab({ dynamic }: { dynamic: Artefact<DynamicTrace> | null
               ) : (
                 <ul className="max-h-56 space-y-1.5 overflow-auto text-xs">
                   {trace.dex_loads.map((load, i) => (
-                    <li key={i} className="rounded bg-panel-2 p-1.5">
+                    <li key={i} className="rounded bg-ground-2 p-1.5">
                       <div className="font-mono break-all text-fg">{load.loader}</div>
                       <div className="font-mono break-all text-muted">{load.path ?? '—'}</div>
                       {!load.in_original_apk && <Tag tone="bad">not in original APK</Tag>}
@@ -232,6 +389,7 @@ export function SandboxTab({ dynamic }: { dynamic: Artefact<DynamicTrace> | null
           )}
         </div>
       )}
-    </ArtefactGate>
+      </ArtefactGate>
+    </div>
   )
 }

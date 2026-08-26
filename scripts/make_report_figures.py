@@ -64,9 +64,7 @@ plt.rcParams.update(
 def _title(ax, title: str, subtitle: str = "") -> None:
     ax.set_title(title, loc="left", fontsize=15, fontweight="bold", pad=18 if subtitle else 10)
     if subtitle:
-        ax.text(
-            0, 1.02, subtitle, transform=ax.transAxes, fontsize=10.5, color=MUTED, va="bottom"
-        )
+        ax.text(0, 1.02, subtitle, transform=ax.transAxes, fontsize=10.5, color=MUTED, va="bottom")
 
 
 def _save(fig, name: str) -> None:
@@ -241,8 +239,16 @@ def figure_evasion() -> dict[str, str]:
     """The frontier trigger. Three trace shapes through the real detector."""
     probe_only = normaliser.aggregate(
         [
-            {"technique": "pkg_query", "mitre": "T1418", "source_hook": "PackageManager.getInstalled"},
-            {"technique": "device_id", "mitre": "T1426", "source_hook": "TelephonyManager.getDeviceId"},
+            {
+                "technique": "pkg_query",
+                "mitre": "T1418",
+                "source_hook": "PackageManager.getInstalled",
+            },
+            {
+                "technique": "device_id",
+                "mitre": "T1426",
+                "source_hook": "TelephonyManager.getDeviceId",
+            },
         ]
     )
     silent = normaliser.aggregate([])
@@ -251,7 +257,11 @@ def figure_evasion() -> dict[str, str]:
     # not an app getting on with its job.
     active = normaliser.aggregate(
         [
-            {"technique": "pkg_query", "mitre": "T1418", "source_hook": "PackageManager.getInstalled"},
+            {
+                "technique": "pkg_query",
+                "mitre": "T1418",
+                "source_hook": "PackageManager.getInstalled",
+            },
             *_crypto_events(14),
             *[
                 {"technique": "sms_read", "mitre": "T1412", "source_hook": "SmsManager.getDefault"}
@@ -338,7 +348,11 @@ def figure_detection_surface() -> dict[str, int]:
     _title(ax1, f"Static sink taxonomy — {len(SINKS)} sinks", f"{len(categories)} categories")
 
     ax2.axis("off")
-    _title(ax2, "MITRE ATT&CK Mobile coverage", "Mapping is deterministic — the LLM is not in this path.")
+    _title(
+        ax2,
+        "MITRE ATT&CK Mobile coverage",
+        "Mapping is deterministic — the LLM is not in this path.",
+    )
     stats = [
         ("techniques in KB", len(techniques)),
         ("reachable from static sinks", len(sink_mitre & set(techniques))),

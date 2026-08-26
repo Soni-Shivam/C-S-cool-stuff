@@ -24,6 +24,7 @@ from tests.apk_fixtures import minimal_apk_bytes
 FROZEN_ROUTES: set[tuple[str, str]] = {
     ("GET", "/api/health"),
     ("POST", "/api/jobs"),
+    ("GET", "/api/jobs"),
     ("GET", "/api/jobs/{job_id}"),
     ("GET", "/api/jobs/{job_id}/events"),
     ("GET", "/api/jobs/{job_id}/ingest"),
@@ -32,6 +33,7 @@ FROZEN_ROUTES: set[tuple[str, str]] = {
     ("GET", "/api/jobs/{job_id}/genai"),
     ("GET", "/api/jobs/{job_id}/dynamic"),
     ("GET", "/api/jobs/{job_id}/score"),
+    ("GET", "/api/jobs/{job_id}/verdict"),
     ("GET", "/api/jobs/{job_id}/ledger"),
     ("GET", "/api/jobs/{job_id}/ledger/verify"),
     ("GET", "/api/jobs/{job_id}/ledger/export"),
@@ -39,6 +41,7 @@ FROZEN_ROUTES: set[tuple[str, str]] = {
     ("GET", "/api/jobs/{job_id}/report.html"),
     ("GET", "/api/jobs/{job_id}/artifacts/yara"),
     ("GET", "/api/jobs/{job_id}/artifacts/stix"),
+    ("GET", "/api/jobs/{job_id}/artifacts/dossier"),
     ("POST", "/api/jobs/{job_id}/actions/{action}/confirm"),
     ("GET", "/api/logs/stream"),
 }
@@ -132,25 +135,61 @@ def test_artefacts_pending_before_the_stage_runs(client, settings) -> None:
     assert detail["stage"] == JobStage.QUEUED.value
 
 
-@pytest.mark.parametrize(
-    ("path", "task"),
-    [("report.html", "T6.3"), ("artifacts/yara", "T6.1"), ("artifacts/stix", "T6.2")],
-)
-def test_unbuilt_features_are_501_not_404(client, finished_job, path, task) -> None:
-    """A frozen-but-unbuilt route must not look like a pending one.
+@pytest.mark.parametrize("path", ["report.html", "artifacts/yara", "artifacts/stix"])
+def test_export_routes_are_built(client, finished_job, path) -> None:
+    """The three export routes are implemented (T6.3, T6.1, T6.2).
 
-    Polling a 404 is reasonable; polling something that will never exist is not, and
-    the UI needs to tell those apart.
+    This test previously asserted 501. It was inverted, not deleted, when the
+    features landed — a route that silently stopped 501-ing without anyone noticing
+    would mean the UI still renders "not available in this build" over a working
+    export.
     """
     response = client.get(f"/api/jobs/{finished_job}/{path}")
-    assert response.status_code == 501
-    detail = response.json()["detail"]
-    assert detail["reason"] == "not_implemented"
-    assert detail["task"] == task
+    assert response.status_code == 200, response.text
+
+
+def test_report_is_self_contained_and_states_its_limitations(client, finished_job) -> None:
+    """The report must carry its own caveats and reference no external assets.
+
+    Self-containment is load-bearing: this document gets emailed to a fraud desk and
+    opened on machines with no network.
+    """
+    response = client.get(f"/api/jobs/{finished_job}/report.html")
+    body = response.text
+    assert response.headers["content-type"].startswith("text/html")
+    assert "<h2>Limitations</h2>" in body
+    # No external fetches: no remote stylesheets, scripts, or images.
+    assert 'src="http' not in body and 'href="http' not in body
+    assert "<script" not in body.lower()
+
+
+def test_yara_rule_does_not_key_on_the_hash(client, finished_job) -> None:
+    """A hash-keyed rule catches exactly one build and is obsolete on the next repack.
+
+    The hash belongs in metadata so an analyst knows what was analysed; putting it in
+    the condition would make the rule useless for the polymorphic case it exists for.
+    """
+    body = client.get(f"/api/jobs/{finished_job}/artifacts/yara").text
+    assert "rule DRISHTI_" in body
+    condition = body.split("condition:", 1)[1]
+    assert "hash." not in condition, "the condition must not depend on a file hash"
+
+
+def test_stix_export_is_deterministic(client, finished_job) -> None:
+    """Two exports of the same job must be byte-identical.
+
+    Ids are UUIDv5 over stable keys rather than random or clock-derived, so a
+    recipient diffing two bundles sees only what genuinely changed.
+    """
+    first = client.get(f"/api/jobs/{finished_job}/artifacts/stix").json()
+    second = client.get(f"/api/jobs/{finished_job}/artifacts/stix").json()
+    assert first == second
+    assert first["type"] == "bundle"
+    assert any(o["type"] == "indicator" for o in first["objects"])
 
 
 # ── artefacts after a full run ───────────────────────────────────────────────
-@pytest.mark.parametrize("kind", ["ingest", "static", "ml", "genai", "dynamic", "score"])
+@pytest.mark.parametrize("kind", ["ingest", "static", "ml", "genai", "dynamic", "score", "verdict"])
 def test_artefacts_are_served_after_the_run(client, finished_job, kind) -> None:
     response = client.get(f"/api/jobs/{finished_job}/{kind}")
     assert response.status_code == 200, response.text
@@ -181,6 +220,77 @@ def test_score_reports_gamma_so_the_ui_can_show_evidence_quality(client, finishe
     body = client.get(f"/api/jobs/{finished_job}/score").json()
     assert 0.0 <= body["gamma"] <= 1.0
     assert body["gamma"] < 1.0, "nothing detonated, so confidence must not read as complete"
+
+
+# ── the shared Verdict projection (A15/A16) ──────────────────────────────────
+def test_verdict_is_the_projection_and_agrees_with_the_score(client, finished_job) -> None:
+    """The route must not decide anything the score already decided.
+
+    Every surface reads this one shape, so a `Verdict` that disagreed with the artefact
+    it was projected from would be a second answer to "how bad is this sample".
+    """
+    verdict = client.get(f"/api/jobs/{finished_job}/verdict").json()
+    score = client.get(f"/api/jobs/{finished_job}/score").json()
+    assert verdict["threat_score"] == score["S"]
+    assert verdict["severity_band"] == score["band"]
+    assert verdict["confidence"] == score["C"]
+    assert verdict["limitations"] == score["limitations"]
+
+
+def test_an_unobserved_sample_is_static_only_not_a_replay(client, finished_job) -> None:
+    """No trace source could produce anything, so nothing was replayed.
+
+    The pipeline records a declared stub trace (`source=unavailable`) so degradation is
+    visible in data. Projecting that stub as a trace would badge the run REPLAY and show
+    an empty `dynamic_trace`, which the contract defines as "it ran and did nothing" —
+    the one reading that is definitely false here.
+    """
+    verdict = client.get(f"/api/jobs/{finished_job}/verdict").json()
+    assert verdict["provenance"] == "STATIC_ONLY"
+    assert verdict["dynamic_trace"] is None
+    assert any("dynamic analysis unavailable" in item for item in verdict["limitations"])
+
+    # …and the stub is still fully visible on its own route, flags intact.
+    trace = client.get(f"/api/jobs/{finished_job}/dynamic").json()
+    assert trace["source"] == "unavailable" and trace["partial"] is True
+
+
+def test_verdict_is_pending_before_a_score_exists(client) -> None:
+    """404 + stage, never a zero-filled verdict. A band cannot be invented."""
+    from drishti.contracts.job import Job
+    from drishti.util import new_id, now
+
+    runner = deps.get_runner()
+    queued = Job(
+        id=new_id("job"), sha256="b" * 64, filename="s.apk", stage=JobStage.QUEUED, created_at=now()
+    )
+    runner._store(queued)
+
+    response = client.get(f"/api/jobs/{queued.id}/verdict")
+    assert response.status_code == 404
+    assert response.json()["detail"]["reason"] == "not_produced_yet"
+
+
+def test_the_dashboard_verdict_type_is_generated_not_hand_written() -> None:
+    """A16: `ui/src/api/verdict.gen.ts` must match `drishti/contracts/verdict.py`.
+
+    Contract addendum A15 forbids a second hand-maintained `Verdict` shape. That rule is
+    only real if something checks it, so this is the check: the TypeScript the analyst
+    portal compiles against is regenerated from the pydantic model and compared byte for
+    byte. Editing the model without regenerating fails here, not in the browser.
+    """
+    import importlib.util
+    from pathlib import Path
+
+    generator = Path(__file__).resolve().parents[2] / "ui" / "scripts" / "gen_verdict_types.py"
+    spec = importlib.util.spec_from_file_location("gen_verdict_types", generator)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.OUTPUT.read_text(encoding="utf-8") == module.render(), (
+        "ui/src/api/verdict.gen.ts is stale — run: python ui/scripts/gen_verdict_types.py"
+    )
 
 
 # ── ledger ───────────────────────────────────────────────────────────────────

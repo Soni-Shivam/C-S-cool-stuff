@@ -18,6 +18,7 @@ Two things are being asserted, and the second is the one that earns its keep:
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -67,7 +68,88 @@ def _observation_event() -> C.ObservationEvent:
 
 
 #: One minimal-but-valid instance per concrete contract model.
+def _lookalike_signal() -> C.LookalikeSignal:
+    return C.LookalikeSignal(
+        id="financial_app_roster",
+        present=True,
+        weight=0.30,
+        detail="references 3 known banking/UPI package(s)",
+        evidence_refs=("ev_000000000001",),
+    )
+
+
+def _lookalike() -> C.LookalikeAssessment:
+    return C.LookalikeAssessment(
+        verdict=C.BenignLookalikeVerdict.TROJAN_SHAPE,
+        trojan_score=0.72,
+        signals=(_lookalike_signal(),),
+        shared_permissions=("android.permission.READ_SMS",),
+        targeted_financial_packages=("com.snapwork.hdfc",),
+        publisher_trusted=False,
+        rationale="permission set alone is not the finding",
+    )
+
+
+def _victim_profile_view() -> C.VictimProfileView:
+    return C.VictimProfileView(language="Hindi", tactic="KYC urgency", segment="retail banking")
+
+
+def _dynamic_trace_view() -> C.DynamicTraceView:
+    return C.DynamicTraceView(
+        detonated=True,
+        api_calls=("SmsManager.sendTextMessage",),
+        decrypted_strings=("[REDACTED]",),
+        network_captures=("POST c2.example.test",),
+    )
+
+
+def _verdict() -> C.Verdict:
+    return C.Verdict(
+        sha256=SHA,
+        package_name="in.rto.challan",
+        threat_score=92,
+        severity_band=C.SeverityBand.CRITICAL,
+        confidence=0.83,
+        provenance="LIVE",
+        impersonated_target="SBI",
+        victim_profile=_victim_profile_view(),
+        behaviors_detected=("reads_sms",),
+        attack_techniques=("T1582",),
+        evidence_refs=("ev_000000000001",),
+        consumer_summary="This app is pretending to be SBI. Do not install it.",
+        recommended_action="BLOCK",
+        dynamic_trace=_dynamic_trace_view(),
+        adversarial_elicitation_deployed=("Generative_C2_Emulation",),
+        limitations=("ML prediction unavailable",),
+    )
+
+
 FACTORIES: dict[str, Any] = {
+    # ── containment ──
+    "ContainmentChecks": lambda: C.ContainmentChecks(
+        probe_trustworthy=True,
+        emulator_internet_blocked=True,
+        emulator_metadata_blocked=True,
+        emulator_vpc_blocked=True,
+        nested_kvm_functional=True,
+        host_firewall_default_drop=True,
+    ),
+    "ContainmentManifest": lambda: C.ContainmentManifest(
+        instance_id="drishti-detonator-1",
+        runtime_image="drishti-emulator-v3",
+        issued_at=datetime.now(UTC).isoformat(),
+        expires_at=(datetime.now(UTC) + timedelta(minutes=10)).isoformat(),
+        checks=C.ContainmentChecks(
+            probe_trustworthy=True,
+            emulator_internet_blocked=True,
+            emulator_metadata_blocked=True,
+            emulator_vpc_blocked=True,
+            nested_kvm_functional=True,
+            host_firewall_default_drop=True,
+        ),
+        public_key="b" * 64,
+        signature="c" * 128,
+    ),
     # ── corpus ──
     "CorpusSample": lambda: C.CorpusSample(
         sha256="a" * 64,
@@ -110,6 +192,11 @@ FACTORIES: dict[str, Any] = {
         mitre="T1582",
     ),
     "CertificateInfo": _certificate,
+    "Verdict": _verdict,
+    "VictimProfileView": _victim_profile_view,
+    "DynamicTraceView": _dynamic_trace_view,
+    "LookalikeSignal": _lookalike_signal,
+    "LookalikeAssessment": _lookalike,
     "CallPath": lambda: C.CallPath(
         sink_id="sms_read",
         sink_signature="Landroid/telephony/SmsMessage;->getMessageBody()Ljava/lang/String;",
@@ -117,6 +204,14 @@ FACTORIES: dict[str, Any] = {
         entrypoint="Lc/a/d;->onReceive(...)V",
         entrypoint_kind="broadcast_receiver",
         reachable_from_lifecycle=True,
+    ),
+    "DecompiledMethod": lambda: C.DecompiledMethod(
+        signature="Lc/a/d;->onCreate(Landroid/os/Bundle;)V",
+        body="public void onCreate(Bundle state) { checkTargets(); }",
+        line_start=1,
+        line_end=1,
+        call_path_indexes=(0,),
+        evidence_ref="ev_01932ab8f4c1",
     ),
     "Hypothesis": lambda: C.Hypothesis(
         id="hyp_0193",
@@ -153,6 +248,16 @@ FACTORIES: dict[str, Any] = {
     ),
     "NetworkFlow": lambda: C.NetworkFlow(
         t_ms=5000, method="POST", url="http://c2.invalid/a", host="c2.invalid", status=200
+    ),
+    "SyntheticC2Response": lambda: C.SyntheticC2Response(
+        t_ms=5000,
+        host="c2.invalid",
+        url="http://c2.invalid/gate",
+        response_kind="command_poll",
+        served_body='{"status": "ok", "cmd": "noop"}',
+        provably_inert=True,
+        neutralisations=("command field 'cmd': 'download' -> 'noop'",),
+        evidence_refs=("gc2_0001",),
     ),
     "DecryptedBlob": lambda: C.DecryptedBlob(
         t_ms=1200,
@@ -207,6 +312,38 @@ FACTORIES: dict[str, Any] = {
         evidence_refs=("ev_01932ab8f4c1",),
         agent="code_interpreter",
         verifier_status=C.VerifierStatus.PASS,
+    ),
+    "CodeInterpretation": lambda: C.CodeInterpretation(
+        method_signature="Lc/a/d;->onCreate(Landroid/os/Bundle;)V",
+        summary="Checks the installed application set from a lifecycle entrypoint.",
+        claims=(
+            C.GroundedClaim(
+                text="Checks installed applications.",
+                evidence_refs=("ev_01932ab8f4c1",),
+                agent="code_interpreter",
+                verifier_status=C.VerifierStatus.PASS,
+            ),
+        ),
+        renamed_symbols={"Lc/a/d;->a()Z": "hasTargetApplication"},
+        confidence="high",
+        cited_lines=(1,),
+    ),
+    "ToolCallRecord": lambda: C.ToolCallRecord(
+        id="tool_01932ab90e2f",
+        name="read_method",
+        arguments={"signature": "Lc/a/d;->onCreate(Landroid/os/Bundle;)V"},
+        status="ok",
+        result_summary="1 source line returned",
+        evidence_refs=("ev_01932ab8f4c1",),
+        duration_ms=2,
+    ),
+    "VerifiedString": lambda: C.VerifiedString(
+        ciphertext="aGVsbG8=",
+        transform="base64",
+        plaintext="hello",
+        verified=True,
+        reason="decoded by the fixed base64 evaluator",
+        evidence_refs=("ev_01932ab8f4c1",),
     ),
     "TechniqueMapping": lambda: C.TechniqueMapping(
         technique_id="T1582", name="SMS Control", tactic="Impact", layer="both"

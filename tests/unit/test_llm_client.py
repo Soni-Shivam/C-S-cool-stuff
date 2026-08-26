@@ -9,7 +9,9 @@ a third party being up, and it must not spend anyone's quota.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from types import MethodType
 
 import httpx
 import pytest
@@ -169,3 +171,47 @@ def test_complete_as_validates_into_the_contract(settings: Settings) -> None:
     result = client.complete_as(system="s", user="u", schema=MockShape)
     assert result is not None
     assert isinstance(result.behaviours, dict)
+
+
+def test_openrouter_tool_loop_executes_and_returns_validated_output(
+    settings: Settings,
+) -> None:
+    configured = settings.model_copy(
+        update={
+            "llm_provider": "openrouter",
+            "openrouter_api_key": "test-key",
+            "llm_model": "test/model",
+        }
+    )
+    client = LLMClient(configured, use_cache=False)
+    replies = iter(
+        [
+            {
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "call_1",
+                        "function": {"name": "read_method", "arguments": '{"signature":"Lx;->a"}'},
+                    }
+                ],
+            },
+            {"content": '{"summary":"grounded","behaviours":{}}'},
+        ]
+    )
+
+    def exchange(self, **kwargs):
+        return next(replies)
+
+    client._openrouter_exchange = MethodType(exchange, client)  # type: ignore[method-assign]
+    calls: list[tuple[str, str | dict]] = []
+
+    result = client.complete_with_tools_as(
+        system="system",
+        user="user",
+        tools=[{"type": "function", "function": {"name": "read_method", "parameters": {}}}],
+        execute=lambda name, args: calls.append((name, args)) or {"body": "return true;"},
+        schema=Verdict,
+    )
+    assert result is not None and result.summary == "grounded"
+    assert calls == [("read_method", '{"signature":"Lx;->a"}')]
+    assert client.calls_made == 2

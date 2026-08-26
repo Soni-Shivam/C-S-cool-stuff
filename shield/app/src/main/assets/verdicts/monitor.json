@@ -1,0 +1,24 @@
+{
+  "sha256": "b34ae3201a70027576001f6a1e1521bec9aed7bfa5264e61a403d8f5955e5b54",
+  "package_name": "in.co.sanchay.expenses",
+  "threat_score": 12,
+  "severity_band": "LOW",
+  "confidence": 0.66,
+  "provenance": "STATIC_ONLY",
+  "impersonated_target": null,
+  "victim_profile": {
+    "language": "en",
+    "tactic": null,
+    "segment": null
+  },
+  "behaviors_detected": [],
+  "attack_techniques": [],
+  "evidence_refs": ["ev_000000000021"],
+  "consumer_summary": "We found nothing harmful in this app. It holds some of the same permissions a fake banking app would, but nothing it does with them looks like an attempt to take your money. We could not check everything, so keep an eye on it.",
+  "recommended_action": "MONITOR",
+  "dynamic_trace": null,
+  "adversarial_elicitation_deployed": [],
+  "limitations": [
+    "No detonation was performed; behaviour is inferred from static analysis only."
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "sha256": "d90eb3327e6b2107881cafa4f7048d9e8b7b9910925e504465fa95155aa38f0a",
+  "package": "com.sina.licaishi",
+  "simulated": false,
+  "outcome": "failed",
+  "observations": [],
+  "failures": [
+    {
+      "code": "install_unsupported",
+      "stage": "install",
+      "message": "Performing Streamed Install\n\nadb: failed to install /opt/drishti/scratch/d90eb3327e6b2107881cafa4f7048d9e8b7b9910925e504465fa95155aa38f0a.apk: Failure [INSTALL_FAILED_NO_MATCHING_ABIS: INSTALL_FAILED_NO_MATCHING_ABIS: Failed to extract native libraries, res=-113]\n\n",
+      "occurred_at": "2026-08-26T07:12:53.305429+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "1a9b5df7bdafc7f4424ef0a959286c1d40b29954b385fcc39d9a6218795f2526",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T07:12:33.695828+00:00"
+  },
+  "started_at": "2026-08-26T07:12:44.098625+00:00",
+  "finished_at": "2026-08-26T07:12:55.700644+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": []
+}

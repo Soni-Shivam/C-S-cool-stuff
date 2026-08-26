@@ -280,6 +280,7 @@ Freeze these routes now; the UI is built against them and must not chase changes
 
 ```
 POST   /api/jobs                  multipart apk        → {job_id}
+GET    /api/jobs                                       → [Job] (newest first)
 GET    /api/jobs/{id}                                  → Job
 GET    /api/jobs/{id}/events      SSE                  → StageEvent stream
 GET    /api/jobs/{id}/static                           → StaticReport

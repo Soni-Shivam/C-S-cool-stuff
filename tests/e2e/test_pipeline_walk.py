@@ -37,8 +37,15 @@ from drishti.util import new_id, now
 #: mechanism behind "every score point traces back to an artefact" — without those nodes
 #: the claim is marketing rather than a property.
 #:
+#: It rose again to 18 when the frontier stopped being a stub (T5.5). The loop now
+#: writes one EVASION_CHECK node per observation it is responding to, BEFORE asking
+#: the Adversarial Elicitor for a plan. That is not bookkeeping: `plan_morphs` drops
+#: any morph whose `derived_from` does not resolve to a real node, so without these
+#: nodes every proposed morph was silently discarded as ungrounded and the loop could
+#: not close. The replay fixture carries two observations, hence +2.
+#:
 #: A genuinely parseable APK produces more; see `test_a_real_apk_produces_more_evidence`.
-EXPECTED_NODES_PER_RUN = 16
+EXPECTED_NODES_PER_RUN = 18
 
 
 @pytest.fixture

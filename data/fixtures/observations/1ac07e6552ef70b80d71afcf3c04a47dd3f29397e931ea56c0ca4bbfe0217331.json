@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "sha256": "1ac07e6552ef70b80d71afcf3c04a47dd3f29397e931ea56c0ca4bbfe0217331",
+  "package": "nl.albron.weeteneet",
+  "simulated": false,
+  "outcome": "failed",
+  "observations": [],
+  "failures": [
+    {
+      "code": "internal_error",
+      "stage": "harness",
+      "message": "NotSupportedError: unable to write to process memory: No such process",
+      "occurred_at": "2026-08-26T03:07:50.314783+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "629cf796b47e92aaf40732d2eb54d94ad389be7700f92143149c840448421fcf",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T03:02:35.574089+00:00"
+  },
+  "started_at": "2026-08-26T03:06:57.091804+00:00",
+  "finished_at": "2026-08-26T03:07:52.854367+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339"
+  ],
+  "mitre_observed": []
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "sha256": "73aef1d852c9c4001b1a7db673e03417d30f489e56db5813a8757866c2641028",
+  "package": null,
+  "simulated": false,
+  "outcome": "failed",
+  "observations": [],
+  "failures": [
+    {
+      "code": "internal_error",
+      "stage": "identify",
+      "message": "aapt could not identify package",
+      "occurred_at": "2026-08-26T05:53:29.417343+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": false
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "9af395dfa7b32562ed16bba3c116376937772c71815a6067b174b2cfb99ef6cb",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T05:53:16.945884+00:00"
+  },
+  "started_at": "2026-08-26T05:53:27.317339+00:00",
+  "finished_at": "2026-08-26T05:53:31.489083+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": []
+}

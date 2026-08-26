@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ============================================================================
+  DRISHTI DECOY — "RTO Challan". THIS APPLICATION IS INERT.
+  ============================================================================
+
+  Read canary/decoy-challan/README.md before changing anything here.
+
+  This manifest deliberately declares the permission set and component shape of the
+  Indian traffic-challan fraud family, because that DECLARED SURFACE is what the M2
+  static engine is supposed to detect. Every declaration below is matched by an
+  implementation whose entire body is a Log.i call or an empty method:
+
+      SmsDeliveryReceiver     no-op. Never touches the PDU, address, or body.
+      ChallanAccessibility    no-op. onAccessibilityEvent is empty.
+      OverlayService          no-op. Never calls WindowManager.addView.
+      BootReceiver            no-op.
+
+  There is no payload. There is no network code of any kind — the "C2" is a string
+  constant pointing at RFC 5737 TEST-NET-1, which is unroutable by definition and is
+  never passed to a socket.
+
+  If you are about to add a method body here that would do something if it ran: stop.
+  ============================================================================
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Trips OTP_THEFT_SURFACE (T1582) in m2_static/rules/permission_combos.yaml.
+         No code in this APK reads or forwards a message. -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+
+    <!-- Trips OVERLAY_CREDENTIAL_THEFT (T1056) together with the service below.
+         No code in this APK ever adds a view to the WindowManager. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Trips DROPPER_CAPABILITY (T1407). No code in this APK starts an install. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- Trips PERSISTENT_BOOT (T1547). The boot receiver logs one line. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!-- Part of the family's usual surface; no code here reads contacts. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <!-- android:icon below is a RASTER icon, not the vector drawable, and that is the
+         whole point. m4_genai/vision.py reads the launcher icon out of the APK zip to
+         hash it and to show it to the vision model; a vector compiles to XML, so a
+         decoy with only res/drawable/ic_challan.xml gives the impersonation layer
+         nothing to look at. See tools/make_launcher_icon.py — the artwork is a
+         lookalike (navy + red + rupee), never a real institution's logo. -->
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@android:style/Theme.Material.Light">
+
+        <activity
+            android:name=".ChallanActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Exported with no permission, exactly as the family ships it. The receiver
+             body is a single Log.i line — see SmsDeliveryReceiver.kt. -->
+        <receiver
+            android:name=".SmsDeliveryReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="2147483647">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Trips ACCESSIBILITY_ABUSE (critical, T1417). The service class overrides
+             onAccessibilityEvent with an empty body. -->
+        <service
+            android:name=".ChallanAccessibilityService"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_config" />
+        </service>
+
+        <!-- Completes OVERLAY_CREDENTIAL_THEFT: SYSTEM_ALERT_WINDOW + INTERNET + a
+             service component. The service stops itself immediately. -->
+        <service
+            android:name=".OverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="DRISHTI inert decoy — no foreground work is performed" />
+        </service>
+    </application>
+</manifest>

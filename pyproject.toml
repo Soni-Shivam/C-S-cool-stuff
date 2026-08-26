@@ -16,7 +16,11 @@ dependencies = [
     "networkx>=3.4,<4",
     "xgboost>=2.1,<3",
     "scikit-learn>=1.5,<2",
-    "shap>=0.46,<0.47",
+    # >=0.48 is required, not preferred: shap 0.46 raises at IMPORT time under
+    # numpy>=2.3 (shap/plots/colors/_colorconv.py calls np.dtype(np.floating),
+    # which numpy 2 rejects), so the whole explainability path is dead on this
+    # environment with the old pin. See DEVIATION in STATUS.md.
+    "shap>=0.48,<1",
     "matplotlib>=3.8",           # evaluation figures for the report; Agg backend, no display
     "cryptography>=43,<44",        # Ed25519 for the evidence ledger
     "structlog>=24.4,<25",
@@ -118,5 +122,18 @@ disallow_untyped_defs = true
 exclude = ["v1-reference/", "\\.venv/"]
 
 [[tool.mypy.overrides]]
-module = ["androguard.*", "shap.*", "xgboost.*", "frida.*", "mitmproxy.*", "yara.*"]
+module = [
+    "androguard.*",
+    "shap.*",
+    "xgboost.*",
+    "frida.*",
+    "mitmproxy.*",
+    "yara.*",
+    # scikit-learn and matplotlib ship no py.typed marker. m5_ml imports both
+    # directly (model zoo, calibration, evaluation figures), so without this every
+    # such import is an error and `make types` reports 20 findings that say only
+    # "this library has no stubs".
+    "sklearn.*",
+    "matplotlib.*",
+]
 ignore_missing_imports = true

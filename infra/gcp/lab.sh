@@ -116,7 +116,7 @@ cmd_verify_containment() {
   # See docs/CARRIED_FINDINGS.md defect 6 — `nc -z` does not exist on Android and made
   # every probe pass vacuously.
   gcloud compute ssh "$INSTANCE" --zone="$ZONE" --project="$PROJECT" --tunnel-through-iap \
-    --command='sudo /opt/drishti/venv/bin/python /opt/drishti/harness/verify_containment.py' \
+    --command='sudo env DRISHTI_SEALED_RUNTIME=1 DRISHTI_INSTANCE_ID="$(cat /opt/drishti/INSTANCE_ID)" PYTHONPATH=/opt/drishti/harness /opt/drishti/venv/bin/python /opt/drishti/harness/verify_containment.py' \
     || die "containment verification FAILED — do not detonate"
   echo "${GREEN}containment verified${RESET}"
 }

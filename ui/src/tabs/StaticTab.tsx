@@ -9,11 +9,26 @@
  *  * A call path with `reachable_from_lifecycle === false` is dimmed and marked
  *    "not reachable". Dead library code reaches dangerous sinks constantly, and a
  *    tree that treats it identically to a live path overstates the finding.
+ *  * The lookalike assessment (A13) is rendered ABOVE the permission table rather
+ *    than after it. Half these rules fire on apps nobody would call malicious, so a
+ *    reader who meets the table first has already drawn a conclusion by the time the
+ *    caveat arrives.
  */
 
 import { useState } from 'react'
 import type { Artefact } from '../api/client'
-import { ArtefactGate, DegradedNotice, Empty, Panel, Tag } from '../components/primitives'
+import { LookalikePanel } from '../components/Lookalike'
+import {
+  ArtefactGate,
+  count,
+  plural,
+  DegradedNotice,
+  Empty,
+  Panel,
+  SectionHead,
+  StatTile,
+  Tag,
+} from '../components/primitives'
 import type { CallPath, Severity, StaticReport } from '../api/types'
 
 const SEVERITY_TONE: Record<Severity, 'bad' | 'warn' | 'neutral'> = {
@@ -67,8 +82,58 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
       {(value) => {
         const inCombo = new Set(value.permission_combos.flatMap((combo) => combo.permissions))
         return (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <DegradedNotice result={value} />
+
+            <SectionHead
+              eyebrow="Static analysis"
+              title="What the package declares"
+              lede="Manifest, certificate, packing and reachability — everything recoverable without running a line of the sample's code."
+              right={
+                <>
+                  <Tag tone="accent">{count(value.permissions.length, 'permission')}</Tag>
+                  <Tag tone={value.permission_combos.length > 0 ? 'bad' : 'good'}>
+                    {count(value.permission_combos.length, 'risky combination')}
+                  </Tag>
+                  <Tag>{count(value.components.length, 'component')}</Tag>
+                </>
+              }
+            />
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <StatTile
+                tone="gradient"
+                value={value.call_paths.length}
+                label={plural(value.call_paths.length, 'sink path')}
+                hint={`${count(value.sink_hits.length, 'distinct sink')} reached`}
+              />
+              <StatTile
+                tone="wash"
+                value={value.exported_unprotected.length}
+                label="exported, unguarded"
+                hint="Components any other app on the device can start."
+              />
+              <StatTile
+                value={value.entropy_mean.toFixed(2)}
+                label="mean entropy"
+                hint={`${value.dex_count} dex · ${value.reflection_count} reflection sites`}
+              />
+              <StatTile
+                value={value.packer_hints.length + value.dcl_indicators.length}
+                label="packing / DCL hints"
+                hint={
+                  value.packer_hints.length + value.dcl_indicators.length === 0
+                    ? 'No packer or dynamic-code-loading indicator matched.'
+                    : [...value.packer_hints, ...value.dcl_indicators].join(', ')
+                }
+              />
+            </div>
+
+            {/* Above the permission table, because it is the frame the table should
+                be read in: several of these rules fire on apps nobody would call
+                malicious, and a reader who meets the table first has already drawn
+                the wrong conclusion by the time they get here. */}
+            {value.lookalike && <LookalikePanel lookalike={value.lookalike} />}
 
             <div className="grid gap-4 xl:grid-cols-2">
               <Panel
@@ -80,7 +145,7 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                 ) : (
                   <ul className="space-y-2.5">
                     {value.permission_combos.map((combo) => (
-                      <li key={combo.rule_id} className="rounded border border-line-soft bg-panel-2 p-2.5">
+                      <li key={combo.rule_id} className="rounded-[var(--radius-tile)] border border-line-soft bg-ground-2/60 p-2.5">
                         <div className="flex items-center gap-2">
                           <Tag tone={SEVERITY_TONE[combo.severity]}>{combo.severity}</Tag>
                           <span className="font-mono text-[11px] text-muted">{combo.rule_id}</span>
@@ -91,7 +156,7 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                           {combo.permissions.map((permission) => (
                             <span
                               key={permission}
-                              className="rounded bg-ink px-1.5 py-0.5 font-mono text-[10px] text-muted"
+                              className="rounded-md bg-ground px-2 py-0.5 font-mono text-[10px] text-muted"
                             >
                               {permission}
                             </span>
@@ -161,7 +226,7 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                 </div>
                 {value.deep_link_schemes.length > 0 && (
                   <div className="mt-3">
-                    <h4 className="mb-1 text-[11px] tracking-widest text-muted">DEEP LINK SCHEMES</h4>
+                    <h4 className="eyebrow mb-2">Deep link schemes</h4>
                     <div className="flex flex-wrap gap-1">
                       {value.deep_link_schemes.map((scheme) => (
                         <span key={scheme} className="font-mono text-[11px] text-fg">
@@ -176,7 +241,7 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
               <Panel title="Over-privilege & drift">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <h4 className="mb-1 text-[11px] tracking-widest text-muted">DECLARED, NOT USED</h4>
+                    <h4 className="eyebrow mb-2">Declared, not used</h4>
                     {value.declared_not_used.length === 0 ? (
                       <Empty>none</Empty>
                     ) : (
@@ -188,7 +253,7 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                     )}
                   </div>
                   <div>
-                    <h4 className="mb-1 text-[11px] tracking-widest text-muted">USED, NOT DECLARED</h4>
+                    <h4 className="eyebrow mb-2">Used, not declared</h4>
                     {value.used_not_declared.length === 0 ? (
                       <Empty>none</Empty>
                     ) : (
@@ -222,7 +287,7 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
               <Panel title={`Components (${value.components.length})`}>
                 <div className="max-h-72 overflow-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="sticky top-0 bg-panel text-muted">
+                    <thead className="sticky top-0 bg-ground-1 text-muted">
                       <tr>
                         <th className="py-1 pr-2 font-medium">name</th>
                         <th className="py-1 pr-2 font-medium">kind</th>
@@ -260,7 +325,7 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                       className={`rounded px-1.5 py-0.5 font-mono text-[11px] ${
                         inCombo.has(permission)
                           ? 'bg-bad/15 text-bad ring-1 ring-bad/40'
-                          : 'bg-panel-2 text-muted'
+                          : 'bg-ground-2 text-muted'
                       }`}
                       title={inCombo.has(permission) ? 'part of a matched high-risk combination' : undefined}
                     >
@@ -293,7 +358,7 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                 ) : (
                   <ul className="max-h-56 space-y-2 overflow-auto">
                     {value.hypotheses.map((hypothesis) => (
-                      <li key={hypothesis.id} className="rounded border border-line-soft bg-panel-2 p-2">
+                      <li key={hypothesis.id} className="rounded-[var(--radius-tile)] border border-line-soft bg-ground-2/60 p-2">
                         <div className="flex items-center gap-2">
                           <Tag tone="accent">{hypothesis.kind}</Tag>
                           <span className="text-[11px] text-muted">priority {hypothesis.priority}</span>

@@ -1,0 +1,37 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "52d17ecc806622bfaa24c5ebb5ba41a02b05c3ee2976cb91087331182902b1d4",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.shanp.wodeshebao on the sealed GCE detonator, containment manifest 8a6ec6a08031cf777361a8eb1ff5a78fbdca95e6965f3fbe899fa16686920799.",
+    "authored_at": "2026-08-26T03:27:38.870510+00:00",
+    "source_sha256": "52d17ecc806622bfaa24c5ebb5ba41a02b05c3ee2976cb91087331182902b1d4",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_52d17ecc8066",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "1 instrumented observations across 1 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.shanp.wodeshebao"
+        ],
+        "count": 1
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T03:27:38.870510+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

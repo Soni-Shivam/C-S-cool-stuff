@@ -91,6 +91,18 @@ class CallPath(DrishtiModel):
     reachable_from_lifecycle: bool
 
 
+class DecompiledMethod(DrishtiModel):
+    """Bounded source recovered for a method on a dangerous sink path."""
+
+    signature: str
+    body: str
+    line_start: int = 1
+    line_end: int = 1
+    call_path_indexes: tuple[int, ...] = ()
+    evidence_ref: str
+    truncated: bool = False
+
+
 class HypothesisKind(StrEnum):
     SECONDARY_PAYLOAD = "secondary_payload"
     OTP_EXFIL = "otp_exfil"
@@ -119,6 +131,52 @@ class Hypothesis(DrishtiModel):
     suggested_probe: dict = Field(default_factory=dict)
     priority: int
     evidence_refs: tuple[str, ...] = ()
+
+
+class BenignLookalikeVerdict(StrEnum):
+    """Outcome of separating a trojan from an app that is legitimately privileged.
+
+    There is deliberately no `BENIGN`. The best available verdict is `INDETERMINATE`,
+    matching the rule used everywhere else here that absence of evidence is not
+    evidence of innocence. `LEGITIMATE_PRIVILEGED` is a statement about the *signer*,
+    not a certification of the code.
+    """
+
+    TROJAN_SHAPE = "trojan_shape"
+    LEGITIMATE_PRIVILEGED = "legitimate_privileged"
+    INDETERMINATE = "indeterminate"
+
+
+class LookalikeSignal(DrishtiModel):
+    """One discriminator, its weight, and why it did or did not fire.
+
+    Absent signals are retained, not dropped. "We looked for a banking roster and found
+    none" is a finding a reader needs; silently omitting it would make the assessment
+    look like it only ever collects evidence in one direction.
+    """
+
+    id: str
+    present: bool
+    weight: float
+    detail: str
+    evidence_refs: tuple[str, ...] = ()
+
+
+class LookalikeAssessment(DrishtiModel):
+    """Why this app is, or is not, the trojan its permissions would allow it to be.
+
+    `shared_permissions` is the honest half: the capabilities this sample holds that
+    Truecaller, SMS-backup tools and anti-spam apps hold too. Naming them stops the
+    report from presenting a dual-use permission as though it were itself the finding.
+    """
+
+    verdict: BenignLookalikeVerdict
+    trojan_score: float
+    signals: tuple[LookalikeSignal, ...] = ()
+    shared_permissions: tuple[str, ...] = ()
+    targeted_financial_packages: tuple[str, ...] = ()
+    publisher_trusted: bool = False
+    rationale: str = ""
 
 
 class ThreatIntel(AnalyserResult):
@@ -189,8 +247,14 @@ class StaticReport(AnalyserResult):
     dcl_indicators: tuple[str, ...] = ()
     reflection_count: int = 0
     urls: tuple[str, ...] = ()
+    #: Package-shaped string constants. M2 has always extracted these to derive
+    #: hypotheses, but never surfaced them - so any rule looking for a roster of
+    #: targeted apps searched a haystack that could not contain one.
+    package_strings: tuple[str, ...] = ()
     crypto_constants: tuple[str, ...] = ()
     call_paths: tuple[CallPath, ...] = ()
+    decompiled_methods: tuple[DecompiledMethod, ...] = ()
     sink_hits: tuple[str, ...] = ()
     hypotheses: tuple[Hypothesis, ...] = ()
+    lookalike: LookalikeAssessment | None = None
     ledger_refs: tuple[str, ...] = ()

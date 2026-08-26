@@ -1,0 +1,89 @@
+# Institutions Indian mobile fraud impersonates, as they appear in UI text.
+#
+# WHY THIS FILE EXISTS
+#
+# The Social-Engineering Analyst (PHASE_3 T3.8) answers "who is this aimed at, and who
+# is it pretending to be". The second half must not be a model's impression. A brand
+# name is a literal string in the app's resource table, so matching it is a lookup and
+# the evidence is the string itself — which the profile then cites, and the verifier
+# then checks.
+#
+# FORMAT
+#   token | canonical name | sector
+#
+# `token` is matched case-insensitively as a whole word against UI strings and the app
+# label. Tokens are deliberately distinctive: "bank" alone would match every banking
+# app in the store, and a lexicon that fires on everything asserts nothing.
+#
+# STATUS: a detection aid, not a registry, and NOT a claim that the named institution
+# has been attacked. A hit means the sample's own strings name that institution — which
+# is a fact about the sample, not about the institution. Add freely; a miss weakens one
+# signal among several and never produces a verdict on its own.
+
+# ── public-sector and private banks ──────────────────────────────────────────
+sbi | State Bank of India | bank
+yono | SBI YONO | bank
+hdfc | HDFC Bank | bank
+icici | ICICI Bank | bank
+imobile | ICICI iMobile | bank
+axis | Axis Bank | bank
+kotak | Kotak Mahindra Bank | bank
+punjab national | Punjab National Bank | bank
+pnb | Punjab National Bank | bank
+canara | Canara Bank | bank
+bank of baroda | Bank of Baroda | bank
+bob world | Bank of Baroda | bank
+union bank | Union Bank of India | bank
+indusind | IndusInd Bank | bank
+idfc | IDFC First Bank | bank
+yes bank | Yes Bank | bank
+federal bank | Federal Bank | bank
+rbl | RBL Bank | bank
+au small finance | AU Small Finance Bank | bank
+bandhan | Bandhan Bank | bank
+
+# ── UPI, wallets and payments ────────────────────────────────────────────────
+upi | Unified Payments Interface | payments
+npci | National Payments Corporation of India | payments
+bhim | BHIM UPI | payments
+paytm | Paytm | payments
+phonepe | PhonePe | payments
+google pay | Google Pay | payments
+gpay | Google Pay | payments
+mobikwik | MobiKwik | payments
+freecharge | Freecharge | payments
+razorpay | Razorpay | payments
+
+# ── government and regulators ────────────────────────────────────────────────
+rto | Regional Transport Office | government
+echallan | e-Challan (traffic penalty) | government
+e-challan | e-Challan (traffic penalty) | government
+challan | e-Challan (traffic penalty) | government
+parivahan | Ministry of Road Transport (Parivahan) | government
+vahan | Vahan vehicle registry | government
+sarathi | Sarathi driving licence portal | government
+aadhaar | Aadhaar / UIDAI | government
+uidai | Aadhaar / UIDAI | government
+pan card | Income Tax PAN | government
+income tax | Income Tax Department | government
+epfo | Employees' Provident Fund Organisation | government
+digilocker | DigiLocker | government
+mparivahan | mParivahan | government
+traffic police | State traffic police | government
+cybercrime | Cyber Crime portal | government
+rbi | Reserve Bank of India | regulator
+sebi | Securities and Exchange Board of India | regulator
+irctc | Indian Railways IRCTC | government
+india post | India Post | government
+
+# ── telecom and utilities, the other common lure ─────────────────────────────
+jio | Reliance Jio | telecom
+airtel | Airtel | telecom
+vi app | Vodafone Idea | telecom
+bsnl | BSNL | telecom
+electricity bill | State electricity board | utility
+
+# ── compliance language fraud leans on ───────────────────────────────────────
+kyc | Know Your Customer re-verification | compliance
+re-kyc | Know Your Customer re-verification | compliance
+video kyc | Know Your Customer re-verification | compliance

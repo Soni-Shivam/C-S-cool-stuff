@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "sha256": "c74439a52eea3f173508b02e1e7dd5f983d2f6463e1f12ea3debe5dd61ef05c1",
+  "package": "com.TomatoesGames.BubbleTetra",
+  "simulated": false,
+  "outcome": "failed",
+  "observations": [],
+  "failures": [
+    {
+      "code": "install_unsupported",
+      "stage": "install",
+      "message": "Performing Streamed Install\n\nadb: failed to install /opt/drishti/scratch/c74439a52eea3f173508b02e1e7dd5f983d2f6463e1f12ea3debe5dd61ef05c1.apk: Failure [INSTALL_FAILED_NO_MATCHING_ABIS: INSTALL_FAILED_NO_MATCHING_ABIS: Failed to extract native libraries, res=-113]\n\n",
+      "occurred_at": "2026-08-26T04:06:38.229281+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "b91efc0a7fa9310befe2a5f15b7542ceba5b068c24c51eac18152eee40b494f5",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T04:06:15.629778+00:00"
+  },
+  "started_at": "2026-08-26T04:06:25.996445+00:00",
+  "finished_at": "2026-08-26T04:06:41.424371+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339"
+  ],
+  "mitre_observed": []
+}
