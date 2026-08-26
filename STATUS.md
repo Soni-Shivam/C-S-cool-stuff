@@ -214,13 +214,41 @@ land. The bar for this hackathon is a working PoC per idea, not a finished produ
 
 **Still genuinely unproven / designed-only:**
 
-- **The lookalike discriminator's real-sample performance.** It works on fixtures; the
-  80-sample validation had not returned at this entry. Treat as unproven until it does.
+- **The lookalike discriminator's real-sample performance — MEASURED 2026-08-26, and it
+  does NOT discriminate at the operating threshold.** Validation over **75 real corpus
+  APKs** (35 malware / 40 benign; run at `e9f3d9e`, measurement
+  `data/measurements/lookalike_validation_n75.json`, malware = MalwareBazaar family-tagged
+  banking trojans — Cerberus, Octo, TeaBot, Coper, Hydra, Ermac, Hook, Alien, BankBot,
+  Joker, SpyNote):
+    - mean `trojan_score`: **malware 0.050** (min 0, max 0.312) vs **benign 0.009** (min 0,
+      max 0.125). rank-AUC **0.621** — weak ordering, well short of usable.
+    - **TROJAN_SHAPE verdicts: 0 benign AND 0 malware.** Zero false positives (the
+      product-killer we feared) — but also zero true positives. `TROJAN_SHAPE_THRESHOLD`
+      is 0.50 and the top malware score observed was 0.312.
+    - **Structural root cause:** the four call-graph-reachability signals carry 0.85 of
+      the 1.60 total weight, so the max score reachable *without* any of them is
+      0.75/1.60 = **0.4688 < 0.50 — the threshold is unreachable from strings alone.**
+      Those reachability signals almost never fire because these recent trojans are
+      **packed**: androguard recovered a *median of 12 decompiled methods* per sample.
+      The behaviour the discriminator keys on is not present in the static image; it is
+      exactly what M3 detonation exists to observe.
+    - The `e9f3d9e` fix worked as intended: certificate `not_before` parsed on **75/75**,
+      and `freshly_minted_certificate` now fires on **0%** of both classes (it was the
+      false universal-firing signal before). `package_strings` non-empty on 70/75.
+    - **Recommendation: do NOT ship as a scoring signal.** Per the evaluation rules I did
+      not tune the threshold or weights to manufacture a gap. It may survive as an
+      explanatory/UI overlay only. Owner decision required.
 - **Generative C2 emulation** remains designed, not built, and is bounded by CLAUDE.md's
   hard boundary — a PoC is only legitimate if the synthesised response is provably inert.
 - **Environment morph → re-detonation (the D3 "sandbox-aware sample" demo)**: the morph
-  *proposals* and the applicator are built and unit-tested; a live morph-then-wake on a
-  real evasive sample has not been captured.
+  *proposals* and the applicator are built and unit-tested. The **Frida morph scripts
+  themselves** (`build_props`, `sim_locale`, `install_packages`, `clock_skew`,
+  `files_present`) were missing entirely — they landed 2026-08-26; `detonator_run.sh
+  morph` and `compose_hooks` were wired to a directory that did not exist. A live
+  morph-then-wake capture on a real evasive sample is the next step now that the scripts
+  exist. Content-provider kinds (sms_history/contacts/accounts) are deliberately
+  unshipped — an absent script is refused, which is honest; a stub would claim a morph it
+  did not apply.
 - **The end-to-end judge demo** (good-app-passes / bad-app-blocked on the emulator, with
   the Device-Owner veto) is being built by a dedicated worker and not yet rehearsed cold.
 

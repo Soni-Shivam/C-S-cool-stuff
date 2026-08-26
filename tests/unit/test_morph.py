@@ -217,3 +217,45 @@ def test_a_morph_that_changed_nothing_reads_as_nothing() -> None:
     delta = diff_traces(before, after)
     assert delta.woke_up is False
     assert delta.new_techniques == ()
+
+
+# ── the morph scripts themselves ─────────────────────────────────────────────
+# The JS is what actually runs on the AVD; a kind whose script is missing hard-fails
+# detonator_run.sh (return 5), and a script that emits its own observations would
+# manufacture exactly the pass-1/pass-2 delta the loop claims to measure. Guard both.
+_MORPH_DIR = Path(__file__).resolve().parents[2] / "drishti" / "m3_dynamic" / "scripts" / "morph"
+
+#: Kinds implemented as a Frida script. GENERATIVE_C2 is handled by the generative-C2
+#: addon, not by a morph script (see validate_morph); the content-provider kinds
+#: (SMS_HISTORY, CONTACTS, ACCOUNTS) are deliberately unshipped rather than stubbed —
+#: an absent script is refused, which is the honest state, whereas a stub would apply
+#: nothing while a --morph-label claimed it had.
+_SCRIPTED_KINDS = {
+    MorphKind.BUILD_PROPS,
+    MorphKind.SIM_LOCALE,
+    MorphKind.INSTALL_PACKAGES,
+    MorphKind.CLOCK_SKEW,
+    MorphKind.FILES_PRESENT,
+}
+
+
+@pytest.mark.parametrize("kind", sorted(_SCRIPTED_KINDS, key=lambda k: k.value))
+def test_each_scripted_morph_kind_has_a_script(kind: MorphKind) -> None:
+    assert (_MORPH_DIR / f"{kind.value}.js").is_file()
+
+
+@pytest.mark.parametrize("script", sorted(_MORPH_DIR.glob("*.js")))
+def test_a_morph_script_never_emits_an_observation(script: Path) -> None:
+    # A morph reports failure via hook_error but must never emit type:'observation' —
+    # that would inflate the delta with events the sample did not produce.
+    text = script.read_text(encoding="utf-8")
+    assert "'observation'" not in text and '"observation"' not in text
+
+
+@pytest.mark.parametrize("script", sorted(_MORPH_DIR.glob("*.js")))
+def test_a_morph_script_is_self_contained(script: Path) -> None:
+    # compose_hooks() does not prepend a shared prelude, so each script must define its
+    # own DRISHTI_MORPH fallback and run regardless of load order.
+    text = script.read_text(encoding="utf-8")
+    assert "DRISHTI_MORPH" in text
+    assert "'use strict'" in text
