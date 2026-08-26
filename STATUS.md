@@ -247,6 +247,51 @@ Throwaway DB and key, safe to run live and repeatedly.
   demo was deliberately unbuilt is now superseded — it is built honestly, against real
   SQL and real chain verification, not simulated in the browser.
 
+### Measured negative results — 2026-08-26
+
+Recorded prominently because a negative result nobody can find is a claim waiting to be
+made again by accident.
+
+**The benign-lookalike discriminator does NOT discriminate. It is not a scoring signal.**
+Measured on **n=75** real corpus APKs (35 family-tagged banking trojans — Cerberus, Octo,
+TeaBot, Coper, Hydra, Ermac, Hook, Alien, BankBot, Joker, SpyNote — against 40 benign).
+
+| | Result |
+|---|---|
+| mean `trojan_score` | malware **0.050** (max 0.312) vs benign **0.009** (max 0.125) |
+| rank-AUC | **0.621** |
+| `TROJAN_SHAPE` verdicts | **0 of 35 malware, 0 of 40 benign** |
+| Measurement | `data/measurements/lookalike_validation_n75.json` |
+
+Structural cause, not a bad threshold: four of the eight signals need call-graph
+reachability and carry 0.85 of the 1.60 total weight, so the ceiling from strings alone
+is 0.4688 — below the 0.50 threshold *by construction*. Those four barely fire because
+2024-25 trojans ship **packed**: androguard recovered a median of **12** decompiled
+methods per sample. Firing rates: `overlay_after_package_enumeration` 17% malware / 5%
+benign, `financial_app_roster` 3% / 0%, `sms_and_network_share_entrypoint` 0% / 0%.
+
+It never fed `S` or the ML feature vector, so nothing was cut from scoring — but the
+**claim** was corrected in `docs/DEMO_AND_MOAT.md`. The idea is sound and demonstrable on
+unpacked code (`tests/unit/test_lookalike.py` shows two apps with identical permissions
+and opposite verdicts); what it demonstrates on real samples is **the ceiling on static
+intent analysis**, which is the argument for detonating instead. Do not retune to
+manufacture separation on that set.
+
+One thing it did fix: certificate `not_before` parsed on **75/75**, and
+`freshly_minted_certificate` — which previously fired on 100% of samples including every
+benign one — now fires on **0%** of both.
+
+**The morph-then-wake capture was attempted and REFUTED by its own control.** BankBot
+`8166dfba` looked like a clean wake (pass 1 failed with 0 observations, pass 2 morphed
+completed with 4). A 3-run unmorphed control showed the sample completes with the same 4
+observations *without* any morph, so the pass-1 failure was a Frida cold-start spawn
+flake, not evasion. Not claimed. The 5 Frida morph scripts the applicator referenced did
+not previously exist and were written; the infrastructure is proven and one command from
+a real capture, but the banking trojans available mostly detonate passively, so no sample
+with a genuine checkable environment gate has been found yet.
+
+---
+
 ### Paper idea → proof-of-concept status (updated 2026-08-26, later in the day)
 
 The team's ideation paper (`REPORT/main.tex`, §17) tracks each novel claim as

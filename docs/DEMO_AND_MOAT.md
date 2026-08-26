@@ -173,6 +173,13 @@ The first is worth more than the rest combined.
    fake-bank families; Hindi and regional social-engineering text; UPI-overlay plus
    SMS-forwarder combinations. Google optimises for global scale.
 
+> **Correction, measured 2026-08-26.** The benign-lookalike discriminator that was
+> to carry this — the answer to "do you flag Truecaller?" — **does not discriminate
+> on real samples** and is not shipped as a scoring signal. n=75, rank-AUC 0.621,
+> zero samples over threshold in either class. Four of its eight signals need a call
+> graph, and modern trojans are packed: androguard recovered a median of 12 methods
+> per sample. **Pitch the reframe, not the detector** — see §6.
+
 ### Tier 3 — compounding. Worth saying even before it is built.
 
 8. **Bank-federated feed.** Each participating bank's customer reports improve the
@@ -195,6 +202,19 @@ Saying these loses the argument, and they are not true:
 - ❌ *"We auto-submit samples to threat-sharing platforms."* Forbidden by `CLAUDE.md`'s
   hard boundary on distributing samples outside the analysis project's private bucket.
 - ❌ Any number not traceable to a measurement in `STATUS.md`.
+- ❌ *"Our static analysis tells a trojan from Truecaller."* Measured: it does not,
+  on packed real-world samples. What IS true and worth saying is stronger:
+
+> Permissions cannot separate Truecaller from a banking trojan — they hold the same
+> ones, and we can show you two apps with identical permission sets. Intent can
+> separate them, and we built those discriminators. Then we measured them on 75 real
+> samples and they caught nothing, because 2024-25 trojans ship packed and there is
+> no code left to reason about. **That negative result is the argument for the rest
+> of the system.** You cannot read intent off an APK you cannot decompile. You have
+> to run it, in a sandbox that makes it show you.
+
+  A judge who has ever tried static analysis on a packed sample will trust that far
+  more than a detector that claims to work.
 
 ---
 

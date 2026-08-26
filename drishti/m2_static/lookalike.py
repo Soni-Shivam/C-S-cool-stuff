@@ -20,6 +20,31 @@ The permission is the capability. It is not the intent. What separates the two i
 
 So this module never asks "does it have READ_SMS". It asks what the app does with it.
 
+**MEASURED 2026-08-26, n=75 real corpus APKs: THIS DOES NOT DISCRIMINATE, and it is
+not shipped as a scoring signal.** Mean trojan_score was 0.050 for 35 family-tagged
+banking trojans (Cerberus, Octo, TeaBot, Coper, Hydra, Ermac, Hook, Alien, BankBot,
+Joker, SpyNote) against 0.009 for 40 benign — rank-AUC 0.621, and **zero** samples in
+either class crossed the 0.50 threshold. It produced no false positives, and no true
+positives either.
+
+The cause is structural rather than a bad threshold, and it is worth understanding
+before anyone tries to tune it. Four of the eight signals depend on call-graph
+reachability and carry 0.85 of the 1.60 total weight, so the maximum score reachable
+from strings alone is 0.4688 — below the threshold by construction. Those four almost
+never fire because modern trojans are **packed**: androguard recovered a median of
+**12** decompiled methods per sample. There is no call graph to walk.
+
+That is not a refutation of the idea. The discriminators are sound and the unit tests
+demonstrate them on two apps with identical permissions and opposite verdicts. It is a
+demonstration of the ceiling on *static* intent analysis: **when you cannot see the
+code, you cannot reason about what it does with a permission** — which is precisely the
+argument for detonating the sample instead. Treat this module as an explanatory overlay
+for unpacked samples, never as a detector.
+
+Measurement: `data/measurements/lookalike_validation_n75.json`. Do NOT lower
+`TROJAN_SHAPE_THRESHOLD` or reweight to manufacture separation on that set; fitting the
+evaluation data is the circularity the project's evaluation rules exist to prevent.
+
 **It never returns "benign".** The best verdict available is `INDETERMINATE`, matching
 the rule elsewhere in this codebase that absence of evidence is not evidence of
 innocence. A trusted publisher yields `LEGITIMATE_PRIVILEGED`, which is a statement
