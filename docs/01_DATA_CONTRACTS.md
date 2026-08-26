@@ -1082,9 +1082,9 @@ so it belongs to the wire contract and inherits its strictness.
 | `req_body_preview` | `str` | Truncated request body, redacted. |
 | `resp_body_preview` | `str` | Truncated response body, redacted. |
 | `synthesised` | `bool` | `True` only when the Generative C2 answered this flow instead of real attacker infrastructure. |
-| `served_kind` | `str \| None` | The response shape we chose, set only alongside `synthesised`. `None` for an observed flow. |
+| `served_kind` | `str \| None` | The response shape we chose (`connectivity_ok`, `command_poll`, `registration_ack`, `config`, `inert_payload_stub` — `C2ResponseKind`), max 32 chars, valid **only** when `synthesised` is `True`. `None` for an observed flow. |
 
-Three properties are load-bearing:
+Four properties are load-bearing:
 
 * **Both body previews refuse to construct on unredacted sensitive text**, using the
   same `contains_sensitive_text` gate as `ObservationEvent.detail` (A2 point 2). A
@@ -1098,6 +1098,14 @@ Three properties are load-bearing:
   our own content injected into the analysis; the distinction has to survive into the
   report, because a dead C2 stays dead and listing our own response as attacker
   infrastructure would be a lie.
+* **The pairing is an enforced invariant, not a convention.** A `model_validator`
+  REFUSES TO CONSTRUCT a flow with a non-`None` `served_kind` and `synthesised=False`:
+  a provenance label on a flow we did not answer would attribute our own content to
+  the attacker. The converse is allowed — `synthesised=True` with `served_kind=None`
+  says we answered without recording which shape, which is incomplete but not a false
+  claim. `served_kind` is bounded at 32 chars like every other string on the model,
+  because it is set from a response header (`X-DRISHTI-Kind`) written on the wire and
+  is rendered into the report.
 * **There is no `tls_intercepted` field.** The detonator captures cleartext HTTP and
   does not claim TLS interception (the system-CA step is deliberately deferred —
   `CLAUDE.md` verified lab fact 7). A field that could only ever read `False` would

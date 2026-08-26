@@ -14,7 +14,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import ConfigDict, Field, StringConstraints, field_validator
+from pydantic import ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 from drishti.contracts.base import AnalyserResult, DrishtiModel
 
@@ -265,8 +265,11 @@ class CapturedFlow(StrictWireModel):
 
     `synthesised` and `served_kind` are set only for a flow the Generative C2 answered.
     That is our own content injected into the analysis, and the distinction has to
-    survive into the report: a dead C2 stays dead. `tls_intercepted` is deliberately
-    absent — the detonator captures cleartext HTTP and never claims TLS interception.
+    survive into the report: a dead C2 stays dead. The pairing is enforced, not merely
+    documented — `served_kind` REFUSES TO CONSTRUCT without `synthesised`, because a
+    provenance label on a flow we did not answer would credit our own content to
+    attacker infrastructure. `tls_intercepted` is deliberately absent — the detonator
+    captures cleartext HTTP and never claims TLS interception.
     """
 
     t_ms_epoch: int
@@ -278,7 +281,8 @@ class CapturedFlow(StrictWireModel):
     req_body_preview: Annotated[str, StringConstraints(max_length=512)] = ""
     resp_body_preview: Annotated[str, StringConstraints(max_length=512)] = ""
     synthesised: bool = False
-    served_kind: str | None = None
+    #: Bounded like every other string here: it is rendered as a provenance label.
+    served_kind: Annotated[str, StringConstraints(max_length=32)] | None = None
 
     @field_validator("req_body_preview", "resp_body_preview")
     @classmethod
@@ -288,6 +292,13 @@ class CapturedFlow(StrictWireModel):
         if contains_sensitive_text(value):
             raise ValueError("captured flow body contains unredacted sensitive text")
         return value
+
+    @model_validator(mode="after")
+    def _kind_requires_synthesised(self) -> CapturedFlow:
+        """Refuse a provenance label on a flow the Generative C2 did not answer."""
+        if self.served_kind is not None and not self.synthesised:
+            raise ValueError("served_kind is only valid on a synthesised flow")
+        return self
 
 
 #: Why a detonation produced no observations. Named rather than inlined so the harness
