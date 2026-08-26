@@ -133,20 +133,58 @@ def test_artefacts_pending_before_the_stage_runs(client, settings) -> None:
 
 
 @pytest.mark.parametrize(
-    ("path", "task"),
-    [("report.html", "T6.3"), ("artifacts/yara", "T6.1"), ("artifacts/stix", "T6.2")],
+    "path", ["report.html", "artifacts/yara", "artifacts/stix"]
 )
-def test_unbuilt_features_are_501_not_404(client, finished_job, path, task) -> None:
-    """A frozen-but-unbuilt route must not look like a pending one.
+def test_export_routes_are_built(client, finished_job, path) -> None:
+    """The three export routes are implemented (T6.3, T6.1, T6.2).
 
-    Polling a 404 is reasonable; polling something that will never exist is not, and
-    the UI needs to tell those apart.
+    This test previously asserted 501. It was inverted, not deleted, when the
+    features landed — a route that silently stopped 501-ing without anyone noticing
+    would mean the UI still renders "not available in this build" over a working
+    export.
     """
     response = client.get(f"/api/jobs/{finished_job}/{path}")
-    assert response.status_code == 501
-    detail = response.json()["detail"]
-    assert detail["reason"] == "not_implemented"
-    assert detail["task"] == task
+    assert response.status_code == 200, response.text
+
+
+def test_report_is_self_contained_and_states_its_limitations(client, finished_job) -> None:
+    """The report must carry its own caveats and reference no external assets.
+
+    Self-containment is load-bearing: this document gets emailed to a fraud desk and
+    opened on machines with no network.
+    """
+    response = client.get(f"/api/jobs/{finished_job}/report.html")
+    body = response.text
+    assert response.headers["content-type"].startswith("text/html")
+    assert "<h2>Limitations</h2>" in body
+    # No external fetches: no remote stylesheets, scripts, or images.
+    assert "src=\"http" not in body and "href=\"http" not in body
+    assert "<script" not in body.lower()
+
+
+def test_yara_rule_does_not_key_on_the_hash(client, finished_job) -> None:
+    """A hash-keyed rule catches exactly one build and is obsolete on the next repack.
+
+    The hash belongs in metadata so an analyst knows what was analysed; putting it in
+    the condition would make the rule useless for the polymorphic case it exists for.
+    """
+    body = client.get(f"/api/jobs/{finished_job}/artifacts/yara").text
+    assert "rule DRISHTI_" in body
+    condition = body.split("condition:", 1)[1]
+    assert "hash." not in condition, "the condition must not depend on a file hash"
+
+
+def test_stix_export_is_deterministic(client, finished_job) -> None:
+    """Two exports of the same job must be byte-identical.
+
+    Ids are UUIDv5 over stable keys rather than random or clock-derived, so a
+    recipient diffing two bundles sees only what genuinely changed.
+    """
+    first = client.get(f"/api/jobs/{finished_job}/artifacts/stix").json()
+    second = client.get(f"/api/jobs/{finished_job}/artifacts/stix").json()
+    assert first == second
+    assert first["type"] == "bundle"
+    assert any(o["type"] == "indicator" for o in first["objects"])
 
 
 # ── artefacts after a full run ───────────────────────────────────────────────
