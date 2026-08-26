@@ -128,10 +128,28 @@ now reads `probe_trustworthy = False` and refuses to make any containment claim,
 the positive control reported UNREACHABLE while a listener was running. A probe that
 cannot see an open network is not evidence of a closed one.
 
-## Verification state at `006baa7`
+## Two exports were lying, and now are not
 
-- **contract + unit suite: EXIT 0** (`.venv/bin/python -m pytest tests/contract tests/unit -q`)
+Worth knowing because both are the kind of thing a judge inspects rather than watches.
+
+**STIX exported any sub-HIGH sample as `benign`** while the dashboard beside it said
+*"safety could not be confirmed either way"* and recommended REVIEW. That is the
+never-benign rule broken in the one artefact a SOC actually ingests — a machine-readable
+file asserting a sample is clean when the system's own screen refuses to. Now `unknown` /
+`anomalous-activity`. Verified on a LOW sample: the word "benign" appears nowhere in the
+bundle.
+
+**The verdict card overstated its own evidence base 2.4×** — 44 `evidence_refs` of which
+18 were distinct, so it drew duplicate chips and computed "+36 more" from the inflated
+length. On the card whose entire purpose is *here is the evidence*. Verified after the
+fix: 34 total, 34 distinct.
+
+## Verification state at `d645481`
+
+- **contract + unit: 1,812 tests, EXIT 0.**
+- **e2e: 16 tests, EXIT 0.** `make e2e` was RED before this branch — all four failures
+  came from the suite asserting a stage list and node count that only held while the
+  pipeline fabricated an evasion observation. It is green now, and `STATUS.md`'s header
+  has been corrected rather than refreshed.
 - **`make lint`: clean.** `ruff format --check`: 199 files already formatted.
-- Two `tests/e2e/test_pipeline_walk.py` failures predate this branch — verified at the
-  base commit `a4f013e`. They assert `EXPECTED_NODES_PER_RUN == 18` against 17 and are
-  unrelated to any change here.
+- **`make ui-build`** passes (tsc + vite); **`make ui-test`** 14/14.
