@@ -268,7 +268,7 @@ Throwaway DB and key, safe to run live and repeatedly.
       MalwareBazaar backfill is now required. List archived to the corpus bucket.
       Stratified sample-list builder + contract A9 + 20 tests. The real AndroZoo index
       has not been fetched; every number so far is from a synthetic 60k-row index.
-- [x] T2.3 Train the classifier                    DONE  2026-08-26  b432c31 · tests: 594 contract+unit (48 new in m5, measured by collection)
+- [x] T2.3 Train the classifier                    DONE  2026-08-26  b432c31 · tests: **595 contract+unit passed** (`make test`, 106s, measured 2026-08-26; 48 of them new in m5)
       **Five models compared**, not one: logistic regression, linear SVM, random forest,
       XGBoost, MLP — identical features, identical splits, seed 20260826. Winner
       **`random_forest`**, chosen by 5-fold CV PR-AUC **inside the training split**
@@ -396,12 +396,13 @@ The single most-demoed artefact: an Android emulator on the demo laptop running
 | Measurement | Value |
 |---|---|
 | `demo_up.sh --fresh`, cold to ready | 35 s, 37 s (two runs) |
-| File landing → verdict on screen, 5 runs (mock LLM) | 7.9 / 8.3 / 10.1 / 12.6 / 13.1 s (median 10.1) |
-| Same, live LLM cache miss | 10.7 s |
-| Same, final rehearsal (cache warm) | 6.5 s |
-| — of which M2 static | 8.6–9.7 s (from `stage_history`) |
+| **File landing → verdict on screen** (two-phase, final) | **5.0 / 5.4 / 8.9 s** |
+| Composite score arriving after the verdict | up to 33 s total |
+| — of which M2 static | 4.9–9.7 s (from `stage_history`) |
+| — of which `genai_static` | **0.8 s cached, 35 s cold** |
 | — of which Shield itself | < 0.3 s |
 | Layer 4 detection after install | < 1 s |
+| Superseded: verdict latency before the two-phase split | 7.9–13.1 s (5 runs), 41.4 s worst case on a cold LLM |
 | Tests | 581 contract+unit passing at this change |
 
 **The veto is real and was proved, not asserted.** With Shield as device owner,
@@ -427,23 +428,25 @@ combinations, each MITRE-mapped — and prints "BASIS FOR THIS DECISION · M2 st
 evidence" beside the zero, with the reason. No number was invented to make the demo
 look better.
 
-**Re-verified 2026-08-26 after the LLM went live** (`DRISHTI_LLM_PROVIDER=openrouter`).
-`S` is still 0, and for a reason worth keeping:
+**Re-measured 2026-08-26 as other agents landed work.** The environment moved twice
+during this task and the demo tracked it without any change to the block logic:
 
-- The LLM ran and returned a real `behavioural_risk_B = 0.999352` with 7 behaviour
-  flags and 7 claims (job `job_3c*`, provider `openrouter`).
-- `m6_score.engine` **excluded it** — `has_behavioural` requires `not genai.partial`,
-  and the verdict is partial because the full pass reused the static verdict with no
-  dynamic evidence. With no trained model in `models/` either, `F_AI` has no admitted
-  inputs.
-- **The model was over-reading.** It asserted `reads_sms_content` and
-  `exfiltrates_over_network` for an APK that contains no SMS code and no networking
-  code at all — it inferred behaviour from the declared manifest surface. This is a
-  genuine finding about static-only LLM reasoning and is now a scripted answer in
-  `docs/DEMO_SCRIPT.md` §2.3, because it demonstrates *why* B is computed in Python
-  from enumerated booleans rather than taken as the model's number.
+| When | `S` | Why |
+|---|---|---|
+| LLM mock, no model | 0 LOW, γ 0.40 | no admitted inputs to `F_AI` |
+| LLM live (`openrouter`), no model | 0 LOW, γ 0.40 | LLM returned `B = 0.999352` (7 behaviour flags, 7 claims) and `m6_score.engine` **excluded it**: `has_behavioural` requires `not genai.partial`, and the verdict is partial because the full pass reused the static verdict with no dynamic evidence |
+| LLM live + trained model | **43 MEDIUM, γ 0.60** | `random_forest-504f-1.1.0` at `p_calibrated = 0.864`, `anomaly_escalate=True`; top SHAP features `perm:READ_SMS`, `combo:count=7`, `combo:OVERLAY_CREDENTIAL_THEFT` |
 
-No scorer code was changed to make the demo's number look better.
+43 is below the 65 HIGH floor, so `BlockDecision` correctly keeps the basis at
+`STATIC_EVIDENCE` and the phone says so beside the score. **No scorer code was changed
+and no threshold was moved to make a number look better.**
+
+**A finding worth keeping: the LLM over-reads a static-only surface.** It asserted
+`reads_sms_content` and `exfiltrates_over_network` for an APK containing no SMS code
+and no networking code at all — it inferred behaviour from the declared manifest. This
+is now a scripted answer in `docs/DEMO_SCRIPT.md` §2.3, because it demonstrates
+exactly *why* `B` is computed in Python from enumerated booleans rather than taken as
+the model's number.
 
 ## Salvage from v1 (see `docs/SALVAGE.md`)
 
@@ -686,6 +689,14 @@ not caught by any test or gate, only by reading `git log`. Single agent from her
   Two consecutive rehearsals differing only in timing produced "provisioned" and
   "NOT HELD". It now also retries 3× and **dies** rather than warning, because Layer 3
   is the beat the demo turns on; `--allow-no-owner` is the deliberate escape hatch.
+- **The Shield decides on M2 static, not on M6's score, and shows the score when it
+  arrives.** The block decision needs the static report; the score sits behind the
+  GenAI stage. A cold free-tier LLM call measured **35 s** (`genai_static`), which put
+  a third-party endpoint's latency directly into the demo's central beat — for a layer
+  the scorer then excludes as partial. `ScanEngine.analyse` now runs two phases:
+  decide + engage the veto on static (~5 s, and `verdictAtMs` is frozen there so the
+  displayed latency never drifts upward), then attach the score. A score can raise the
+  verdict; it never lowers it. This cut worst-case time-to-verdict from 41.4 s to 8.9 s.
 - **The Shield's Report screen calls `GET /api/jobs/{id}/artifacts/dossier`** rather
   than composing a complaint on the phone, and renders the backend's
   `submission_is_manual`, `reportable`, `reason`, `portal_url` and `helpline` fields.
