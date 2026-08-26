@@ -142,7 +142,22 @@ def score(
     band = _band(value)
     anomaly = bool(ml and has_ml and ml.anomaly_escalate)
     if anomaly and band is SeverityBand.LOW:
-        band = SeverityBand.HIGH
+        # LOW -> MEDIUM, deliberately NOT LOW -> HIGH.
+        #
+        # The escalator's job, in the paper's own words, is that "zero-days cannot land
+        # quietly in LOW" — it forces a human to look. It is not a claim of malice, and
+        # `requires_human_review` below is what actually carries that intent.
+        #
+        # Promoting to HIGH made it one: HIGH is in `_BLOCK_BANDS`, so the consumer
+        # screen rendered "DO NOT INSTALL". Measured on the shipped model: 93 LOW rows
+        # promoted WITHOUT `S` moving a single point, and **84 of them benign**. On the
+        # same run the detector's lift was negative — anomaly 0.3560 for malware against
+        # 0.3983 for benign — so it was ranking clean apps as the more unusual ones and
+        # then blocking them.
+        #
+        # MEDIUM maps to REVIEW rather than BLOCK, which is what an anomaly score
+        # actually justifies: a second look, not an accusation.
+        band = SeverityBand.MEDIUM
     review = anomaly or disagreement or confidence < 0.5
     limitations = _limitations(static=static, ml=ml, genai=genai, dynamic=dynamic)
     return CompositeScore(

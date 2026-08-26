@@ -326,6 +326,43 @@ reverted rather than left as unexplained churn. Someone with a clean hour should
 
 ---
 
+### The novelty escalator was blocking benign apps — 2026-08-26
+
+Found by measuring the shipped model rather than by reading the code, and it reached
+the consumer screen.
+
+`anomaly_escalate` promoted a LOW band straight to **HIGH**. `contracts/verdict.py` maps
+HIGH into `_BLOCK_BANDS`, which the consumer surface renders as **DO NOT INSTALL**. So a
+signal intended to mean "a human should look at this" was issuing an accusation.
+
+Measured on the shipped run: **93 LOW rows promoted without `S` moving a single point,
+and 84 of them BENIGN.** On the same run the detector's own lift was **negative** —
+anomaly 0.3560 for malware against **0.3983 for benign** — so it was ranking clean apps
+as the more unusual ones and then blocking them. That is precisely the "do you just flag
+everything?" failure, live in the demo path.
+
+Fixed: the escalator now promotes **LOW → MEDIUM**, which maps to `REVIEW`. The paper's
+stated intent is preserved — a zero-day still cannot land quietly in LOW, and
+`requires_human_review` is what actually carries that intent. Two tests pin it: the
+escalator can never reach a band in `_BLOCK_BANDS`, and it can never demote a verdict
+that earned HIGH on real evidence.
+
+The detector itself is **not** vindicated by this fix. Its lift is negative on this
+corpus and it remains a candidate for removal; escalating to REVIEW bounds the damage,
+it does not make the signal good.
+
+### Model bundle — GCS was serving the leaky model — 2026-08-26
+
+`gs://cybershield-505518-models/` held **`random_forest-504f-1.1.0`**: trained on the
+two-epoch corpus, on the retired feature schema, and no longer the model the paper cites.
+`models/` is gitignored, so shared storage was the only copy and it was the wrong one.
+
+Replaced with **`xgboost-428f-1.2.0`** (schema 1.2.0, single-epoch corpus). The previous
+bundle is archived at `gs://cybershield-505518-models/archive-random_forest-504f-1.1.0/`
+rather than deleted — a superseded model is provenance, not garbage.
+
+---
+
 ### Measured negative results — 2026-08-26
 
 Recorded prominently because a negative result nobody can find is a claim waiting to be
