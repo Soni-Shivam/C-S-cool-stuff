@@ -41,6 +41,70 @@ MAX_PERMUTATION_EVALS = 800
 #: KernelExplainer intractable and buys nothing for the tree explainers.
 BACKGROUND_ROWS = 200
 
+#: pyproject pins `shap>=0.48,<1` and the lower bound is a requirement, not a
+#: preference: shap 0.46 raises at IMPORT under numpy>=2.3
+#: (`shap/plots/colors/_colorconv.py` calls `np.dtype(np.floating)`, which numpy 2
+#: refuses). An environment that drifts back below this bound loses per-sample
+#: attribution entirely, so the version is checked and NAMED rather than left to
+#: surface as a bare TypeError swallowed by an `except`.
+SHAP_MIN_VERSION = (0, 48)
+
+
+def _installed_shap_version() -> str | None:
+    """The installed shap version, readable even when `import shap` itself raises."""
+    try:
+        from importlib.metadata import version
+
+        return version("shap")
+    except Exception:
+        return None
+
+
+def _import_shap() -> tuple[Any, str | None]:
+    """Return `(module, None)`, or `(None, reason)` naming why SHAP cannot run here.
+
+    The reason is written for an operator reading it in `MLPrediction.errors`: it says
+    which version is installed and which is required, because "SHAP unavailable" on its
+    own reads as "shap is not installed" and sends the reader down the wrong path when
+    the truth is that an incompatible shap is installed and failing at import.
+    """
+    installed = _installed_shap_version()
+    try:
+        import shap
+    except Exception as exc:
+        where = f"shap {installed} is installed but " if installed else ""
+        return None, (
+            f"{where}`import shap` raised {type(exc).__name__}: {exc} — this pipeline "
+            "requires shap>=0.48,<1 (shap 0.46 raises at import under numpy>=2.3)"
+        )
+    reported = getattr(shap, "__version__", None) or installed
+    if _version_tuple(reported) < SHAP_MIN_VERSION:
+        return None, (
+            f"shap {reported} is installed but this pipeline requires shap>=0.48,<1; "
+            "older releases are not compatible with numpy>=2.3"
+        )
+    return shap, None
+
+
+def _version_tuple(version: str | None) -> tuple[int, ...]:
+    """`0.46.0` -> `(0, 46, 0)`. An unparseable version is treated as new enough."""
+    if not version:
+        return SHAP_MIN_VERSION
+    parts: list[int] = []
+    for chunk in version.split(".")[:3]:
+        # Leading digits only: `1.0.0rc1` is release 1.0.0, and reading `0rc1` as 1
+        # would rank a release candidate above the release it precedes.
+        digits = ""
+        for character in chunk:
+            if not character.isdigit():
+                break
+            digits += character
+        if not digits:
+            break
+        parts.append(int(digits))
+    return tuple(parts) if parts else SHAP_MIN_VERSION
+
+
 _FAMILY_LABELS: dict[str, str] = {
     "perm": "permission",
     "combo": "permission combination",
@@ -85,6 +149,10 @@ class Explainer:
         self.model = model
         self.vocabulary = vocabulary
         self.method = "none"
+        #: Why per-sample SHAP could not run, in words an operator can act on. `None`
+        #: while SHAP is working. Threaded into `MLPrediction.errors` by `infer.predict`
+        #: so a degraded explainer is diagnosable from the job output alone.
+        self.unavailable_reason: str | None = None
         self._shap: Any = None
         self._max_evals: int | None = None
         self._fallback_weights: np.ndarray | None = None
@@ -94,10 +162,9 @@ class Explainer:
         inner = self.model
         if hasattr(self.model, "named_steps"):
             inner = self.model.named_steps.get("clf", self.model)
-        try:
-            import shap
-        except Exception:
-            self._build_fallback()
+        shap, reason = _import_shap()
+        if shap is None:
+            self._build_fallback(reason)
             return
 
         rng = np.random.default_rng(SEED)
@@ -123,16 +190,20 @@ class Explainer:
                 self._max_evals = MAX_PERMUTATION_EVALS
                 self.method = f"shap.Explainer(permutation, max_evals={MAX_PERMUTATION_EVALS})"
             else:
-                self._build_fallback()
+                self._build_fallback(
+                    f"{type(inner).__name__} is neither a tree nor a linear model, so "
+                    "no SHAP explainer fits it; permutation importance is its honest answer"
+                )
                 return
-        except Exception:
-            self._build_fallback()
+        except Exception as exc:
+            self._build_fallback(f"building the SHAP explainer raised {type(exc).__name__}: {exc}")
 
-    def _build_fallback(self) -> None:
+    def _build_fallback(self, reason: str | None = None) -> None:
         from drishti.m5_ml.models import global_importance
 
         weights = global_importance(self.model, len(self.vocabulary))
         self._fallback_weights = weights
+        self.unavailable_reason = reason or "per-sample SHAP did not run"
         self.method = (
             "model-native global importance (SHAP unavailable)"
             if weights is not None
@@ -170,8 +241,10 @@ class Explainer:
                 while array.ndim > 2:
                     array = array[..., -1]
                 return np.asarray(array.reshape(array.shape[0], -1)[0], dtype=float)
-            except Exception:
-                self._build_fallback()
+            except Exception as exc:
+                self._build_fallback(
+                    f"the SHAP explainer raised {type(exc).__name__} on this sample: {exc}"
+                )
         if self._fallback_weights is None:
             return None
         # Global magnitude scaled by this sample's value: still not per-sample SHAP, and

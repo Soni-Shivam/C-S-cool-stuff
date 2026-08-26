@@ -1,0 +1,82 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "a0610f08c783ff5486a66022fedf483e1ac81dfe48935680b5d9d29b309338c5",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.quadrigeminate.hydrocatalysis on the sealed GCE detonator, containment manifest 0154198069a06ce304da35577712a9f500e6a42a7b4d271b96ce85ac10b320cf.",
+    "authored_at": "2026-08-26T06:16:18.764056+00:00",
+    "source_sha256": "a0610f08c783ff5486a66022fedf483e1ac81dfe48935680b5d9d29b309338c5",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_a0610f08c783",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "14 instrumented observations across 3 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 40,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      },
+      {
+        "t_ms": 0,
+        "api": "Cipher.doFinal",
+        "args": [
+          "crypto op plaintext=\u0003\ufffd\ufffdn\u04b4\\\u000e"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 11
+      },
+      {
+        "t_ms": 676,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.google.android.gms"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 2
+      }
+    ],
+    "network_flows": [],
+    "decrypted_blobs": [
+      {
+        "t_ms": 0,
+        "algorithm": null,
+        "plaintext_preview": "\u0003\ufffd\ufffdn\u04b4\\\u000e",
+        "plaintext_sha256": null,
+        "length_bytes": 7,
+        "contains_url": false,
+        "contains_dex_magic": false,
+        "occurrences": 11
+      }
+    ],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T06:16:18.764056+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

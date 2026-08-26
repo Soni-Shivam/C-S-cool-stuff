@@ -249,9 +249,7 @@ def _vlm_brand(icon: Image.Image, settings: Settings) -> tuple[str | None, float
     return brand, confidence, [f"VLM: imitates {brand} ({why})"]
 
 
-def _cached_vlm_brand(
-    icon: Image.Image, settings: Settings
-) -> tuple[str | None, float, list[str]]:
+def _cached_vlm_brand(icon: Image.Image, settings: Settings) -> tuple[str | None, float, list[str]]:
     """`_vlm_brand`, memoised on disk by the icon's perceptual hash.
 
     MEASURED, and the reason this exists: the free VLM returned confidences spanning
@@ -286,9 +284,7 @@ def _cached_vlm_brand(
     if settings.llm_cache_enabled and not any("failed" in n for n in notes):
         try:
             cache_dir.mkdir(parents=True, exist_ok=True)
-            path.write_text(
-                json.dumps({"brand": brand, "confidence": confidence, "notes": notes})
-            )
+            path.write_text(json.dumps({"brand": brand, "confidence": confidence, "notes": notes}))
         except OSError:
             pass
     return brand, confidence, notes

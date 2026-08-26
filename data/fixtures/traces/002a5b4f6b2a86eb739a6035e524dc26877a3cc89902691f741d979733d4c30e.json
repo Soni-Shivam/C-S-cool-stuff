@@ -9,6 +9,9 @@
     "captured_from_image": "drishti-m3-tools-v1"
   },
   "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
     "run_id": "run_002a5b4f6b2a",
     "source": "live",
     "detonated": true,
@@ -21,17 +24,37 @@
         "args": [
           "[REDACTED:DEVICE_VALUE]"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 1
       }
     ],
+    "network_flows": [],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [
+      {
+        "probe_kind": "TelephonyManager.getDeviceId",
+        "queried": "[REDACTED:DEVICE_VALUE]",
+        "result": "MISS",
+        "t_ms": 0,
+        "followed_by_stall": true,
+        "stall_duration_ms": null,
+        "inferred_requirement": "device_identity",
+        "stack": []
+      }
+    ],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
     "emulator_image": "drishti-m3-tools-v1",
     "vm_instance_id": "7618811088902044349; hooks completed",
     "harness_version": "m3-harness-1.0.0",
     "containment_verified": true,
     "captured_at": "2026-08-13T10:25:37.146315Z",
-    "synthetic": false,
-    "errors": [],
-    "partial": false
+    "synthetic": false
   },
   "post_morph": {}
 }

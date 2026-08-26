@@ -1,0 +1,85 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "c565f4b9b3c6bb095c6ce62ab02c5cc8a84502231f4facdddb6f3d7af2321b5e",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.grand.thinpad on the sealed GCE detonator, containment manifest 06737012b2eb3318cd7083b93d00b1373c3f0f9d915b046498b1c79df62eb80a.",
+    "authored_at": "2026-08-26T06:26:57.066354+00:00",
+    "source_sha256": "c565f4b9b3c6bb095c6ce62ab02c5cc8a84502231f4facdddb6f3d7af2321b5e",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_c565f4b9b3c6",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "19 instrumented observations across 3 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 561,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 7
+      },
+      {
+        "t_ms": 307,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=http://vgfgfttfyug###########.cfd/api/mirrors"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 8
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.grand.thinpad"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 4
+      }
+    ],
+    "network_flows": [
+      {
+        "t_ms": 307,
+        "method": "GET",
+        "url": "http://vgfgfttfyug###########.cfd/api/mirrors",
+        "host": "vgfgfttfyug###########.cfd",
+        "req_headers": {},
+        "req_body_preview": "",
+        "req_body_sha256": null,
+        "status": null,
+        "resp_body_preview": null,
+        "synthesised": false,
+        "tls_intercepted": false
+      }
+    ],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T06:26:57.066354+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

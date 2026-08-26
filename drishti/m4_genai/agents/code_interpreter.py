@@ -22,7 +22,7 @@ product (CLAUDE.md rule 5), so the model cites or it is marked as having failed 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
@@ -106,6 +106,115 @@ def build_user_turn(pack: RetrievalPack, static: StaticReport) -> str:
     return "\n".join([*header, render_workspace(pack), *footer])
 
 
+def canonical_signature(signature: str) -> str:
+    """A dialect-independent key for one method: `package.Class->name`.
+
+    Models write signatures the way a human reads them — `com.b.a.c.a->a(Context, String)`
+    — and also as full JVM descriptors — `Lcom/b/a/c/a;->a(Landroid/content/Context;)V`.
+    The retrieval catalogue keys on neither: it stores `Lcom/b/a/c/a;->a`, with **no
+    parameter list at all**. An exact dict lookup therefore dropped every interpretation
+    the model produced, and the dashboard reported `0 methods interpreted` for the
+    flagship reverse-engineering layer while the model had in fact done the work.
+
+    Normalised away: the `L…;` wrapper, `/` versus `.` as the package separator, spacing,
+    and the parameter list. **Kept:** the class and the method name — obfuscated code is
+    full of `a()`, so a same-named method on a different class must never match.
+
+    Parameter counts are deliberately NOT part of the key. They cannot be: the catalogue
+    does not record them, so arity could only ever disagree with itself. `signature_arity`
+    exists to compare them when both sides genuinely state one.
+    """
+    text = signature.strip()
+    if not text or "->" not in text:
+        return ""
+    owner, _, rest = text.partition("->")
+    owner = owner.strip()
+    if owner.startswith("L") and owner.endswith(";"):
+        owner = owner[1:-1]
+    owner = owner.replace("/", ".").strip(".")
+    name = rest.strip().partition("(")[0].strip()
+    if not owner or not name:
+        return ""
+    return f"{owner}->{name}"
+
+
+#: JVM primitive type descriptors. `V` is void and legal only as a return type.
+_PRIMITIVES = set("BCDFIJSZ")
+
+
+def signature_arity(signature: str) -> int | None:
+    """Parameter count, or None when the signature does not state one.
+
+    None is the important value. The catalogue omits parameters entirely, so treating
+    "no list" as "zero parameters" would make every catalogue entry disagree with every
+    model answer that spelled its arguments out.
+    """
+    text = signature.strip()
+    if "(" not in text:
+        return None
+    inner = text.partition("(")[2].rsplit(")", 1)[0].strip()
+    if not inner:
+        return 0
+    if "," in inner:
+        return len([p for p in inner.split(",") if p.strip()])
+
+    # JVM descriptor list: no separators, so walk the type codes.
+    count, index = 0, 0
+    while index < len(inner):
+        char = inner[index]
+        if char == "[":  # array dimension, part of the type that follows
+            index += 1
+            continue
+        if char == "L":  # object type, runs to the terminating semicolon
+            end = inner.find(";", index)
+            if end == -1:
+                break
+            count += 1
+            index = end + 1
+            continue
+        if char in _PRIMITIVES:
+            count += 1
+        index += 1
+    return count
+
+
+def resolve_signature(signature: str, table: dict[str, Any]) -> Any | None:
+    """Look a signature up exactly, then by canonical class-and-name. None if not ours.
+
+    Arity is used only to break a tie between real overloads, and only when BOTH the
+    catalogue entry and the model's answer state one. Absent that, class and name are the
+    whole of the identity — which is all the catalogue actually records.
+    """
+    if signature in table:
+        return table[signature]
+    key = canonical_signature(signature)
+    if not key:
+        return None
+    wanted = signature_arity(signature)
+    matches = [(c, v) for c, v in table.items() if canonical_signature(c) == key]
+    if not matches:
+        return None
+    if len(matches) > 1 and wanted is not None:
+        for candidate, value in matches:
+            if signature_arity(candidate) == wanted:
+                return value
+    return matches[0][1]
+
+
+def _output_budget(client: LLMClient) -> int:
+    """Output tokens to reserve, leaving room for the tool results to come back.
+
+    The tool loop's expensive round is the second one: it repeats round 0's prompt, adds
+    the assistant's tool calls and every tool result, and still has to reserve room for
+    the answer. Reserving a flat 3,000 made that round exceed the provider limit on the
+    shipped tier, so the model called its tools and its findings were then discarded.
+    """
+    ceiling = getattr(client._settings, "llm_max_request_tokens", 8_000)
+    # Half the ceiling for the answer is still far more than a validated JSON
+    # InterpretationSet needs, and it leaves the other half for prompt + tool results.
+    return max(512, min(3_000, ceiling // 5))
+
+
 def interpret_methods(
     static: StaticReport,
     ledger: LedgerStore,
@@ -132,6 +241,11 @@ def interpret_methods(
         execute=toolbox.execute,
         schema=InterpretationSet,
         purpose="code_interpreter",
+        # Sized to the provider's per-request ceiling rather than to a round number.
+        # Round 1 carries every tool result back on top of round 0's prompt, and the
+        # reserved output counts toward the same limit, so an over-generous reservation
+        # is what rejects the round that actually produces the interpretations.
+        max_output_tokens=_output_budget(client),
     )
     if response is None:
         log.warning("code_interpreter_unavailable", chains=len(workspace.chains))
@@ -144,8 +258,8 @@ def interpret_methods(
 
     interpretations: list[CodeInterpretation] = []
     for item in response.interpretations[:MAX_METHODS_INTERPRETED]:
-        slice_ = known.get(item.method_signature)
-        method = fallback.get(item.method_signature)
+        slice_ = resolve_signature(item.method_signature, known)
+        method = resolve_signature(item.method_signature, fallback)
         if slice_ is None and method is None:
             # The model named a method that is not in this analysis. Dropping it is the
             # same discipline as rejecting a bad citation: we do not report on code we

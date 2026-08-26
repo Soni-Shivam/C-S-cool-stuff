@@ -1,0 +1,60 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "2b332adf4e52168cbd2e76866165a5c6f421d15b5778d44f78f0d86c4c26b9fa",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of p31e2586d.p0e6e1473.pca88ca83 on the sealed GCE detonator, containment manifest b06624803c319707c248fb67063945c2ecb7bebbcedfd754cd3137684e02dfba.",
+    "authored_at": "2026-08-26T05:28:59.739824+00:00",
+    "source_sha256": "2b332adf4e52168cbd2e76866165a5c6f421d15b5778d44f78f0d86c4c26b9fa",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_2b332adf4e52",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "18 instrumented observations across 2 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 470,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.google.android.webview"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 17
+      }
+    ],
+    "network_flows": [],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T05:28:59.739824+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

@@ -1,0 +1,82 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "d921e4c59b048aa4085712054c1fa0cac28994f8857b519f27a297b8f2c5d77d",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.tumuluses.gastrocnemius on the sealed GCE detonator, containment manifest cb649ef4201d63a1a58b6202a3a8a1fc31b2b957ff3341102287cac877419fc2.",
+    "authored_at": "2026-08-26T06:42:03.624626+00:00",
+    "source_sha256": "d921e4c59b048aa4085712054c1fa0cac28994f8857b519f27a297b8f2c5d77d",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_d921e4c59b04",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "58 instrumented observations across 3 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 373,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 2
+      },
+      {
+        "t_ms": 0,
+        "api": "Cipher.doFinal",
+        "args": [
+          "crypto op plaintext=d\ufffd\u0001\ufffdz\u0017\ufffda\ufffdEt\ufffd\ufffd#\ufffd\u064a\ufffdGLf\r\ufffd\ufffdh\ufffd\ufffd\u0007\ufffd\ufffd>V#\ufffdQ\ufffd\ufffd\u0782`\u00e3\ufffdm#\ufffd\ufffd"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 54
+      },
+      {
+        "t_ms": 1999,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.google.android.gms"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 2
+      }
+    ],
+    "network_flows": [],
+    "decrypted_blobs": [
+      {
+        "t_ms": 0,
+        "algorithm": null,
+        "plaintext_preview": "d\ufffd\u0001\ufffdz\u0017\ufffda\ufffdEt\ufffd\ufffd#\ufffd\u064a\ufffdGLf\r\ufffd\ufffdh\ufffd\ufffd\u0007\ufffd\ufffd>V#\ufffdQ\ufffd\ufffd\u0782`\u00e3\ufffdm#\ufffd\ufffd",
+        "plaintext_sha256": null,
+        "length_bytes": 44,
+        "contains_url": false,
+        "contains_dex_magic": false,
+        "occurrences": 54
+      }
+    ],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T06:42:03.624626+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

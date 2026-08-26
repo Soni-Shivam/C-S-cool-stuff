@@ -9,6 +9,9 @@
     "captured_from_image": "m3-detonator-manual-20260826"
   },
   "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
     "run_id": "run_3acc8a25e891",
     "source": "live",
     "detonated": true,
@@ -21,6 +24,9 @@
         "args": [
           "added a window over other apps"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 2
       },
       {
@@ -29,6 +35,9 @@
         "args": [
           "queried provider content://com.google.android.gms.chimera/api_force_staging/com.google.android.gms.measurement.dy..."
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 3
       },
       {
@@ -37,6 +46,9 @@
         "args": [
           "queried package=com.android.vending"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 52
       },
       {
@@ -45,17 +57,40 @@
         "args": [
           "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 37
       }
     ],
+    "network_flows": [
+      {
+        "t_ms": 120,
+        "method": "GET",
+        "url": "https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+        "host": "firebaseinstallations.googleapis.com",
+        "req_headers": {},
+        "req_body_preview": "",
+        "req_body_sha256": null,
+        "status": null,
+        "resp_body_preview": null,
+        "synthesised": false,
+        "tls_intercepted": false
+      }
+    ],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
     "emulator_image": "m3-detonator-manual-20260826",
     "vm_instance_id": "7382052279419138339",
     "harness_version": "m3-harness-2.0.0",
     "containment_verified": true,
     "captured_at": "2026-08-26T03:48:45.183373+00:00",
-    "synthetic": false,
-    "errors": [],
-    "partial": false
+    "synthetic": false
   },
   "post_morph": {}
 }

@@ -801,6 +801,80 @@ land. The bar for this hackathon is a working PoC per idea, not a finished produ
 - [x] T4.6 Trace normalisation                     DONE  2026-08-26 · 1,925 raw events → 40 groups; `b_dynamic` provably unchanged
 - [x] T4.7 TRIPWIRE @ H40                          PASSED — live detonation achieved, so the fallback was never needed
 - [x] T4.8 Sandbox plan builder                    DONE  2026-08-26 · SandboxPlan built and consumed by both sandbox passes
+- [x] T4.9 Live detonation wired into the pipeline DONE  2026-08-26 · `LiveSandboxSource` implemented; see below
+
+### T4.9 — the execution path is wired, not just the analysis path — 2026-08-26
+
+The paper (§13.2 Table 12, §15.3, §17 Table 18) records M3 as *partially* built: the
+analysis layer — trace normalisation, rule-11 aggregation, evasion detection, the
+containment probe — was built and tested, while the **execution path was not reachable
+from the pipeline**. That was accurate. `LiveSandboxSource.available()` returned a
+hardcoded `False` with the comment "P0: the lab is not built", and `.run()` raised
+"not implemented until P4". The 115 detonations that did happen were driven by hand,
+one `detonator_run.sh` invocation at a time, and their output reached the product only
+if somebody remembered to run `scripts/observation_to_trace.py` afterwards.
+
+So the dynamic layer could never fire for a sample a user actually uploaded. What was
+built:
+
+- **`drishti/m3_dynamic/ingest.py`** — `artifact_to_trace()`, the single
+  `ObservationArtifact` → `DynamicTrace` conversion. It previously existed only inside
+  `scripts/observation_to_trace.py`, so the offline fixture path and any future live
+  path would have been two implementations of one conversion. The script is now a CLI
+  over the module and `tests/contract/test_observation_ingest_parity.py` holds them
+  together — the M3 analogue of `test_feature_parity.py`.
+- **`drishti/m3_dynamic/detonator.py`** — `RemoteDetonatorClient`, the runbook's
+  stage → detonate → collect sequence over IAP, with the retry loop the runbook asks
+  for. No local branch exists: CLAUDE.md's rule is enforced by the structure rather
+  than by a comment.
+- **`LiveSandboxSource`** — real health probe (VM `RUNNING`, never *started* as a side
+  effect of a job) and a real run path. Two gates abort rather than warn: containment
+  not verified, and `safe_for_ingestion` false.
+- **Evasion observations now survive conversion.** The old converter dropped them, so
+  every captured fixture replayed as a sample that never probed its environment and the
+  frontier could not fire on real data. 10 of 51 captured runs carry a probe→stall
+  pattern; those now reach `_frontier`.
+
+**A protocol bug was caught before it cost a VM start.** The first client was written
+to send `detonate --sha256 X --serial Y --duration N --morphs <json>`. The script takes
+`detonate <sha> [duration]` positionally and puts pass 2 behind a *separate* `morph
+<sha> <kinds> [duration]` subcommand writing `<sha>.morph.json`. `MorphKind` also
+enumerates nine kinds while only five have Frida scripts; the VM answers rc 5 for the
+rest. `tests/unit/test_detonator_client.py` now asserts the command surface against
+`infra/gcp/detonator_run.sh` itself.
+
+**Fixture backfill.** 117 captured artifacts existed; 51 carry observations; only 25
+had ever been converted. All 51 are now committed as replayable `TraceFixture`s, so
+replay covers the real corpus instead of a quarter of it.
+
+**Structured evidence is no longer dropped in conversion.** `ObservationEvent` is flat
+— technique, mitre, hook, one redacted `detail` string — so the dropped-dex path, the C2
+URL and the pre-encryption plaintext all arrive as prose. The old converter kept none of
+it, which is why the Sandbox tab reported `0 network flows · 0 dex loads · 0 decrypted
+blobs` for samples that had genuinely produced them. Measured over the 51 captured runs:
+
+| Lifted | Count | Note |
+|---|---|---|
+| `dex_loads` | 11 | all from runtime-written paths (`/data/user/…/cache`, `app_DynamicOptDex`) |
+| `network_flows` | 17 | across 13 distinct hosts |
+| `decrypted_blobs` | 18 | `Cipher.doFinal` plaintext, captured before encryption |
+
+Parsing is anchored on the hook's own marker and refuses to guess: a detail with no
+`path=` yields no `DexLoadEvent` at all, rather than one with an invented verdict.
+`in_original_apk` is **derived from the path** rather than defaulted, because it is the
+strongest single input to `D` and the default (`False`) is the accusatory value — a
+split APK loading its own `base.apk!/classes.dex` must not be called a dropper.
+
+**This partially un-deadens `D`.** 11 of the 51 captured samples load dex from a
+runtime-written path, so `D` is now reachable for real traces instead of being
+structurally zero. It remains zero for static-only jobs, and `StaticReport.used_not_declared`
+is still never populated by M2 — that half of `D` is untouched and still a real gap.
+
+**Still not done, explicitly:** no live detonation has been run through this path. The
+`m3-detonator` VM is `TERMINATED` and `DRISHTI_GCP_PROJECT` is unset in `.env`, so
+`auto` resolves to replay. The code is exercised against a fake detonator, not a real
+one — `tests/lab/` is where a live-marked test belongs and none has been written yet.
+Until that runs, T4.9 is "wired and unit-tested", not "proven live".
 
 ## P5 — FRONTIER (H44→H58)
 
@@ -1297,3 +1371,80 @@ not caught by any test or gate, only by reading `git log`. Single agent from her
   minute mid-demo.** `demo_up.sh` prints whether it is HELD; check it every time.
 - **No dynamic analysis has been run for the demo sample**, and the phone's
   limitations list — generated by the backend, not typed — says so.
+
+---
+
+### Deviations — 2026-08-26 (repo-invariant + clean-clone test suite)
+
+- **`models/*.pkl` is now an explicit exception in `test_no_forbidden_artifacts_tracked`,
+  not an invariant violation.** `fa04cdf` committed the trained classifier, calibrator
+  and anomaly bundles (`.gitignore` already allowlists them by name); the invariant
+  still failed because its allowlist was `canary/` only. Reason: a trained model is
+  neither a sample nor key material — it executes nothing and leaks no secret — and
+  the H7 concern it was written for (v1 shipping a *synthetic* model as real) is a
+  provenance question answered by `models/model_card.json` and the metrics in this
+  file, not by whether the bytes are in git. `gs://<proj>-models/`
+  (`DRISHTI_GCS_MODELS_BUCKET`) stays the runtime source of truth; the committed
+  copies exist so a paper reviewer can reproduce inference without GCP credentials.
+  The exception is scoped to `.pkl`/`.joblib` **under `models/`** — an `.apk`, `.dex`,
+  `.pem`, `.p12` or `.jks` dropped there is still an offender, and
+  `test_the_models_exception_is_narrow` proves it.
+- **`test_derive_hints_finds_the_decoys_dead_beacons` skips on a clean clone instead of
+  failing.** It reads `canary/decoy-challan/dist/RTO_Challan.apk`, a deliberately
+  gitignored build artifact (only `canary/dist/` is committed). Building it needs the
+  JDK/Android SDK/Gradle toolchain that `canary/decoy-challan/build.sh` downloads —
+  not hermetic enough for a fixture — so the test now `pytest.skip`s with the build
+  command named. It skips visibly; it never silently passes.
+
+### The Groq free tier is the binding constraint on M4 — measured 2026-08-26
+
+The code interpreter reported `0 methods interpreted · 0 retrieval tool calls` on every
+run, and the dashboard rendered that as though the model had *chosen* not to use its
+tools. It had not. Four separate defects were stacked on top of one real quota limit.
+
+**The limit, in the provider's own words** (captured by running the real pipeline over a
+corpus sample, not inferred):
+
+    round 0   "Rate limit reached ... on tokens per minute (TPM): Limit 8000,
+               Used 4932, Requested 5584. Please try again in 18.87s."
+    round 1   "Request too large ... Limit 8000, Requested 8528, please reduce your
+               message size and try again."
+
+**8,000 TPM, and the reserved `max_tokens` counts toward it.** The behaviour checklist
+costs ~4,900 and the interpreter's round 0 ~5,300, so the two stages cannot both run
+inside one minute. A 5,300-token prompt reserving 3,000 output is an 8,300-token request
+and is refused outright — which is why round 1, *the round that carries the tool results
+back and produces the interpretations*, never completed.
+
+What was wrong in our code, each fixed with a test:
+
+1. **413 was not retryable.** `_exchange_with_retry` re-raised on the first attempt, the
+   tool loop returned None, `_guarded` swallowed it. One quota blip cost the job its
+   whole RE stage.
+2. **The two 413s need opposite handling and the status cannot tell them apart.** A
+   rolling-window limit says "try again in Ns" and is worth waiting for; an oversized
+   request says "reduce your message size" and can never succeed. Retrying the second
+   burned 38s per job to reach the identical failure; it now fails in **171ms**.
+3. **Our backoff was 1s+2s against a requested 18.87s.** Retrying sooner than the
+   provider asked is arithmetically the same as not retrying. `retry_delay_from()` now
+   honours the stated delay, capped at 30s so a hostile value cannot hang a demo.
+4. **The provider's explanation was discarded.** `raise_for_status()` yields "Client
+   error '413 Payload Too Large'" and throws away the body — which is where Groq says
+   *why*. This cost about an hour of misdiagnosis; `_explain()` now includes it.
+
+Sizing, now derived rather than guessed. `Settings.llm_max_request_tokens` (default 8,000)
+records the provider ceiling; the interpreter reserves output from it, `MAX_TOOL_RESULT_CHARS`
+went 8,000 -> 2,000, and the retrieval workspace went 5,000 -> 1,800 tokens.
+
+**Measured result:** 0 tool calls -> **8 tool calls** (`read_method`, `get_method_strings`,
+`find_xrefs`), 1 LLM call -> 4, 0 claims -> 2, and the tool loop now completes rounds at
+3,715 / 3,936 / 4,160 tokens instead of being rejected.
+
+**Still not landed, and it is a quota ceiling rather than a defect:** `interpretations`
+remains 0. The model spends its whole round budget on tools and is then rate-limited
+before it can emit the final validated JSON. The honest options are a tier upgrade (Groq's
+own error suggests Dev Tier) or fewer stages per minute. The workspace reduction to 1,800
+tokens is a real cost to the RE layer — fewer method bodies reach the model — and is
+recorded here as a deviation rather than presented as a tuning improvement. Raising
+`llm_max_request_tokens` after an upgrade restores it automatically.
+

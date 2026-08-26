@@ -9,6 +9,9 @@
     "captured_from_image": "m3-detonator-manual-20260826"
   },
   "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
     "run_id": "run_cf61fac93861",
     "source": "live",
     "detonated": true,
@@ -21,6 +24,9 @@
         "args": [
           "added a window over other apps"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 2
       },
       {
@@ -29,6 +35,9 @@
         "args": [
           "queried provider content://com.google.android.gms.chimera/api_force_staging/com.google.android.gms.maps_dynamite"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 1
       },
       {
@@ -37,17 +46,47 @@
         "args": [
           "queried package=com.android.vending"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 7
       }
     ],
+    "network_flows": [],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [
+      {
+        "probe_kind": "ContentResolver.query",
+        "queried": "queried provider content://com.google.android.gms.chimera/api_force_staging/com.google.android.gms.maps_dynamite",
+        "result": "MISS",
+        "t_ms": 22,
+        "followed_by_stall": true,
+        "stall_duration_ms": null,
+        "inferred_requirement": "sms_history",
+        "stack": []
+      },
+      {
+        "probe_kind": "PackageManager.getPackageInfo",
+        "queried": "queried package=com.android.vending",
+        "result": "MISS",
+        "t_ms": 0,
+        "followed_by_stall": true,
+        "stall_duration_ms": null,
+        "inferred_requirement": "install_packages",
+        "stack": []
+      }
+    ],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
     "emulator_image": "m3-detonator-manual-20260826",
     "vm_instance_id": "7382052279419138339",
     "harness_version": "m3-harness-2.0.0",
     "containment_verified": true,
     "captured_at": "2026-08-26T04:09:15.825958+00:00",
-    "synthetic": false,
-    "errors": [],
-    "partial": false
+    "synthetic": false
   },
   "post_morph": {}
 }

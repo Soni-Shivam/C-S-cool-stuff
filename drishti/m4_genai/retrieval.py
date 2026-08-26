@@ -38,7 +38,10 @@ from drishti.m4_genai.safety import wrap_untrusted
 
 #: How much of the 12k input budget the code workspace may consume. The rest pays for
 #: the system prompt, the evidence catalogue, the manifest facts and the tool schemas.
-DEFAULT_TOKEN_BUDGET = 5_000
+#: Workspace budget. Lowered from 5,000 once the tool loop was measured end to end: the
+#: pack is only round 0's cost, and round 1 carries the tool results as well. The binding
+#: constraint is the provider's per-request ceiling, not the prompt budget in config.
+DEFAULT_TOKEN_BUDGET = 1_800
 
 #: Never send more than this many chains however small they are — a model given
 #: twenty shallow chains produces twenty shallow answers.

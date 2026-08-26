@@ -1,0 +1,95 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "003d2fd8ef8fc9d4765e4bbc650ecd20ef339be94606486629c003f683cb5982",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of kind.collect.action on the sealed GCE detonator, containment manifest 540211ca66fb3769c85495d1f5799eca257fa3e15e7f16befdf094340d8d1294.",
+    "authored_at": "2026-08-26T05:17:26.856527+00:00",
+    "source_sha256": "003d2fd8ef8fc9d4765e4bbc650ecd20ef339be94606486629c003f683cb5982",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_003d2fd8ef8f",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "20 instrumented observations across 3 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 404,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 17
+      },
+      {
+        "t_ms": 0,
+        "api": "DexClassLoader.$init",
+        "args": [
+          "loaded dex path=/data/user/#/kind.collect.action/app_DynamicOptDex/xcN.json"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      },
+      {
+        "t_ms": 193,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=http://ip-api.com/json"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 2
+      }
+    ],
+    "network_flows": [
+      {
+        "t_ms": 193,
+        "method": "GET",
+        "url": "http://ip-api.com/json",
+        "host": "ip-api.com",
+        "req_headers": {},
+        "req_body_preview": "",
+        "req_body_sha256": null,
+        "status": null,
+        "resp_body_preview": null,
+        "synthesised": false,
+        "tls_intercepted": false
+      }
+    ],
+    "decrypted_blobs": [],
+    "dex_loads": [
+      {
+        "t_ms": 0,
+        "loader": "DexClassLoader.$init",
+        "path": "/data/user/#/kind.collect.action/app_DynamicOptDex/xcN.json",
+        "sha256": null,
+        "size_bytes": null,
+        "in_original_apk": false,
+        "dumped_to": null
+      }
+    ],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T05:17:26.856527+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

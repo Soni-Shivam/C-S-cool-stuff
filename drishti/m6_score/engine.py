@@ -6,6 +6,7 @@ nodes belongs to the pipeline adapter, never to the score calculation itself.
 
 from __future__ import annotations
 
+import math
 from typing import Literal, cast
 
 from drishti.contracts.dynamic_trace import DynamicTrace, TraceSourceKind
@@ -82,7 +83,8 @@ def score(
     has_intel = bool(intel and intel.source not in {"none", "unavailable"} and not intel.partial)
     probability = ml.p_calibrated if ml and has_ml else None
     behavioural = genai.behavioural_risk_B if genai and has_behavioural else None
-    fused = _noisy_or(probability, behavioural)
+    evidence = genai.behavioural_evidence if genai and has_behavioural else None
+    fused = _fuse(probability, evidence=evidence, behavioural=behavioural)
     reputation = 1.0 if intel and intel.known_bad_hash else 0.0
     drift = _drift(static, dynamic)
     factors = (
@@ -99,7 +101,13 @@ def score(
             "Fused AI intelligence",
             fused,
             0.50,
-            {"p_calibrated": probability, "behavioural_risk_B": behavioural},
+            {
+                "p_calibrated": probability,
+                "behavioural_risk_B": behavioural,
+                # Shown beside B so a reader can see which DIRECTION the behavioural
+                # layer pushed, which the [0,1] display value cannot express.
+                "behavioural_evidence": evidence,
+            },
             _refs(ml, genai),
         ),
         _factor(
@@ -176,7 +184,66 @@ def score(
     )
 
 
+#: Keeps `logit` finite at the edges. The calibrator emits exact 0.0 and 1.0 — its
+#: isotonic fit has flat regions at both ends — and `log(0)` would make the whole score
+#: NaN rather than merely wrong.
+_EPS = 1e-6
+
+
+def _logit(p: float) -> float:
+    p = min(max(p, _EPS), 1.0 - _EPS)
+    return math.log(p / (1.0 - p))
+
+
+def _sigmoid(z: float) -> float:
+    # Branch on the sign to avoid overflow in exp() for large |z|; both branches are the
+    # same function, and the scorer must not raise on an extreme weight sum.
+    if z >= 0:
+        return 1.0 / (1.0 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1.0 + e)
+
+
+def _fuse(
+    probability: float | None,
+    *,
+    evidence: float | None,
+    behavioural: float | None = None,
+) -> float:
+    """Combine the classifier probability with the behavioural evidence, in log-odds.
+
+        logit(F_AI) = logit(P_cal) + evidence
+
+    **Why this replaced noisy-OR.** `P + B - P·B` is monotone increasing in `B` over
+    `B >= 0`, so `F_AI >= P_cal` *always*: the GenAI layer could decline to add risk but
+    could never subtract it. A legitimate app the classifier condemned was therefore
+    unrescuable by construction — and rescuing exactly that app is the stated reason the
+    behavioural layer exists.
+
+    This form is not an ad-hoc fix. `BEHAVIOUR_WEIGHTS` and `CONTEXT_WEIGHTS` are measured
+    log-likelihood ratios, so adding them to the classifier's log-odds is ordinary
+    Bayesian evidence combination: the ML supplies the prior, the behavioural layer
+    supplies a likelihood ratio, and the arithmetic is auditable line by line.
+
+    `evidence is None` means the verdict predates the signed-evidence field, and falls
+    back to noisy-OR so an old artefact keeps the meaning it was scored under. `evidence
+    == 0.0` is different and deliberate: it means the layer ran and found nothing to say,
+    which must leave the classifier untouched rather than nudging it.
+
+    Pure: no I/O, no clock, no randomness (CLAUDE.md rule 3).
+    """
+    if evidence is None:
+        return _noisy_or(probability, behavioural)
+    if probability is None:
+        # No prior to update. The behavioural belief is the whole signal.
+        if behavioural is not None:
+            return _clamp(behavioural)
+        return round(_clamp(_sigmoid(evidence)), 6)
+    return round(_clamp(_sigmoid(_logit(probability) + evidence)), 6)
+
+
 def _noisy_or(probability: float | None, behavioural: float | None) -> float:
+    """The pre-2026-08-26 fusion. Retained so old artefacts re-score identically."""
     if probability is None:
         return _clamp(behavioural or 0.0)
     if behavioural is None:

@@ -149,10 +149,22 @@ def _consumer_summary(
         return f"{opening} {harm} Do not install it."
 
     if action == "REVIEW":
+        # Grounded, not stock. This branch used to return one hardcoded sentence naming
+        # SMS interception and banking overlays for EVERY sample. REVIEW is the MEDIUM
+        # band, where most real samples land, so nearly every reader was told two
+        # specific harms had been found when frequently neither behaviour was asserted.
+        # A precise false statement is worse than a vague true one, especially to a
+        # frightened person deciding whether to trust their banking app.
+        harm = _plain_harm(genai, fallback=None)
+        if harm:
+            return (
+                f"We could not confirm this app is safe. {harm} "
+                "Install it only if you are certain you trust the sender."
+            )
         return (
-            "We could not confirm this app is safe. It asks for permissions that could "
-            "be used to read your messages or show fake screens over your banking app. "
-            "Install it only if you are certain you trust the sender."
+            "We could not confirm this app is safe. We did not observe a specific "
+            "dangerous behaviour, but we could not rule one out either. Install it only "
+            "if you are certain you trust the sender."
         )
     return "We found nothing harmful in this app, but we could not check everything."
 
@@ -196,18 +208,25 @@ _PLAIN_HARM: tuple[tuple[str, str], ...] = (
 )
 
 
-def _plain_harm(genai: GenAIVerdict | None) -> str:
+def _plain_harm(
+    genai: GenAIVerdict | None,
+    *,
+    fallback: str | None = "It behaves like an app built to steal money.",
+) -> str | None:
     """Describe the worst confirmed behaviour without jargon.
 
-    Only behaviours the model actually ASSERTED are described. The fallback sentence is
-    deliberately vague rather than inventing a specific harm we did not observe.
+    Only behaviours the model actually ASSERTED are described, worst-first.
+
+    `fallback` is what to say when nothing was asserted. BLOCK keeps the default — by
+    then the score has already crossed 65 on other evidence, so a general statement is
+    warranted. REVIEW passes `None`, because at MEDIUM there is no basis for asserting
+    harm at all, and the caller says so in plainer terms instead.
     """
-    if genai is None or not genai.behaviours:
-        return "It behaves like an app built to steal money."
-    for key, sentence in _PLAIN_HARM:
-        if genai.behaviours.get(key):
-            return sentence
-    return "It behaves like an app built to steal money."
+    if genai is not None and genai.behaviours:
+        for key, sentence in _PLAIN_HARM:
+            if genai.behaviours.get(key):
+                return sentence
+    return fallback
 
 
 def _dynamic_view(trace: DynamicTrace | None) -> DynamicTraceView | None:

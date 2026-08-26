@@ -48,25 +48,69 @@ def replay() -> ReplayTraceSource:
     return ReplayTraceSource(REPO_FIXTURES)
 
 
+class _NoLab:
+    """A detonator that is not there. Records what it was asked, executes nothing."""
+
+    def __init__(self, state: str = "UNCONFIGURED") -> None:
+        self._state = state
+        self.calls: list[str] = []
+
+    def instance_state(self) -> str:
+        self.calls.append("instance_state")
+        return self._state
+
+    def stage(self, apk_path: Path, sha256: str) -> None:
+        self.calls.append("stage")
+
+    def detonate(self, sha256: str, *, morphs: tuple, duration_s: int) -> None:
+        self.calls.append("detonate")
+
+    def collect(self, sha256: str, *, morphed: bool = False):
+        self.calls.append("collect")
+        raise AssertionError("collect must never be reached without a running detonator")
+
+
 # ── interface conformance ────────────────────────────────────────────────────
-@pytest.mark.parametrize("source", [LiveSandboxSource(), ReplayTraceSource(REPO_FIXTURES)])
+@pytest.mark.parametrize(
+    "source",
+    # The live source is given a fake detonator on purpose: `available()` is a real
+    # health probe now, and a CI gate that shells out to `gcloud` would both be slow and
+    # break CLAUDE.md's rule that CI never touches GCP.
+    [LiveSandboxSource(client=_NoLab()), ReplayTraceSource(REPO_FIXTURES)],
+)
 def test_both_implementations_satisfy_the_abc(source: TraceSource) -> None:
     assert isinstance(source, TraceSource)
     assert isinstance(source.available(), bool)
     assert isinstance(source.kind, TraceSourceKind)
 
 
-def test_live_source_is_unavailable_and_raises_until_p4() -> None:
+def test_live_source_is_unavailable_without_a_configured_lab() -> None:
     """It raises rather than degrading.
 
     A live source that quietly returned an empty trace would make a missing sandbox
     indistinguishable from a sample that did nothing.
+
+    With no `DRISHTI_GCP_PROJECT` there is nowhere a sample may legally be executed, so
+    the source reports itself unavailable and refuses. This is the same refusal the P0
+    stub made, now for a real reason instead of a hardcoded `False` — the live path is
+    implemented (T4.1), it simply has no lab to drive here.
     """
-    live = LiveSandboxSource()
+    live = LiveSandboxSource(settings=None, client=_NoLab())
     assert live.available() is False
     assert live.kind is TraceSourceKind.LIVE
-    with pytest.raises(TraceSourceUnavailableError, match="P4"):
-        live.run(Path("/nonexistent.apk"), SandboxPlan())
+    with pytest.raises(TraceSourceUnavailableError, match="detonator is not running"):
+        live.run(Path("/nonexistent.apk"), SandboxPlan(), sha256="a" * 64)
+
+
+def test_live_source_never_starts_the_vm_as_a_side_effect() -> None:
+    """Bringing the lab up is an operator action, never a consequence of a job.
+
+    An idle nested-virt VM is the single fastest way to consume the research budget
+    (CLAUDE.md, cost guardrails), so `available()` reports the state and stops there.
+    """
+    probe = _NoLab(state="TERMINATED")
+    assert LiveSandboxSource(client=probe).available() is False
+    assert probe.calls == ["instance_state"], "no start, stage or detonate may be issued"
 
 
 def test_replay_source_is_available_with_the_committed_fixture(replay) -> None:
@@ -203,16 +247,16 @@ def test_a_malformed_fixture_fails_loudly(tmp_path) -> None:
 # ── mode resolution ──────────────────────────────────────────────────────────
 def test_auto_falls_back_to_replay_while_live_is_unavailable() -> None:
     """The parachute, wired in at hour zero so the H40 tripwire is a 20-minute switch."""
-    source = resolve_trace_source("auto", fixture_dir=REPO_FIXTURES)
+    source = resolve_trace_source("auto", fixture_dir=REPO_FIXTURES, client=_NoLab())
     assert isinstance(source, ReplayTraceSource)
 
 
 def test_explicit_live_does_not_silently_become_replay() -> None:
     """Asking for live and getting replay would make the disclosure meaningless."""
-    source = resolve_trace_source("live", fixture_dir=REPO_FIXTURES)
+    source = resolve_trace_source("live", fixture_dir=REPO_FIXTURES, client=_NoLab())
     assert isinstance(source, LiveSandboxSource)
     with pytest.raises(TraceSourceUnavailableError):
-        source.run(Path("/x.apk"), SandboxPlan())
+        source.run(Path("/x.apk"), SandboxPlan(), sha256="a" * 64)
 
 
 def test_explicit_replay_is_replay() -> None:

@@ -1,0 +1,104 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "841e432a41b9625040704fd636d4fc3814a6d4193fa315cd78cfed9aa3991c04",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.beginhigh19 on the sealed GCE detonator, containment manifest 72d6392ea81439f7d9c47c8c07080c4fabd51a018f703757f934c0c4a3546f12.",
+    "authored_at": "2026-08-26T05:59:51.957754+00:00",
+    "source_sha256": "841e432a41b9625040704fd636d4fc3814a6d4193fa315cd78cfed9aa3991c04",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_841e432a41b9",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "29 instrumented observations across 4 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 20564,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 3
+      },
+      {
+        "t_ms": 17292,
+        "api": "Cipher.doFinal",
+        "args": [
+          "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i..."
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 19
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getInstalledPackages",
+        "args": [
+          "enumerated installed packages"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 4
+      },
+      {
+        "t_ms": 47061,
+        "api": "TelephonyManager.getLine1Number",
+        "args": [
+          "getLine1Number -> +###########"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 2
+      },
+      {
+        "t_ms": 47062,
+        "api": "TelephonyManager.getSimOperatorName",
+        "args": [
+          "getSimOperatorName -> T-Mobile"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      }
+    ],
+    "network_flows": [],
+    "decrypted_blobs": [
+      {
+        "t_ms": 17292,
+        "algorithm": null,
+        "plaintext_preview": "{\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"##f###e#a#dac#f#ec#bdfe####d####\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+        "plaintext_sha256": null,
+        "length_bytes": 99,
+        "contains_url": false,
+        "contains_dex_magic": false,
+        "occurrences": 19
+      }
+    ],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T05:59:51.957754+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

@@ -21,15 +21,23 @@ Three honesty properties are enforced here rather than remembered:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import Field
 
+from drishti.config import Settings, get_settings
 from drishti.contracts.base import DrishtiModel
 from drishti.contracts.dynamic_trace import DynamicTrace, TraceSourceKind
 from drishti.contracts.frontier import SandboxPlan
 from drishti.logging import get_logger
+from drishti.m3_dynamic.detonator import (
+    DetonatorClient,
+    DetonatorTarget,
+    RemoteDetonatorClient,
+)
+from drishti.m3_dynamic.ingest import artifact_to_trace
 from drishti.util import new_id
 
 log = get_logger(__name__)
@@ -88,32 +96,130 @@ class TraceSource(ABC):
 
 
 class LiveSandboxSource(TraceSource):
-    """Real detonation on the sealed GCE detonator. **Lands in P4 (T4.1 to T4.6).**
+    """Real detonation on the sealed GCE detonator (P4, T4.1-T4.6).
 
-    Deliberately unavailable until then, and it raises rather than degrading: a live
-    source that quietly returned an empty trace would make a missing sandbox look like
-    a sample that did nothing.
+    Sequencing, refusal and provenance — nothing else. The execution lives on the VM
+    behind `DetonatorClient`, and this class owns no code path that could run a sample
+    locally. That is CLAUDE.md's one stated rule, expressed as a structure rather than
+    as a comment asking future callers to be careful.
 
-    Note what this class does NOT do, and must never do: run on a laptop. Detonation
-    happens only inside the sealed VM (CLAUDE.md).
+    It **raises rather than degrading**, everywhere. A live source that quietly returned
+    an empty trace would make a missing sandbox look like a sample that did nothing, and
+    those are opposite findings. The caller (`pipeline._sandbox`) catches
+    `TraceSourceUnavailableError` and substitutes a stub that declares itself a stub;
+    that disclosure is only possible because this class refuses instead of improvising.
+
+    Two gates run before any trace is returned, and neither downgrades to a warning:
+
+    * **Containment.** The harness re-verifies containment per sample and records the
+      verdict in the artifact. An artifact whose containment was not verified aborts the
+      run, because the signed manifest would otherwise attest a property nobody tested.
+    * **Snapshot lifecycle.** `safe_for_ingestion` additionally requires the emulator to
+      have come back clean — restored before, restored after, package gone. A dirty AVD
+      means the *next* sample's trace is untrustworthy too.
     """
 
-    def __init__(self, *, detonator_instance: str | None = None) -> None:
-        self._detonator = detonator_instance
+    def __init__(
+        self,
+        *,
+        client: DetonatorClient | None = None,
+        settings: Settings | None = None,
+        duration_s: int | None = None,
+        detonator_instance: str | None = None,
+    ) -> None:
+        if client is None:
+            # Settings may refuse to construct for reasons that have nothing to do with
+            # the sandbox — a missing LLM key, most often. M3 must not inherit M4's
+            # configuration requirements, so an unresolvable environment yields an
+            # UNCONFIGURED client that reports itself unavailable, which is the honest
+            # answer: with no lab configured there is nowhere a sample may be executed.
+            resolved: Settings | None = settings
+            if resolved is None:
+                try:
+                    resolved = get_settings()
+                except Exception as exc:
+                    log.info("sandbox_settings_unavailable", error=str(exc)[:200])
+            target = DetonatorTarget.from_settings(resolved) if resolved else None
+            # An explicit instance name overrides the configured one, which is how a
+            # batch driven at a specific VM stays a config change rather than an edit.
+            if target is not None and detonator_instance:
+                target = replace(target, instance=detonator_instance)
+            client = RemoteDetonatorClient(target=target)
+            if duration_s is None and resolved is not None:
+                duration_s = resolved.sandbox_duration_s
+        self.client = client
+        self._duration_s = duration_s if duration_s is not None else 120
 
     @property
     def kind(self) -> TraceSourceKind:
         return TraceSourceKind.LIVE
 
     def available(self) -> bool:
-        # P0: the lab is not built. P4 replaces this with a real health probe —
-        # containment verified, emulator booted, frida responding.
-        return False
+        """True only when a detonator is configured and actually running.
 
-    def run(self, apk_path: Path, plan: SandboxPlan) -> DynamicTrace:
-        raise TraceSourceUnavailableError(
-            "live detonation is not implemented until P4 (T4.1); no sample is ever executed locally"
+        Deliberately *not* "start the VM if it is stopped". An idle nested-virt VM is
+        the fastest way to consume a fixed research budget, so bringing the lab up is an
+        operator action (`make lab-up`) and never a side effect of an accepted job.
+        """
+        try:
+            state = self.client.instance_state()
+        except Exception as exc:  # a health probe may not raise into the pipeline
+            log.info("detonator_probe_failed", error=f"{type(exc).__name__}: {exc}"[:200])
+            return False
+        if state != "RUNNING":
+            log.info("detonator_not_running", state=state)
+            return False
+        return True
+
+    def run(self, apk_path: Path, plan: SandboxPlan, *, sha256: str | None = None) -> DynamicTrace:
+        """Stage, detonate, collect, normalise. Any failure raises.
+
+        `sha256` is accepted explicitly so a caller that already hashed the upload does
+        not re-read a 300MB file, matching `ReplayTraceSource.run`.
+        """
+        if not self.available():
+            raise TraceSourceUnavailableError(
+                "the detonator is not running; start it with `make lab-up` before "
+                "requesting a live detonation. No sample is ever executed locally."
+            )
+        digest = sha256 or _sha256_of(apk_path)
+
+        try:
+            self.client.stage(apk_path, digest)
+            self.client.detonate(digest, morphs=plan.morphs, duration_s=self._duration_s)
+            artifact = self.client.collect(digest, morphed=bool(plan.morphs))
+        except TraceSourceUnavailableError:
+            raise
+        except Exception as exc:
+            raise TraceSourceUnavailableError(
+                f"detonation failed for {digest[:12]}: {type(exc).__name__}: {exc}"
+            ) from exc
+
+        if not artifact.metadata.containment_verified:
+            # CLAUDE.md: a containment failure aborts. It never downgrades to a warning
+            # on a trace that somebody might still read as a measurement.
+            raise TraceSourceUnavailableError(
+                f"containment was NOT verified for {digest[:12]}; the run is discarded"
+            )
+        if not artifact.safe_for_ingestion:
+            raise TraceSourceUnavailableError(
+                f"artifact for {digest[:12]} is not safe to ingest "
+                f"(outcome={artifact.outcome}, snapshot lifecycle incomplete)"
+            )
+
+        trace = artifact_to_trace(
+            artifact,
+            source=TraceSourceKind.LIVE,
+            morphs_applied=tuple(dict.fromkeys(m.kind.value for m in plan.morphs)),
         )
+        log.info(
+            "live_trace_collected",
+            sha256=digest[:12],
+            detonated=trace.detonated,
+            api_events=len(trace.api_events),
+            evasion=len(trace.evasion_observations),
+        )
+        return trace
 
 
 class ReplayTraceSource(TraceSource):
@@ -203,6 +309,7 @@ def resolve_trace_source(
     *,
     fixture_dir: Path | str = DEFAULT_FIXTURE_DIR,
     detonator_instance: str | None = None,
+    client: DetonatorClient | None = None,
 ) -> TraceSource:
     """Pick a source for `sandbox_mode`.
 
@@ -212,7 +319,9 @@ def resolve_trace_source(
     `live` is strict on purpose: asking for live and silently getting replay is the
     one behaviour that would make the disclosure meaningless.
     """
-    live = LiveSandboxSource(detonator_instance=detonator_instance)
+    # `client` exists so a test can resolve a source without a health probe reaching
+    # `gcloud`. CI never touches GCP (CLAUDE.md), and `auto` calls `available()` here.
+    live = LiveSandboxSource(client=client, detonator_instance=detonator_instance)
     replay = ReplayTraceSource(fixture_dir)
 
     if mode == "live":

@@ -1,0 +1,71 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "9ba6ece1a921ccf5dd5a13e4fcbf4fa64601d3503a5995ea30f6826eff94afa1",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.xcytrjoux.cqhfynogu on the sealed GCE detonator, containment manifest f708aede8dd723e78d9c8899d5b2b0db542e09fde93a8dbc8aae679db24cf735.",
+    "authored_at": "2026-08-26T06:13:13.374419+00:00",
+    "source_sha256": "9ba6ece1a921ccf5dd5a13e4fcbf4fa64601d3503a5995ea30f6826eff94afa1",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_9ba6ece1a921",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "20 instrumented observations across 3 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 0,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 3
+      },
+      {
+        "t_ms": 537,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.google.android.webview"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 15
+      },
+      {
+        "t_ms": 448,
+        "api": "TelephonyManager.getLine1Number",
+        "args": [
+          "getLine1Number -> +###########"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 2
+      }
+    ],
+    "network_flows": [],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T06:13:13.374419+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

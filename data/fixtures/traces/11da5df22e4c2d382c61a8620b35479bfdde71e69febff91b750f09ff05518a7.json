@@ -9,6 +9,9 @@
     "captured_from_image": "m3-detonator-manual-20260826"
   },
   "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
     "run_id": "run_11da5df22e4c",
     "source": "live",
     "detonated": true,
@@ -21,6 +24,9 @@
         "args": [
           "added a window over other apps"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 2
       },
       {
@@ -29,6 +35,9 @@
         "args": [
           "queried provider content://com.google.android.gms.chimera/api_force_staging/com.google.android.gms.measurement.dy..."
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 6
       },
       {
@@ -37,6 +46,9 @@
         "args": [
           "queried package=com.android.vending"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 90
       },
       {
@@ -45,6 +57,9 @@
         "args": [
           "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dz-immobilier-###e#/installations"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 55
       },
       {
@@ -53,6 +68,9 @@
         "args": [
           "getSimOperatorName -> T-Mobile"
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 10
       },
       {
@@ -61,17 +79,51 @@
         "args": [
           "crypto op plaintext=\ufffd)\u0016t\u0002\ufffd\r\ufffd\u0002RD\ufffd/\ufffd\ufffd&\u0003!mD\ufffd\ufffd\ufffd\u0723\ufffd\ufffdst\ufffd=\u0013#%\u007f#\ufffd,\ufffd;[\ufffd\ufffd}\u000bp\ufffd\ufffd\ufffdX#\ufffd`\u0003Y\ufffd\u0005\ufffdx\u0005}l?O\ufffd\u001e\ufffdq\u0232\ufffd\ufffd\ufffd\ufffd\u015b\ufffd\ufffd\ufffd^\ufffd\ufffd\ufffd_\u0011\ufffd\u001c\ufffdC\ufffdJ\"!#\ufffd\ufffd\ufffd\ufffd#..."
         ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
         "count": 4
       }
     ],
+    "network_flows": [
+      {
+        "t_ms": 257,
+        "method": "GET",
+        "url": "https://firebaseinstallations.googleapis.com/v#/projects/dz-immobilier-###e#/installations",
+        "host": "firebaseinstallations.googleapis.com",
+        "req_headers": {},
+        "req_body_preview": "",
+        "req_body_sha256": null,
+        "status": null,
+        "resp_body_preview": null,
+        "synthesised": false,
+        "tls_intercepted": false
+      }
+    ],
+    "decrypted_blobs": [
+      {
+        "t_ms": 0,
+        "algorithm": null,
+        "plaintext_preview": "\ufffd)\u0016t\u0002\ufffd\r\ufffd\u0002RD\ufffd/\ufffd\ufffd&\u0003!mD\ufffd\ufffd\ufffd\u0723\ufffd\ufffdst\ufffd=\u0013#%\u007f#\ufffd,\ufffd;[\ufffd\ufffd}\u000bp\ufffd\ufffd\ufffdX#\ufffd`\u0003Y\ufffd\u0005\ufffdx\u0005}l?O\ufffd\u001e\ufffdq\u0232\ufffd\ufffd\ufffd\ufffd\u015b\ufffd\ufffd\ufffd^\ufffd\ufffd\ufffd_\u0011\ufffd\u001c\ufffdC\ufffdJ\"!#\ufffd\ufffd\ufffd\ufffd#...",
+        "plaintext_sha256": null,
+        "length_bytes": 99,
+        "contains_url": false,
+        "contains_dex_magic": false,
+        "occurrences": 4
+      }
+    ],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
     "emulator_image": "m3-detonator-manual-20260826",
     "vm_instance_id": "7382052279419138339",
     "harness_version": "m3-harness-2.0.0",
     "containment_verified": true,
     "captured_at": "2026-08-26T03:40:11.929338+00:00",
-    "synthetic": false,
-    "errors": [],
-    "partial": false
+    "synthetic": false
   },
   "post_morph": {}
 }

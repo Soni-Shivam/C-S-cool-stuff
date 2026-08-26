@@ -73,7 +73,9 @@ def test_b_is_computed_locally_not_read_from_the_model(static_report, settings) 
 
     report, store = static_report
     verdict = analyse(report, store, settings)
-    expected, _ = behavioural_risk(verdict.behaviours)
+    # `behaviour_context` is stored on the verdict precisely so B stays recomputable
+    # from the verdict alone.
+    expected, _ = behavioural_risk(verdict.behaviours, context=verdict.behaviour_context)
     assert verdict.behavioural_risk_B == expected
 
 

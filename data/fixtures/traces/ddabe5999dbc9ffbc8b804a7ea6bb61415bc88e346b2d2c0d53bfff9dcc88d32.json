@@ -1,0 +1,60 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "ddabe5999dbc9ffbc8b804a7ea6bb61415bc88e346b2d2c0d53bfff9dcc88d32",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.rmowa.wpamz on the sealed GCE detonator, containment manifest 7c58a5ea4e819611004a13b18d1b4c16fce73827f33d6b489803c05b1dda0f12.",
+    "authored_at": "2026-08-26T06:48:41.341410+00:00",
+    "source_sha256": "ddabe5999dbc9ffbc8b804a7ea6bb61415bc88e346b2d2c0d53bfff9dcc88d32",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_ddabe5999dbc",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "18 instrumented observations across 2 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 472,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.android.vending"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 17
+      }
+    ],
+    "network_flows": [],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T06:48:41.341410+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

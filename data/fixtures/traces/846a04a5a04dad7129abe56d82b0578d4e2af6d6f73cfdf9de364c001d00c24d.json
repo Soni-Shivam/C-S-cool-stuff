@@ -1,0 +1,136 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "846a04a5a04dad7129abe56d82b0578d4e2af6d6f73cfdf9de364c001d00c24d",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.riverfront8 on the sealed GCE detonator, containment manifest bcc0acdc9a8a322733a80caab45296eb02e9d16804491d39f44298b51d0b334c.",
+    "authored_at": "2026-08-26T06:02:21.991006+00:00",
+    "source_sha256": "846a04a5a04dad7129abe56d82b0578d4e2af6d6f73cfdf9de364c001d00c24d",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_846a04a5a04d",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "39 instrumented observations across 5 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 2510,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 4
+      },
+      {
+        "t_ms": 0,
+        "api": "DexClassLoader.$init",
+        "args": [
+          "loaded dex path=/data/user/#/com.riverfront#/cache/ngzvnyttctwi"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      },
+      {
+        "t_ms": 20424,
+        "api": "Cipher.doFinal",
+        "args": [
+          "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"..."
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 15
+      },
+      {
+        "t_ms": 791,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.google.android.webview"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 15
+      },
+      {
+        "t_ms": 50310,
+        "api": "TelephonyManager.getLine1Number",
+        "args": [
+          "getLine1Number -> +###########"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 2
+      },
+      {
+        "t_ms": 132,
+        "api": "PackageManager.getInstalledPackages",
+        "args": [
+          "enumerated installed packages"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      },
+      {
+        "t_ms": 50325,
+        "api": "TelephonyManager.getSimOperatorName",
+        "args": [
+          "getSimOperatorName -> T-Mobile"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      }
+    ],
+    "network_flows": [],
+    "decrypted_blobs": [
+      {
+        "t_ms": 20424,
+        "algorithm": null,
+        "plaintext_preview": "{\"xc\":\"gSWI\",\"lB\":\"pittsep##\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\"...",
+        "plaintext_sha256": null,
+        "length_bytes": 99,
+        "contains_url": false,
+        "contains_dex_magic": false,
+        "occurrences": 15
+      }
+    ],
+    "dex_loads": [
+      {
+        "t_ms": 0,
+        "loader": "DexClassLoader.$init",
+        "path": "/data/user/#/com.riverfront#/cache/ngzvnyttctwi",
+        "sha256": null,
+        "size_bytes": null,
+        "in_original_apk": false,
+        "dumped_to": null
+      }
+    ],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T06:02:21.991006+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

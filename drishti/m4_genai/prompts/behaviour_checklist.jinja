@@ -4,7 +4,40 @@
   The model answers a FIXED enumerated checklist and must cite evidence node ids for
   every claim it makes. It never emits a score — Python computes B from the weight
   table — so an injected instruction to set a score has nothing to act on.
+
+  The questions ask about malicious USE IN CONTEXT, not capability. Capability alone is
+  already covered by the ML features and the deterministic rules; measured on the real
+  corpus, capability-phrased questions fired MORE often on large legitimate apps than on
+  malware (split-APK code loading, SMS access in messaging apps). B's job is the part a
+  classifier cannot do: judge whether the use fits what the app claims to be.
+
+  NOTE for maintainers: BEHAVIOUR_WEIGHTS in safety.py was measured against these
+  questions as asked. If you reword a question, the weight for that key must be
+  re-measured (scripts/fit_behaviour_weights.py) — the weight is a property of the
+  question, not of the key name.
 -#}
+{%- set questions = {
+  "abuses_accessibility_service": "does it use an accessibility service to act on OTHER apps or system dialogs (click, read, or grant on the user's behalf) rather than to make its own UI accessible?",
+  "detects_analysis_environment": "does it change behaviour after checking for an emulator, root, debugger, or analysis tooling?",
+  "encrypts_data_before_sending": "does it encrypt or encode collected data with its own scheme before transmission, beyond ordinary TLS?",
+  "exfiltrates_over_network": "does it send collected personal data (messages, contacts, identifiers, screen contents) to a remote endpoint that its own function does not require?",
+  "gates_behaviour_on_installed_apps": "does it enumerate installed packages to TARGET specific apps (e.g. a roster of banking or wallet packages), rather than for interoperability with a declared feature?",
+  "harvests_contacts_or_call_log": "does it copy contacts or the call log out of the device without a user-facing feature that needs them?",
+  "harvests_device_identifiers": "does it collect device identifiers and ship them to infrastructure unrelated to its declared function?",
+  "hides_or_disables_its_own_icon": "does it hide or disable its own launcher icon after installation?",
+  "impersonates_a_known_brand": "does it present the name, icon, or UI of a brand that its package and signer do not belong to?",
+  "intercepts_notifications": "does it read other apps' notifications (e.g. bank alerts, OTP messages) rather than posting its own?",
+  "loads_dex_at_runtime": "does it load executable code from outside its installed package (downloaded, decrypted, or dropped at runtime) — NOT ordinary split-APK / dynamic-feature delivery of its own signed code?",
+  "monitors_clipboard": "does it read the clipboard in the background or on content it did not create (e.g. to catch copied account numbers or wallet addresses)?",
+  "overlays_other_apps": "does it draw over ANOTHER app's UI in a way inconsistent with its own stated function (e.g. a login-shaped screen over a bank), as opposed to picture-in-picture, bubbles, or its own floating widget?",
+  "reads_sms_content": "does it read SMS BODIES for extraction (OTP or bank-alert lexicon, forwarding, upload) rather than as a declared messaging/backup/spam feature?",
+  "requests_device_admin": "does it request device-admin or similar irrevocability without being a device-management product?",
+  "sends_sms_without_user_action": "can it send SMS from code paths not triggered by an explicit user action (e.g. premium numbers, worming to contacts)?",
+} -%}
+{%- set context_questions = {
+  "capability_use_consistent_with_declared_purpose": "taking the app's own declared identity at face value (package, UI strings, store-category shape), are its risky capabilities the ones an app of that kind legitimately needs, used in the way that kind of app uses them?",
+  "risky_capability_serves_no_plausible_feature": "does it hold at least one risky capability (overlay, accessibility, SMS, notification access, device admin) for which NO user-facing feature visible in the evidence provides a plausible purpose?",
+} -%}
 You are a mobile malware analyst reviewing STATIC analysis output for one Android
 application, assisting a defensive triage system.
 
@@ -19,12 +52,25 @@ REQUIRED SHAPE
 
 RULES
 
-1. `behaviours` must contain EXACTLY these keys, each a JSON boolean:
-{% for name in behaviour_names %}   - {{ name }}
-{% endfor %}
+1. `behaviours` must contain EXACTLY the following keys, each a JSON boolean.
+   Each question asks about USE IN CONTEXT, not mere capability. Holding a permission
+   is not the behaviour; a legitimate app of the kind this app claims to be may hold
+   the same permission for a fair purpose. Answer `true` only when the evidence shows
+   the malicious use described, or shows the capability wired to infrastructure or
+   targets that the app's own declared purpose cannot explain.
 
+   Behaviour questions:
+{% for name in behaviour_names %}   - {{ name }}: {{ questions[name] }}
+{% endfor %}
+   Context questions (these two are about legitimacy, in both directions — answering
+   them honestly is how a genuine app gets recognised as genuine):
+{% for name in context_names %}   - {{ name }}: {{ context_questions[name] }}
+{% endfor %}
 2. Answer `true` only where the evidence shown supports it. Static analysis cannot
-   observe runtime behaviour, so absence of evidence is `false`, never `true`.
+   observe runtime behaviour, so absence of evidence is `false`, never `true` — except
+   `capability_use_consistent_with_declared_purpose`, which is a judgement over the
+   whole of the evidence shown and may be `true` when the app's capability profile
+   coheres with its declared identity.
 
 3. **Every claim must cite evidence.** `evidence_refs` must contain one or more ids
    taken VERBATIM from the EVIDENCE CATALOGUE below. Do not invent an id, do not

@@ -1,0 +1,136 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "3504d9f2a2fdf021a382be4e2603acbdb5550ac2ddf26f62da1c2227b1f7f400",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.travelabout8 on the sealed GCE detonator, containment manifest b151961eadbb1001076532b87ca69b7b9a7a206fb8b7300ea5c633358a58144e.",
+    "authored_at": "2026-08-26T05:38:12.903253+00:00",
+    "source_sha256": "3504d9f2a2fdf021a382be4e2603acbdb5550ac2ddf26f62da1c2227b1f7f400",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [],
+    "partial": false,
+    "duration_ms": 0,
+    "run_id": "run_3504d9f2a2fd",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "51 instrumented observations across 5 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 19845,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 8
+      },
+      {
+        "t_ms": 0,
+        "api": "DexClassLoader.$init",
+        "args": [
+          "loaded dex path=/data/user/#/com.travelabout#/cache/sloaaugs"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      },
+      {
+        "t_ms": 18339,
+        "api": "Cipher.doFinal",
+        "args": [
+          "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"#ahtung###\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#..."
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 18
+      },
+      {
+        "t_ms": 20411,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.google.android.webview"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 15
+      },
+      {
+        "t_ms": 158,
+        "api": "PackageManager.getInstalledPackages",
+        "args": [
+          "enumerated installed packages"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 6
+      },
+      {
+        "t_ms": 47953,
+        "api": "TelephonyManager.getLine1Number",
+        "args": [
+          "getLine1Number -> +###########"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 2
+      },
+      {
+        "t_ms": 47962,
+        "api": "TelephonyManager.getSimOperatorName",
+        "args": [
+          "getSimOperatorName -> T-Mobile"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      }
+    ],
+    "network_flows": [],
+    "decrypted_blobs": [
+      {
+        "t_ms": 18339,
+        "algorithm": null,
+        "plaintext_preview": "{\"xc\":\"gSWI\",\"lB\":\"#ahtung###\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#...",
+        "plaintext_sha256": null,
+        "length_bytes": 99,
+        "contains_url": false,
+        "contains_dex_magic": false,
+        "occurrences": 18
+      }
+    ],
+    "dex_loads": [
+      {
+        "t_ms": 0,
+        "loader": "DexClassLoader.$init",
+        "path": "/data/user/#/com.travelabout#/cache/sloaaugs",
+        "sha256": null,
+        "size_bytes": null,
+        "in_original_apk": false,
+        "dumped_to": null
+      }
+    ],
+    "file_writes": [],
+    "evasion_observations": [],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T05:38:12.903253+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

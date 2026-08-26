@@ -41,7 +41,14 @@ from drishti.logging import get_logger
 from drishti.m4_genai.client import LLMClient
 from drishti.m4_genai.resources import UiString, extract_ui_strings, record_ui_strings
 from drishti.m4_genai.retrieval import select
-from drishti.m4_genai.safety import BEHAVIOUR_WEIGHTS, behavioural_risk, wrap_untrusted
+from drishti.m4_genai.safety import (
+    BEHAVIOUR_WEIGHTS,
+    CONTEXT_WEIGHTS,
+    LLM_CONTEXT_KEYS,
+    behavioural_evidence,
+    behavioural_risk,
+    wrap_untrusted,
+)
 
 log = get_logger(__name__)
 
@@ -101,7 +108,36 @@ def _environment() -> Environment:
 def build_system_prompt() -> str:
     """Render the checklist instructions. Contains no sample-derived text."""
     template = _environment().get_template("behaviour_checklist.jinja")
-    return template.render(behaviour_names=sorted(BEHAVIOUR_WEIGHTS))
+    return template.render(
+        behaviour_names=sorted(BEHAVIOUR_WEIGHTS),
+        context_names=sorted(LLM_CONTEXT_KEYS),
+    )
+
+
+def static_behaviour_context(static: StaticReport) -> dict[str, bool]:
+    """Deterministic context flags for `behavioural_risk` — Python-computed, never model-emitted.
+
+    These carry the exculpatory weight of `B` (see `CONTEXT_WEIGHTS`): they rest on
+    evidence the sample cannot cheaply forge — a signing key that has actually existed
+    for years, a publisher on the trusted roster, the lookalike assessment's verdict —
+    so a prompt injection cannot reach them. The 730-day signer threshold is a priori
+    domain knowledge (Android ties upgrades to the signing key, so legitimate publishers
+    keep one for years; lookalike.py documents the same discriminator), not a fitted
+    cut.
+    """
+    cert = static.certificate
+    lookalike = static.lookalike
+    return {
+        "cert_signer_stable_years": cert.age_days >= 730 and not cert.debug_cert,
+        "debug_certificate": bool(cert.debug_cert),
+        "publisher_trusted": bool(lookalike and lookalike.publisher_trusted),
+        "lookalike_legitimate_privileged": bool(
+            lookalike and lookalike.verdict == "legitimate_privileged"
+        ),
+        "targets_installed_financial_apps": bool(
+            lookalike and lookalike.targeted_financial_packages
+        ),
+    }
 
 
 def build_evidence_catalogue(ledger: LedgerStore, job_id: str) -> tuple[str, set[str]]:
@@ -204,18 +240,27 @@ def build_user_turn(static: StaticReport) -> str:
 T = TypeVar("T")
 
 
-def _guarded(name: str, run: Callable[[], T], *, default: T) -> T:
+def _guarded(name: str, run: Callable[[], T], *, default: T, errors: list[str] | None = None) -> T:
     """Run one sub-analyser; a failure inside it degrades the verdict, never the job.
 
     CLAUDE.md rule 2. The rule names a `@degrades_gracefully` decorator that does not
     exist anywhere in this repository — every module implements the property inline
     instead. This is that property at the one boundary where it matters most: the
     agents are the newest code in the system and the demo runs at hour 71.
+
+    `errors` is the verdict's error sink. Logging alone is not degrading gracefully:
+    a swallowed 413 used to leave the dashboard saying "no model tool call was made in
+    this run", which reads as the model *choosing* idleness rather than the provider
+    failing. The reason a stage is empty must reach `GenAIVerdict.errors`, because the
+    Limitations section is generated from real flags, never from someone remembering.
     """
     try:
         return run()
     except Exception as exc:
-        log.error("subagent_failed", agent=name, error=f"{type(exc).__name__}: {exc}"[:300])
+        detail = f"{type(exc).__name__}: {exc}"[:300]
+        log.error("subagent_failed", agent=name, error=detail)
+        if errors is not None:
+            errors.append(f"{name} failed: {detail}")
         return default
 
 
@@ -294,8 +339,22 @@ def analyse(
             llm_calls=llm.calls_made,
         )
 
-    # B is computed here, from the enumerated answers. The model never supplies it.
-    b_value, contributing = behavioural_risk(dict(response.behaviours))
+    # B is computed here, from the enumerated answers plus context. The model never
+    # supplies it. Context merges two provenances: deterministic static facts computed
+    # in Python (which carry the exculpatory weight — the model cannot be talked into
+    # them), and the model's two enumerated purpose answers, which are separated out of
+    # `behaviours` here so a model-supplied value can never masquerade as a
+    # deterministic fact (`static_behaviour_context` keys win the merge).
+    behaviour_context: dict[str, bool] = {
+        **{k: response.behaviours.get(k) is True for k in LLM_CONTEXT_KEYS},
+        **static_behaviour_context(static),
+    }
+    checklist = {k: v for k, v in response.behaviours.items() if k not in LLM_CONTEXT_KEYS}
+    b_value, contributing = behavioural_risk(dict(checklist), context=behaviour_context)
+    # The signed form of the same sum. `B` is for display; this is what the scorer
+    # fuses, because it can be negative and therefore lower the score.
+    b_evidence = behavioural_evidence(dict(checklist), context=behaviour_context)
+    context_fired = tuple(name for name in CONTEXT_WEIGHTS if behaviour_context.get(name) is True)
 
     # Every claim is checked against the ledger. Rejected claims are RETAINED, not
     # dropped: the rejection count feeds the report's Limitations section, and a
@@ -342,16 +401,32 @@ def analyse(
         tuple[ToolCallRecord, ...],
         tuple[VerifiedString, ...],
     ] = ((), (), ())
+    degradations: list[str] = []
     interpretations, tool_calls, verified_strings = _guarded(
         "code_interpreter",
         lambda: interpret_methods(static, ledger, job_id, llm, pack=pack),
         default=empty_interpretations,
+        errors=degradations,
     )
+    # The other silent-empty path: `interpret_methods` degrades to no interpretations
+    # WITHOUT raising when the provider returns nothing valid (it logs
+    # `code_interpreter_unavailable`). Chains were selected, so emptiness here is a
+    # provider failure, not the model declining its tools — say so in `errors`.
+    if (
+        pack.chains
+        and not interpretations
+        and not any("code_interpreter" in e for e in degradations)
+    ):
+        degradations.append(
+            f"code_interpreter returned no interpretations for {len(pack.chains)} selected "
+            "chains: provider unavailable or response invalid after retry"
+        )
 
     victim = _guarded(
         "social_engineering",
         lambda: profile_victim(static, ui_strings, ledger, job_id, llm),
         default=None,
+        errors=degradations,
     )
     verified_interpretations: list[CodeInterpretation] = []
     for interpretation in interpretations:
@@ -373,7 +448,9 @@ def analyse(
 
     content: dict[str, Any] = {
         "behaviours_true": list(contributing),
+        "behaviour_context": list(context_fired),
         "behavioural_risk_B": b_value,
+        "behavioural_evidence": b_evidence,
         "summary": response.summary[:2000],
         "model": settings.resolved_llm_model,
         "claims_total": len(claims),
@@ -407,13 +484,34 @@ def analyse(
         verified_strings=verified_strings,
         victim=victim,
         behavioural_risk_B=b_value,
-        B_rationale=(
-            f"{len(contributing)} enumerated behaviours asserted: {', '.join(contributing)}"
-            if contributing
-            else "no enumerated behaviour was asserted"
-        ),
-        behaviours=dict(response.behaviours),
+        behavioural_evidence=b_evidence,
+        B_rationale=_b_rationale(contributing, context_fired),
+        behaviours=dict(checklist),
+        behaviour_context=behaviour_context,
         provider=settings.llm_provider,
         llm_calls=llm.calls_made,
+        # NOT `partial`: the checklist itself succeeded, and the scorer drops B from
+        # the fusion entirely when `partial` is set (`has_behavioural`). A failed
+        # sub-agent degrades the narrative, not the term — `errors` carries the reason.
+        errors=tuple(degradations),
         ledger_refs=(node.id, *static_refs),
     )
+
+
+def _b_rationale(contributing: tuple[str, ...], context_fired: tuple[str, ...]) -> str:
+    """One sentence saying what moved `B`, in both directions.
+
+    The exculpatory half is the product owner's stated objective: a genuine app using a
+    risky capability for a fair purpose must be SAID to be doing so, not silently
+    down-weighted.
+    """
+    if not contributing:
+        return "no weighted behaviour was asserted"
+    parts = [f"{len(contributing)} weighted behaviours asserted: {', '.join(contributing)}"]
+    exculpatory = [n for n in context_fired if CONTEXT_WEIGHTS[n] < 0]
+    aggravating = [n for n in context_fired if CONTEXT_WEIGHTS[n] > 0]
+    if exculpatory:
+        parts.append(f"reduced by exculpatory context: {', '.join(exculpatory)}")
+    if aggravating:
+        parts.append(f"raised by aggravating context: {', '.join(aggravating)}")
+    return "; ".join(parts)
