@@ -6,8 +6,8 @@ Protocol: `docs/00_GUIDING_MAP.md` §13.
 
 - **Started:** 2026-08-13 · **Last reconciled:** 2026-08-26
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
-- **Phase:** 24-hour demo build · corpus extracting, M7 exports landed, live LLM verified; detonation and trained model still unproven
-- **Tests:** **816 contract+unit + 15 e2e, all passing** (measured 2026-08-26 at `5907fdc`)
+- **Phase:** Finale build · the frontier loop closes, 115 live detonations, all seven modules built. Remaining gaps are recorded under *Measured negative results* and *Still unproven*, not hidden.
+- **Tests:** **1,219 contract+unit + 15 e2e, all passing** (measured 2026-08-26 at `8f0dfdf`)
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
 
@@ -260,6 +260,25 @@ Throwaway DB and key, safe to run live and repeatedly.
   hash chain still reports the break **at the exact seq**. `T6.4`'s note that the tamper
   demo was deliberately unbuilt is now superseded — it is built honestly, against real
   SQL and real chain verification, not simulated in the browser.
+
+### Known blocker — the paper does not compile
+
+`REPORT/main.tex` **produces no PDF**, and it did not before this session's edits either
+— confirmed by compiling the committed baseline. Partially fixed, honestly recorded
+rather than left to be discovered at submission.
+
+| | Before | Now |
+|---|---|---|
+| `Option clash for package xcolor` | fatal, no output | **fixed** — `\PassOptionsToPackage` before `\documentclass`, because `SelfArx.cls:40` already loads xcolor bare |
+| `Undefined control sequence` ×2 (`\@Keywords`, `\keywordname`) | present | **fixed** — `\Keywords{}` was commented out while the class references it unconditionally |
+| `There's no line here to end` | present | **still present** |
+
+The remaining error is inside the class's `\maketitle` abstract/keyword box. Replacing
+the `\\` breaks with `\par` in `selfArx.cls` did not clear it, so that experiment was
+reverted rather than left as unexplained churn. Someone with a clean hour should bisect
+`\maketitle`; the content is correct and only the title block is at fault.
+
+---
 
 ### Measured negative results — 2026-08-26
 
@@ -542,30 +561,45 @@ land. The bar for this hackathon is a working PoC per idea, not a finished produ
 
 ## P4 — DYNAMIC SANDBOX (H24→H48)
 
-- [~] T4.1 Emulator control                        WIP   2026-08-25  7fce6f0 · snapshot/admission flow unit-tested; live lab pending
-- [~] T4.2 Frida runner                            WIP   2026-08-25  7fce6f0 · observational harness implemented; live lab pending
-- [ ] T4.3 Crash recovery & self-repair            TODO
-- [ ] T4.4 TLS interception & network capture      TODO  ← v1 gap H4, see CARRIED_FINDINGS
-- [ ] T4.5 Evasion observation detection           TODO
-- [ ] T4.6 Trace normalisation                     TODO
-- [ ] T4.7 TRIPWIRE @ H40                          TODO  ← mandatory decision point
-- [ ] T4.8 Sandbox plan builder                    TODO
+- [x] T4.1 Emulator control                        DONE  2026-08-26  8f0dfdf · 115 live detonations on the sealed m3-detonator
+- [x] T4.2 Frida runner                            DONE  2026-08-26  8f0dfdf · 12 hook classes; 2,019 observations captured
+- [~] T4.3 Crash recovery & self-repair            WIP   2026-08-26 · snapshot restore works; the LLM self-repair-from-tombstone loop is NOT built
+- [ ] T4.4 TLS interception & network capture      DEFERRED — deliberate, see Decisions. mitmproxy is in the image but never runs;
+      `tls_intercepted` is never set true. `Cipher.doFinal` yields plaintext BEFORE encryption, which is
+      strictly stronger and also defeats custom crypto (T1521). State it as a choice, not a gap.
+- [x] T4.5 Evasion observation detection           DONE  2026-08-26 · drishti/m3_dynamic/evasion.py, 161 lines
+- [x] T4.6 Trace normalisation                     DONE  2026-08-26 · 1,925 raw events → 40 groups; `b_dynamic` provably unchanged
+- [x] T4.7 TRIPWIRE @ H40                          PASSED — live detonation achieved, so the fallback was never needed
+- [x] T4.8 Sandbox plan builder                    DONE  2026-08-26 · SandboxPlan built and consumed by both sandbox passes
 
 ## P5 — FRONTIER (H44→H58)
 
-- [ ] T5.1 Morph applicator                        TODO
-- [ ] T5.2 Morph validation                        TODO
-- [ ] T5.3 Adversarial Elicitor agent              TODO
-- [ ] T5.4 Generative C2 emulation                 TODO
-- [ ] T5.5 Frontier orchestration loop             TODO
-- [ ] T5.6 Replay-mode frontier                    TODO
-- [ ] T5.7 Frontier UI panel                       TODO
+- [x] T5.1 Morph applicator                        DONE  2026-08-26 · 5 Frida morph scripts: build_props, sim_locale,
+      install_packages, clock_skew, files_present
+- [x] T5.2 Morph validation                        DONE  2026-08-26 · `validate_morph()` runs before adb or JS; params are
+      injected as JSON literals, never string-concatenated
+- [x] T5.3 Adversarial Elicitor agent              DONE  2026-08-26 · 238 lines; structured input only, so no raw sample string
+      reaches the prompt
+- [x] T5.4 Generative C2 emulation                 DONE  2026-08-26 · 717 lines, with a provable inertness gate
+- [x] T5.5 Frontier orchestration loop             DONE  2026-08-26  8f0dfdf · **the loop now closes.** Wiring the call site alone
+      was not enough: nothing wrote EVASION_CHECK nodes, so every proposed morph was
+      silently dropped as ungrounded. Verified — a morph's `derived_from` resolves to a
+      real evasion_check node.
+- [x] T5.6 Replay-mode frontier                    DONE  2026-08-26 · 117 replayable fixtures, all `simulated=False`
+- [x] T5.7 Frontier UI panel                       DONE  2026-08-26 · ui/src/tabs/FrontierTab.tsx, 227 lines
 
 ## P6 — REPORT / UI / DEMO (H50→H72)
 
-- [ ] T6.1 YARA generation                         TODO — **this line is stale.** `GET .../artifacts/yara` returns a real rule (verified 2026-08-26 on `job_3cf756dd48f2`); `test_export_routes_are_built` asserts 200. Owner to reconcile.
-- [ ] T6.2 STIX 2.1 export                         TODO — **stale, same reason.** Returns a deterministic bundle; a contract test pins byte-identical re-export.
-- [ ] T6.3 HTML report                             TODO — **stale, same reason.** Returns a 12KB self-contained document with a generated Limitations section.
+- [x] T6.1 YARA generation                         DONE  2026-08-26 · `drishti/m7_report/yara.py`. Keys on repack-resistant
+      artefacts; the hash is metadata, never a condition. Emits itself DISABLED with the reason below three
+      distinctive strings. `test_yara_rule_does_not_key_on_the_hash` pins it.
+- [x] T6.2 STIX 2.1 export                         DONE  2026-08-26 · UUIDv5 over stable keys, so two exports of a job are
+      byte-identical and the scorer's determinism is not undone one layer up. Publishes only VERIFIED claims and
+      OBSERVED flows — never `synthesised` ones, which came from our own Generative C2.
+- [x] T6.3 HTML report                             DONE  2026-08-26 · self-contained, no external assets. Limitations are
+      DERIVED from provenance flags; a sample that produced no runtime behaviour renders INCONCLUSIVE, never benign.
+- [x] T6.10 Reporting dossier (A12)                DONE  2026-08-26 · `submission_is_manual` is always true — NCRP has no
+      public submission API and nothing here files anything. `reportable` is gated on band.
 - [~] T6.4 Dashboard completion                    WIP   2026-08-26  dea2ee9 · seven views render live; the shared Verdict and the honesty affordances landed
       Every panel is wired to a real endpoint and renders only what the API sent.
       **The three "renders its 501" caveats above this line were stale** — report.html,

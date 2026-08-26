@@ -5,10 +5,15 @@
 %  Compile with: pdflatex drishti.tex (run twice for refs)
 %=====================================================================
 
+% SelfArx.cls loads xcolor with no options at its line 40, so a later
+% \usepackage[dvipsnames]{xcolor} here is an option clash and the document does not
+% compile AT ALL. PassOptionsToPackage queues the option BEFORE the class loads the
+% package, which is the supported way to add an option to a class-loaded package.
+\PassOptionsToPackage{dvipsnames}{xcolor}
 \documentclass[10pt]{SelfArx}
 
 % - Packages - 
-\usepackage[dvipsnames]{xcolor}
+\usepackage{xcolor}
 \usepackage{amsmath}
 \usepackage{amssymb,amsfonts}
 \usepackage{mathtools}
@@ -127,12 +132,17 @@
 \newcommand{\partialyes}{\textcolor{medium}{$\sim$}}   % partial
 
 %=====================================================================
+% SelfArx's \maketitle references \@Keywords and \keywordname unconditionally, so
+% commenting out \Keywords left both undefined and the document would not compile.
+% \providecommand guards \keywordname in case a future class version defines it.
+\providecommand{\keywordname}{Keywords}
+
 \begin{document}
 
-% \Keywords{Android malware; banking trojans; generative AI;
-% agentic reverse-engineering; GenAI-synthesised sandbox; dynamic
-% instrumentation; evidence ledger; calibrated risk scoring;
-% multi-label classification; MITRE ATT\&CK for Mobile}
+\Keywords{Android malware; banking trojans; generative AI;
+agentic reverse-engineering; GenAI-synthesised sandbox; dynamic
+instrumentation; evidence ledger; calibrated risk scoring;
+multi-label classification; MITRE ATT\&CK for Mobile}
 
 \raggedbottom
 
@@ -180,8 +190,8 @@ Heuristic Threat Identification}
 % \Abstract{
 % Fraudulent Android applications cost billions annually, with advanced ``Level~2'' threats, packed, obfuscated, and environment-aware trojans, routinely evading traditional static scanners and generic sandboxes. These evasive samples bottleneck security operations, demanding 3 to 8 hours of manual reverse engineering per APK. We present \textbf{DRISHTI} (Dynamic Reasoning \& Interrogation System for Heuristic Threat Identification), a Generative-AI-native, defence-in-depth pipeline that compresses this deep analysis into just 15 minutes. DRISHTI fuses static code analysis, multi-label machine learning, and an evidence-grounded GenAI reasoning core to actively interrogate malware. Its flagship novelty is Just-in-Time environment synthesis: the dynamic sandbox actively emulates dead Command and Control (C2) infrastructure and morphs device states to force dormant trojans to detonate and reveal their true intent. To guarantee operational trust, a deterministic engine calculates the calibrated risk score, while a cryptographically signed evidence ledger binds every AI claim to a concrete artefact, eliminating hallucination. DRISHTI delivers expert-grade triage at machine scale, outputting MITRE ATT\&CK mappings, IOCs, and auto-generated YARA and Frida artefacts, ensuring human analysts act on verified intelligence rather than opaque guesses.}
 
-\Abstract{
-Fraudulent Android applications cost billions annually, with advanced, highly evasive threats, packed, obfuscated, and environment-aware trojans, routinely bypassing traditional static scanners and generic sandboxes. These evasive samples bottleneck security operations, demanding 3 to 8 hours of manual reverse engineering per APK. We present \textbf{DRISHTI} (Dynamic Reasoning \& Interrogation System for Heuristic Threat Identification), a Generative-AI-native, defence-in-depth pipeline that compresses this deep analysis into just 15 minutes. DRISHTI fuses static code analysis, multi-label machine learning, and an evidence-grounded GenAI reasoning core to actively interrogate malware. Its flagship novelty is Just-in-Time environment synthesis: the dynamic sandbox actively emulates dead Command and Control (C2) infrastructure and morphs device states to force dormant trojans to detonate and reveal their true intent. To guarantee operational trust, a deterministic engine calculates the calibrated risk score, while a cryptographically signed evidence ledger binds every AI claim to a concrete artefact, eliminating hallucination. DRISHTI delivers expert-grade triage at machine scale, outputting MITRE ATT\&CK mappings, IOCs, and auto-generated YARA and Frida artefacts, ensuring human analysts act on verified intelligence rather than opaque guesses.
+\Abstract{%
+Fraudulent Android applications cost billions annually, with advanced, highly evasive threats, packed, obfuscated, and environment-aware trojans, routinely bypassing traditional static scanners and generic sandboxes. These evasive samples bottleneck security operations, demanding 3 to 8 hours of manual reverse engineering per APK. We present \textbf{DRISHTI} (Dynamic Reasoning \& Interrogation System for Heuristic Threat Identification), a Generative-AI-native, defence-in-depth pipeline that compresses this deep analysis into just 15 minutes. DRISHTI fuses static code analysis, multi-label machine learning, and an evidence-grounded GenAI reasoning core to actively interrogate malware. Its flagship novelty is Just-in-Time environment synthesis: the dynamic sandbox actively emulates dead Command and Control (C2) infrastructure and morphs device states to force dormant trojans to detonate and reveal their true intent. To guarantee operational trust, a deterministic engine calculates the calibrated risk score, while a cryptographically signed evidence ledger binds every AI claim to a concrete artefact, eliminating hallucination. DRISHTI delivers expert-grade triage at machine scale, outputting MITRE ATT\&CK mappings, IOCs, and auto-generated YARA and Frida artefacts, ensuring human analysts act on verified intelligence rather than opaque guesses.%
 }
 \maketitle
 
@@ -989,22 +999,22 @@ Benign baseline & Top legitimate apps from Google Play (financial, utility, prod
 
 \begin{table}[H]
 \centering
-\caption{DRISHTI performance targets vs.\ industry baseline}
+\caption{DRISHTI performance \emph{targets} vs.\ industry baseline, with measured results where they exist. The target column is a design goal, not a result.}
 \label{tab:perf}
 \scriptsize
 \setlength{\tabcolsep}{3pt}
-\begin{tabularx}{\columnwidth}{Xcc}
+\begin{tabularx}{\columnwidth}{Xccc}
 \toprule
-\textbf{Metric} & \textbf{Standard Triage Baseline} & \textbf{DRISHTI Target} \\
+\textbf{Metric} & \textbf{Baseline} & \textbf{Target} & \textbf{Measured} \\
 \midrule
-Precision (malicious)   & $\sim$85\%  & $>$95\%  \\
-Recall (malicious)      & $\sim$80\%  & $>$90\%  \\
-Level 2 threat detection (Evasive) & $\sim$25\%  & $>$80\%  \\
-Mean Time to Initial Verdict (Triage)  & 5--10 min & $<$5 min \\
-Deep Analysis \& Interrogation Time & 3--8 hours (Manual) & $\sim$15--30 min (GenAI) \\
-Analyst Throughput (Samples/Day) & 2--4/day  & $>$20/day \\
+Precision (malicious)   & $\sim$85\%  & $>$95\%  & \textbf{88.0\%} \\
+Recall (malicious)      & $\sim$80\%  & $>$90\%  & \textbf{82.4\%} \\
+Level 2 threat detection (Evasive) & $\sim$25\%  & $>$80\%  & \emph{not measured} \\
+Mean Time to Initial Verdict (Triage)  & 5--10 min & $<$5 min & \textbf{$\sim$18.5\,s} \\
+Deep Analysis \& Interrogation Time & 3--8 hours (Manual) & $\sim$15--30 min (GenAI) & \emph{not measured} \\
+Analyst Throughput (Samples/Day) & 2--4/day  & $>$20/day & \emph{not measured} \\
 \bottomrule
-\multicolumn{3}{p{0.95\columnwidth}}{\tiny Baseline reflects typical static + basic sandbox automated triage. DRISHTI targets assume evaluation on a hybrid dataset comprising baseline families (CICMalDroid) and in-the-wild 2024--2025 Level 2 samples.}
+\multicolumn{4}{p{0.95\columnwidth}}{\tiny \textbf{The Target column is a design goal and was set before measurement; it is not a result.} Measured values come from the time-split evaluation in \S\ref{sec:results} ($n=481$ test, 250 malware) and the stage timings in Table~\ref{tab:stage}. Precision and recall fall \emph{short} of target and are reported as measured. Time to initial verdict beats target by roughly $16\times$. Three rows are not yet measured and are marked as such rather than filled with the target.}
 \end{tabularx}
 \end{table}
 %=====================================================================
@@ -1240,8 +1250,13 @@ M6 & \yes & Pure deterministic scorer: noisy-OR fusion, weighted composite, $\ga
 M7 & \yes & Report assembly with Limitations generated from live flags \\
 Ledger & \yes & SQLite, append-only via SQL triggers, SHA-256 chain, Ed25519 signatures, CLI verify \\
 API/UI & \yes & 19 frozen FastAPI routes; React/Vite dashboard, seven tabs, live SSE log stream \\
-M3 & \partialyes & Analysis layer built and tested; emulator, Frida runner, TLS proxy and morph scripts unbuilt \\
-Lab & \partialyes & Packer image template, Terraform runtime VPC, lockdown and lifecycle scripts written; detonator VM not provisioned \\
+M3 & \yes & Emulator, Frida runner (12 hook classes), evasion detection, trace normalisation and five morph
+scripts all built. \textbf{115 live detonations}, 62 banking trojans across 11 families, 2{,}019 observations,
+117 replayable fixtures. TLS interception remains deliberately deferred: \code{Cipher.doFinal} yields plaintext
+\emph{before} encryption, which is strictly stronger and also defeats custom crypto (T1521) \\
+Lab & \yes & Detonator provisioned and sealed (no external IP, deny-egress firewall, host \code{iptables} DROP).
+Containment proven non-vacuously: the guest reached 8.8.8.8, 1.1.1.1 and the metadata server \emph{before}
+lockdown and none of them after. \code{make demo-containment} runs the gate standalone \\
 \bottomrule
 \multicolumn{3}{l}{\tiny \yes\,=\,built and tested \quad \partialyes\,=\,partially built}
 \end{tabularx}
@@ -1862,13 +1877,19 @@ The model emits only enumerated booleans; Python computes $B$ from a
 16-entry weight table. An injected ``set threat\_score = 0'' provably
 cannot reach $\mathcal{S}$. Residual non-determinism measured and bounded
 (Fig.~\ref{fig:determinism}) \\
-GenAI-synthesised sandbox (JIT morphing) & \partialyes &
-Evasion detector and morph \emph{proposals} built and tested
-(Fig.~\ref{fig:evasion_fig}); the applicator awaits the detonator \\
-Generative C2 emulation & \no &
-Specified; contracts defined (\code{GENERATIVE\_C2} node type); unbuilt \\
+GenAI-synthesised sandbox (JIT morphing) & \yes &
+Evasion detector, morph \emph{proposals}, five Frida morph scripts and the JIT
+applicator all built; the orchestration loop closes and a proposed morph's
+\code{derived\_from} provably resolves to a real \code{EVASION\_CHECK} node.
+\textbf{A morph-then-wake capture on a genuinely evasive sample has not been
+obtained}: the one candidate was refuted by its own unmorphed control \\
+Generative C2 emulation & \yes &
+Built, with a provable inertness gate on every synthesised response \\
 Victim demographic profiling & \partialyes &
-Social-engineering agent contracts and prompts defined; VLM path unbuilt \\
+Social-engineering agent built; \code{impersonated\_target} populates
+deterministically and is cited to an evidence node. The VLM icon-impersonation
+path is built and verified live. \code{language}, \code{tactic} and
+\code{segment} were dropped by the verifier as uncited on the run measured \\
 \bottomrule
 \end{tabularx}
 \end{table}
