@@ -1,0 +1,685 @@
+{
+  "generated_at": "2026-08-26T03:56:00.121587+00:00",
+  "schema_version": "1.1.0",
+  "seed": 20260826,
+  "corpus": {
+    "schema_version": "1.1.0",
+    "sources": [
+      "data/corpus/features.jsonl"
+    ],
+    "extracted": 553,
+    "skipped_failed_extraction": 32,
+    "skipped_no_features": 0,
+    "composition": {
+      "train": {
+        "benign": 168,
+        "malware": 228,
+        "n": 396
+      },
+      "calib": {
+        "benign": 26,
+        "malware": 24,
+        "n": 50
+      },
+      "test": {
+        "benign": 50,
+        "malware": 57,
+        "n": 107
+      }
+    },
+    "time_bands": {
+      "2018-2020": {
+        "benign": 53,
+        "malware": 78
+      },
+      "2021-2023": {
+        "benign": 52,
+        "malware": 75
+      },
+      "2024-2026": {
+        "benign": 76,
+        "malware": 81
+      },
+      "<=2017": {
+        "benign": 63,
+        "malware": 75
+      }
+    },
+    "time_split_disjoint": true,
+    "time_split_detail": "train bands ['2018-2020', '2021-2023', '<=2017'] are disjoint from ['2024-2026']",
+    "repartition": {
+      "applied": true,
+      "rule": "sha256 bucket < 3 of 10 -> calib, else test; applied to the held-out bands only, label-independent, train untouched",
+      "calib_fraction_requested": 0.3,
+      "moved_to_calib": 44,
+      "moved_to_test": 17,
+      "before": {
+        "calib": {
+          "benign": 18,
+          "malware": 5,
+          "n": 23
+        },
+        "test": {
+          "benign": 58,
+          "malware": 76,
+          "n": 134
+        }
+      },
+      "after": {
+        "calib": {
+          "benign": 26,
+          "malware": 24,
+          "n": 50
+        },
+        "test": {
+          "benign": 50,
+          "malware": 57,
+          "n": 107
+        }
+      },
+      "trigger": "the shipped calibration split held 5 malware rows, under the 10 needed to fit a calibrator"
+    }
+  },
+  "vocabulary": {
+    "time_scheme": 504,
+    "random_scheme": 501,
+    "min_training_occurrences": 1
+  },
+  "winner": "random_forest",
+  "winner_selection": "highest 5-fold CV PR-AUC inside the training split (0.983 \u00b1 0.007); the test split played no part",
+  "cv_pr_auc_in_train": {
+    "logreg_l2": [
+      0.9683,
+      0.0114
+    ],
+    "linear_svm": [
+      0.951,
+      0.0203
+    ],
+    "random_forest": [
+      0.983,
+      0.007
+    ],
+    "xgboost": [
+      0.9818,
+      0.0085
+    ],
+    "mlp": [
+      0.9658,
+      0.0085
+    ]
+  },
+  "models": {
+    "logreg_l2": "Logistic regression, L2, C=1.0, balanced class weight, standardised inputs",
+    "linear_svm": "LinearSVC (squared hinge, C=0.5, balanced) + 5-fold Platt inside train",
+    "random_forest": "RandomForest, 400 trees, balanced_subsample, min_samples_leaf=2",
+    "xgboost": "XGBoost hist, 400 rounds, depth 6, lr 0.06, scale_pos_weight=neg/pos",
+    "mlp": "MLP (128, 64), ReLU, adam, early stopping on a 10% internal validation slice"
+  },
+  "results": [
+    {
+      "split": "time",
+      "model": "logreg_l2",
+      "n": 107,
+      "n_pos": 57,
+      "n_neg": 50,
+      "prevalence": 0.53271,
+      "pr_auc": 0.9334,
+      "pr_auc_ci": [
+        0.8818,
+        0.9732
+      ],
+      "roc_auc": 0.9098,
+      "roc_auc_ci": [
+        0.8477,
+        0.9635
+      ],
+      "threshold": 0.016002,
+      "threshold_source": "max-F1 on the calibration split (n=50)",
+      "precision": 0.8125,
+      "recall": 0.9123,
+      "f1": 0.8595,
+      "tp": 52,
+      "fp": 12,
+      "tn": 38,
+      "fn": 5,
+      "fp_rate_at_target_recall": 0.1,
+      "precision_at_target_recall": 0.912281,
+      "threshold_at_target_recall": 0.093043,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "random",
+      "model": "logreg_l2",
+      "n": 111,
+      "n_pos": 62,
+      "n_neg": 49,
+      "prevalence": 0.558559,
+      "pr_auc": 0.9773,
+      "pr_auc_ci": [
+        0.9515,
+        0.994
+      ],
+      "roc_auc": 0.9691,
+      "roc_auc_ci": [
+        0.9368,
+        0.9908
+      ],
+      "threshold": 0.467671,
+      "threshold_source": "max-F1 on the calibration split (n=111)",
+      "precision": 0.9508,
+      "recall": 0.9355,
+      "f1": 0.9431,
+      "tp": 58,
+      "fp": 3,
+      "tn": 46,
+      "fn": 4,
+      "fp_rate_at_target_recall": 0.061224,
+      "precision_at_target_recall": 0.949153,
+      "threshold_at_target_recall": 0.789226,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "time",
+      "model": "linear_svm",
+      "n": 107,
+      "n_pos": 57,
+      "n_neg": 50,
+      "prevalence": 0.53271,
+      "pr_auc": 0.8966,
+      "pr_auc_ci": [
+        0.8275,
+        0.9504
+      ],
+      "roc_auc": 0.8719,
+      "roc_auc_ci": [
+        0.8011,
+        0.936
+      ],
+      "threshold": 0.241525,
+      "threshold_source": "max-F1 on the calibration split (n=50)",
+      "precision": 0.8125,
+      "recall": 0.9123,
+      "f1": 0.8595,
+      "tp": 52,
+      "fp": 12,
+      "tn": 38,
+      "fn": 5,
+      "fp_rate_at_target_recall": 0.22,
+      "precision_at_target_recall": 0.825397,
+      "threshold_at_target_recall": 0.30049,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "random",
+      "model": "linear_svm",
+      "n": 111,
+      "n_pos": 62,
+      "n_neg": 49,
+      "prevalence": 0.558559,
+      "pr_auc": 0.9629,
+      "pr_auc_ci": [
+        0.9167,
+        0.9908
+      ],
+      "roc_auc": 0.9566,
+      "roc_auc_ci": [
+        0.9148,
+        0.9864
+      ],
+      "threshold": 0.556245,
+      "threshold_source": "max-F1 on the calibration split (n=111)",
+      "precision": 0.9032,
+      "recall": 0.9032,
+      "f1": 0.9032,
+      "tp": 56,
+      "fp": 6,
+      "tn": 43,
+      "fn": 6,
+      "fp_rate_at_target_recall": 0.081633,
+      "precision_at_target_recall": 0.933333,
+      "threshold_at_target_recall": 0.632245,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "time",
+      "model": "random_forest",
+      "n": 107,
+      "n_pos": 57,
+      "n_neg": 50,
+      "prevalence": 0.53271,
+      "pr_auc": 0.958,
+      "pr_auc_ci": [
+        0.9228,
+        0.9825
+      ],
+      "roc_auc": 0.9432,
+      "roc_auc_ci": [
+        0.9007,
+        0.9762
+      ],
+      "threshold": 0.315796,
+      "threshold_source": "max-F1 on the calibration split (n=50)",
+      "precision": 0.9184,
+      "recall": 0.7895,
+      "f1": 0.8491,
+      "tp": 45,
+      "fp": 4,
+      "tn": 46,
+      "fn": 12,
+      "fp_rate_at_target_recall": 0.26,
+      "precision_at_target_recall": 0.8,
+      "threshold_at_target_recall": 0.14895,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "random",
+      "model": "random_forest",
+      "n": 111,
+      "n_pos": 62,
+      "n_neg": 49,
+      "prevalence": 0.558559,
+      "pr_auc": 0.9863,
+      "pr_auc_ci": [
+        0.9646,
+        0.9997
+      ],
+      "roc_auc": 0.9733,
+      "roc_auc_ci": [
+        0.9324,
+        0.9997
+      ],
+      "threshold": 0.477962,
+      "threshold_source": "max-F1 on the calibration split (n=111)",
+      "precision": 0.9672,
+      "recall": 0.9516,
+      "f1": 0.9593,
+      "tp": 59,
+      "fp": 2,
+      "tn": 47,
+      "fn": 3,
+      "fp_rate_at_target_recall": 0.0,
+      "precision_at_target_recall": 1.0,
+      "threshold_at_target_recall": 0.64202,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "time",
+      "model": "xgboost",
+      "n": 107,
+      "n_pos": 57,
+      "n_neg": 50,
+      "prevalence": 0.53271,
+      "pr_auc": 0.927,
+      "pr_auc_ci": [
+        0.8706,
+        0.9716
+      ],
+      "roc_auc": 0.9025,
+      "roc_auc_ci": [
+        0.8388,
+        0.958
+      ],
+      "threshold": 0.115789,
+      "threshold_source": "max-F1 on the calibration split (n=50)",
+      "precision": 0.9583,
+      "recall": 0.807,
+      "f1": 0.8762,
+      "tp": 46,
+      "fp": 2,
+      "tn": 48,
+      "fn": 11,
+      "fp_rate_at_target_recall": 0.3,
+      "precision_at_target_recall": 0.776119,
+      "threshold_at_target_recall": 0.016308,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "random",
+      "model": "xgboost",
+      "n": 111,
+      "n_pos": 62,
+      "n_neg": 49,
+      "prevalence": 0.558559,
+      "pr_auc": 0.9847,
+      "pr_auc_ci": [
+        0.9599,
+        1.0
+      ],
+      "roc_auc": 0.9677,
+      "roc_auc_ci": [
+        0.9178,
+        1.0
+      ],
+      "threshold": 0.783515,
+      "threshold_source": "max-F1 on the calibration split (n=111)",
+      "precision": 1.0,
+      "recall": 0.9355,
+      "f1": 0.9667,
+      "tp": 58,
+      "fp": 0,
+      "tn": 49,
+      "fn": 4,
+      "fp_rate_at_target_recall": 0.0,
+      "precision_at_target_recall": 1.0,
+      "threshold_at_target_recall": 0.896494,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "time",
+      "model": "mlp",
+      "n": 107,
+      "n_pos": 57,
+      "n_neg": 50,
+      "prevalence": 0.53271,
+      "pr_auc": 0.9607,
+      "pr_auc_ci": [
+        0.9227,
+        0.9857
+      ],
+      "roc_auc": 0.94,
+      "roc_auc_ci": [
+        0.889,
+        0.9791
+      ],
+      "threshold": 0.078471,
+      "threshold_source": "max-F1 on the calibration split (n=50)",
+      "precision": 0.8448,
+      "recall": 0.8596,
+      "f1": 0.8522,
+      "tp": 49,
+      "fp": 9,
+      "tn": 41,
+      "fn": 8,
+      "fp_rate_at_target_recall": 0.24,
+      "precision_at_target_recall": 0.8125,
+      "threshold_at_target_recall": 0.061056,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "random",
+      "model": "mlp",
+      "n": 111,
+      "n_pos": 62,
+      "n_neg": 49,
+      "prevalence": 0.558559,
+      "pr_auc": 0.9782,
+      "pr_auc_ci": [
+        0.9534,
+        0.9943
+      ],
+      "roc_auc": 0.9628,
+      "roc_auc_ci": [
+        0.9199,
+        0.9922
+      ],
+      "threshold": 0.310179,
+      "threshold_source": "max-F1 on the calibration split (n=111)",
+      "precision": 0.8923,
+      "recall": 0.9355,
+      "f1": 0.9134,
+      "tp": 58,
+      "fp": 7,
+      "tn": 42,
+      "fn": 4,
+      "fp_rate_at_target_recall": 0.061224,
+      "precision_at_target_recall": 0.949153,
+      "threshold_at_target_recall": 0.494517,
+      "target_recall": 0.9,
+      "notes": []
+    }
+  ],
+  "calibration": {
+    "performed": true,
+    "method": "sigmoid",
+    "n_calib": 50,
+    "n_calib_pos": 24,
+    "n_calib_neg": 26,
+    "brier_on_calib_cv": 0.138843,
+    "methods_considered": [
+      "sigmoid"
+    ],
+    "methods_rejected": {
+      "isotonic": "24 positives in the calibration split, below the 25 needed; isotonic on this many collapses to a step function that looks confident and encodes nothing"
+    },
+    "brier_test_before": 0.149441,
+    "brier_test_after": 0.106423,
+    "ece_test_before": 0.204892,
+    "ece_test_after": 0.088497,
+    "per_method_on_test": {
+      "isotonic": {
+        "brier_test": 0.103031,
+        "ece_test": 0.114396
+      },
+      "sigmoid": {
+        "brier_test": 0.106423,
+        "ece_test": 0.088497
+      }
+    },
+    "n_test": 107,
+    "n_test_malware": 57,
+    "bin_agreement_before": {
+      "bin": [
+        0.75,
+        0.85
+      ],
+      "n": 7,
+      "observed_rate": 1.0,
+      "expected_rate": 0.8,
+      "tolerance": 0.1,
+      "within_tolerance": false,
+      "note": "only 7 samples in the bucket \u2014 the result is not informative"
+    },
+    "bin_agreement_after": {
+      "bin": [
+        0.75,
+        0.85
+      ],
+      "n": 5,
+      "observed_rate": 1.0,
+      "expected_rate": 0.8,
+      "tolerance": 0.1,
+      "within_tolerance": false,
+      "note": "only 5 samples in the bucket \u2014 the result is not informative"
+    }
+  },
+  "anomaly": {
+    "performed": true,
+    "escalate_at": 0.85,
+    "n_fit_benign": 168,
+    "n_scored": 107,
+    "escalated_total": 59,
+    "escalated_benign": 14,
+    "escalated_malware": 45,
+    "benign_escalation_rate": 0.28,
+    "malware_escalation_rate": 0.789474,
+    "mean_score_benign": 0.721667,
+    "mean_score_malware": 0.876253
+  },
+  "attribution_method": "shap.TreeExplainer",
+  "global_importance_method": "permutation importance on PR-AUC (5 repeats, shortlisted to the 60 highest-ranked of 504 columns before measuring)",
+  "global_importance_top20": [
+    {
+      "feature": "perm:MOUNT_UNMOUNT_FILESYSTEMS",
+      "weight": 0.008372
+    },
+    {
+      "feature": "perm:GET_TASKS",
+      "weight": 0.00637
+    },
+    {
+      "feature": "url:count",
+      "weight": 0.005905
+    },
+    {
+      "feature": "archive:entropy_mean",
+      "weight": 0.004121
+    },
+    {
+      "feature": "perm:RECEIVE",
+      "weight": 0.003109
+    },
+    {
+      "feature": "reach:pkg_list",
+      "weight": 0.002898
+    },
+    {
+      "feature": "reach:path_count",
+      "weight": 0.002293
+    },
+    {
+      "feature": "sink:pkg_query",
+      "weight": 0.00212
+    },
+    {
+      "feature": "sink:count",
+      "weight": 0.001888
+    },
+    {
+      "feature": "perm:WRITE_EXTERNAL_STORAGE",
+      "weight": 0.001878
+    },
+    {
+      "feature": "reach:native_load",
+      "weight": 0.001775
+    },
+    {
+      "feature": "api:reflection_count",
+      "weight": 0.001526
+    },
+    {
+      "feature": "api:dcl_indicator_count",
+      "weight": 0.001425
+    },
+    {
+      "feature": "perm:CHANGE_WIFI_STATE",
+      "weight": 0.001366
+    },
+    {
+      "feature": "perm:READ_LOGS",
+      "weight": 0.001298
+    },
+    {
+      "feature": "perm:READ_PHONE_STATE",
+      "weight": 0.001217
+    },
+    {
+      "feature": "api:crypto_constant_count",
+      "weight": 0.001217
+    },
+    {
+      "feature": "combo:DROPPER_CAPABILITY",
+      "weight": 0.001153
+    },
+    {
+      "feature": "api:PathClassLoader",
+      "weight": 0.001143
+    },
+    {
+      "feature": "reach:count",
+      "weight": 0.001061
+    }
+  ],
+  "example_attribution": [
+    {
+      "feature": "archive:entropy_mean",
+      "value": 6.778864629385369,
+      "weight": 0.033384
+    },
+    {
+      "feature": "api:reflection_count",
+      "value": 3.0,
+      "weight": 0.033196
+    },
+    {
+      "feature": "perm:GET_TASKS",
+      "value": 1.0,
+      "weight": 0.031608
+    },
+    {
+      "feature": "url:count",
+      "value": 0.0,
+      "weight": 0.026525
+    },
+    {
+      "feature": "url:distinct_hosts",
+      "value": 0.0,
+      "weight": 0.023585
+    },
+    {
+      "feature": "sink:pkg_resolve",
+      "value": 0.0,
+      "weight": 0.02346
+    },
+    {
+      "feature": "perm:READ_PHONE_STATE",
+      "value": 1.0,
+      "weight": 0.022649
+    },
+    {
+      "feature": "sink:count",
+      "value": 2.0,
+      "weight": 0.019754
+    },
+    {
+      "feature": "url:unknown_host_count",
+      "value": 0.0,
+      "weight": 0.019199
+    },
+    {
+      "feature": "reach:native_load",
+      "value": 1.0,
+      "weight": 0.018243
+    }
+  ],
+  "learning_curve": [
+    {
+      "fraction": 0.125,
+      "n_train": 49,
+      "n_train_malware": 28,
+      "pr_auc_time_split": 0.9395
+    },
+    {
+      "fraction": 0.25,
+      "n_train": 99,
+      "n_train_malware": 57,
+      "pr_auc_time_split": 0.9506
+    },
+    {
+      "fraction": 0.5,
+      "n_train": 198,
+      "n_train_malware": 114,
+      "pr_auc_time_split": 0.9436
+    },
+    {
+      "fraction": 0.75,
+      "n_train": 297,
+      "n_train_malware": 171,
+      "pr_auc_time_split": 0.953
+    },
+    {
+      "fraction": 1.0,
+      "n_train": 396,
+      "n_train_malware": 228,
+      "pr_auc_time_split": 0.9559
+    }
+  ],
+  "pilot": false,
+  "runtime_seconds": 67.9,
+  "seconds_per_model": {
+    "logreg_l2": 7.9,
+    "linear_svm": 8.2,
+    "random_forest": 11.7,
+    "xgboost": 10.4,
+    "mlp": 7.7
+  }
+}
