@@ -4,7 +4,7 @@
     {
       "name": "ui",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "ui"],
+      "runtimeArgs": ["--prefix", "ui", "run", "dev"],
       "port": 5173
     }
   ]

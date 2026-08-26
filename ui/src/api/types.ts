@@ -489,6 +489,32 @@ export interface DynamicTrace extends AnalyserResult {
   synthetic: boolean
 }
 
+// ─── A12 reporting dossier ───────────────────────────────────────────────────
+
+/**
+ * The complaint package for a cyber cell or a bank fraud desk. Mirrors the response of
+ * `GET /api/jobs/{job}/artifacts/dossier` (`drishti/m7_report/dossier.py`).
+ *
+ * `submission_is_manual` is always `true` and there is no code path that can set it
+ * false: India's National Cyber Crime Reporting Portal has no public submission API.
+ * Nothing in this product files a complaint. The UI generates a package a human files,
+ * and must never offer a control that reads as "report to cyber cell".
+ */
+export interface Dossier {
+  sha256: string
+  reportable: boolean
+  reason: string
+  summary: string
+  facts: Record<string, string | number | boolean | null>
+  indicators: string[]
+  techniques: string[]
+  caveats: string[]
+  portal_url: string
+  helpline: string
+  submission_is_manual: boolean
+  text: string
+}
+
 // ─── §4 GenAI verdict ────────────────────────────────────────────────────────
 
 export type VerifierStatus =
