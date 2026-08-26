@@ -89,9 +89,13 @@ export function FrontierTab({
 
       {stubbed && (
         <div className="rounded border border-warn/40 bg-warn/5 px-4 py-3 text-sm text-warn">
-          This plan came from the <span className="font-mono">stub</span> generator. It is derived from
-          real pass-1 observations, but no model synthesised it and no morph was applied to a device —
-          the LLM-generated plan and the applicator land in P5 (T5.1–T5.3).
+          This plan came from the <span className="font-mono">stub</span> generator in{' '}
+          <span className="font-mono">pipeline.py</span>, not from the Adversarial Elicitor. It is
+          derived from real pass-1 observations, but no model synthesised it and no morph was
+          applied to a device. The elicitor and the JIT applicator do exist —{' '}
+          <span className="font-mono">m4_genai/agents/adversarial_elicitor.py</span> and{' '}
+          <span className="font-mono">m3_dynamic/morph.py</span> — this pipeline path simply does
+          not call them.
         </div>
       )}
 
@@ -155,8 +159,10 @@ export function FrontierTab({
       <Panel title="3 · Generative C2" subtitle="Synthesised responses served to a dead or geo-fenced C2">
         {c2Nodes.length === 0 ? (
           <Empty>
-            No Generative C2 exchange. Emulation lands in P5 (T5.4); until then no synthesised response
-            has ever been served to a sample.
+            No Generative C2 exchange for this job. The emulation is built
+            (<span className="font-mono">m3_dynamic/generative_c2.py</span>, behind its inertness
+            gate) but it only serves a response to a sample that is actually running, and nothing
+            detonated here. No synthesised response was served.
           </Empty>
         ) : (
           <ul className="space-y-2">
