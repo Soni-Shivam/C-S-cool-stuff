@@ -15,8 +15,10 @@
  *    caveat arrives.
  */
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Artefact } from '../api/client'
+import { Copyable, FilterableList } from '../components/Analyst'
+import { matches, summarise } from '../components/analyst'
 import { LookalikePanel } from '../components/Lookalike'
 import {
   ArtefactGate,
@@ -29,7 +31,7 @@ import {
   StatTile,
   Tag,
 } from '../components/primitives'
-import type { CallPath, Severity, StaticReport } from '../api/types'
+import type { CallPath, Component, Severity, StaticReport } from '../api/types'
 
 const SEVERITY_TONE: Record<Severity, 'bad' | 'warn' | 'neutral'> = {
   critical: 'bad',
@@ -75,6 +77,92 @@ function CallPathRow({ path }: { path: CallPath }) {
     </li>
   )
 }
+
+/**
+ * The components table, searchable.
+ *
+ * Split out of the render prop because it needs state and that body is not a component.
+ * A real sample declares 122 of these; the question an analyst arrives with is almost
+ * always "which ones are exported and unguarded", and scrolling 122 rows to find out is
+ * not an answer. The name, the kind and the export state are all searchable, so
+ * "exported" narrows to the ones that matter.
+ */
+function ComponentsPanel({ components }: { components: readonly Component[] }) {
+  const [query, setQuery] = useState('')
+  const visible = useMemo(
+    () =>
+      components.filter((component) =>
+        matches(
+          [
+            component.name,
+            component.kind,
+            component.exported ? (component.permission ? 'exported guarded' : 'exported unguarded') : 'not exported',
+          ],
+          query,
+        ),
+      ),
+    [components, query],
+  )
+
+  return (
+    <Panel
+      title={`Components (${components.length})`}
+      right={
+        components.length >= 8 ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="filter components…"
+              data-analyst-filter
+              className="w-44 rounded-full border border-line-bright bg-ground-2 px-3 py-1.5 text-xs text-fg transition-colors placeholder:text-muted hover:border-v400 focus:border-v400 focus:outline-none"
+            />
+            <span className="shrink-0 font-mono text-[10px] text-muted">
+              {summarise(visible.length, components.length)}
+            </span>
+          </div>
+        ) : undefined
+      }
+    >
+      {visible.length === 0 ? (
+        <Empty>No components match “{query}”. {components.length} declared.</Empty>
+      ) : (
+        <div className="max-h-72 overflow-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="sticky top-0 bg-ground-1 text-muted">
+              <tr>
+                <th className="py-1 pr-2 font-medium">name</th>
+                <th className="py-1 pr-2 font-medium">kind</th>
+                <th className="py-1 font-medium">exported</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((component) => (
+                <tr key={`${component.kind}:${component.name}`} className="border-t border-line-soft">
+                  <td className="py-1 pr-2 font-mono break-all text-fg">{component.name}</td>
+                  <td className="py-1 pr-2 text-muted">{component.kind}</td>
+                  <td className="py-1">
+                    {component.exported ? (
+                      component.permission ? (
+                        <Tag tone="warn">exported, guarded</Tag>
+                      ) : (
+                        <Tag tone="bad">exported, unguarded</Tag>
+                      )
+                    ) : (
+                      <span className="text-dim">no</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Panel>
+  )
+}
+
 
 export function StaticTab({ report }: { report: Artefact<StaticReport> | null }) {
   return (
@@ -284,42 +372,16 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
             </Panel>
 
             <div className="grid gap-4 xl:grid-cols-2">
-              <Panel title={`Components (${value.components.length})`}>
-                <div className="max-h-72 overflow-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="sticky top-0 bg-ground-1 text-muted">
-                      <tr>
-                        <th className="py-1 pr-2 font-medium">name</th>
-                        <th className="py-1 pr-2 font-medium">kind</th>
-                        <th className="py-1 font-medium">exported</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {value.components.map((component) => (
-                        <tr key={`${component.kind}:${component.name}`} className="border-t border-line-soft">
-                          <td className="py-1 pr-2 font-mono break-all text-fg">{component.name}</td>
-                          <td className="py-1 pr-2 text-muted">{component.kind}</td>
-                          <td className="py-1">
-                            {component.exported ? (
-                              component.permission ? (
-                                <Tag tone="warn">exported, guarded</Tag>
-                              ) : (
-                                <Tag tone="bad">exported, unguarded</Tag>
-                              )
-                            ) : (
-                              <span className="text-dim">no</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Panel>
+              <ComponentsPanel components={value.components} />
 
               <Panel title={`Permissions (${value.permissions.length})`}>
-                <div className="flex max-h-72 flex-wrap gap-1 overflow-auto">
-                  {value.permissions.map((permission) => (
+                <FilterableList
+                  items={value.permissions}
+                  searchable={(permission) => permission}
+                  noun="permissions"
+                  className="flex max-h-72 flex-wrap gap-1 overflow-auto"
+                >
+                  {(permission) => (
                     <span
                       key={permission}
                       className={`rounded px-1.5 py-0.5 font-mono text-[11px] ${
@@ -331,22 +393,25 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                     >
                       {permission}
                     </span>
-                  ))}
-                </div>
+                  )}
+                </FilterableList>
               </Panel>
             </div>
 
             <div className="grid gap-4 xl:grid-cols-2">
               <Panel title={`URLs (${value.urls.length})`} subtitle="Defanged — sample-derived, never rendered as links">
-                {value.urls.length === 0 ? (
-                  <Empty>none extracted</Empty>
-                ) : (
-                  <ul className="max-h-56 space-y-0.5 overflow-auto font-mono text-[11px] break-all text-muted">
-                    {value.urls.map((url) => (
-                      <li key={url}>{url}</li>
-                    ))}
-                  </ul>
-                )}
+                <FilterableList
+                  items={value.urls}
+                  searchable={(url) => url}
+                  noun="URLs"
+                  className="max-h-56 space-y-0.5 overflow-auto font-mono text-[11px] break-all text-muted"
+                >
+                  {(url) => (
+                    <div key={url}>
+                      <Copyable value={url} />
+                    </div>
+                  )}
+                </FilterableList>
               </Panel>
 
               <Panel

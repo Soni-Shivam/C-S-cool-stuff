@@ -47,6 +47,7 @@ import { LedgerTab } from './tabs/LedgerTab'
 import { OverviewTab } from './tabs/OverviewTab'
 import { ReportTab } from './tabs/ReportTab'
 import { ReverseEngineeringTab } from './tabs/ReverseEngineeringTab'
+import { RunsTab } from './tabs/RunsTab'
 import { SandboxTab } from './tabs/SandboxTab'
 import { StaticTab } from './tabs/StaticTab'
 
@@ -59,6 +60,7 @@ const TABS = [
   { name: 'Frontier', slug: 'frontier' },
   { name: 'Ledger', slug: 'ledger' },
   { name: 'Report', slug: 'report' },
+  { name: 'Runs', slug: 'runs' },
 ] as const
 type Tab = (typeof TABS)[number]['name']
 
@@ -149,6 +151,45 @@ export default function App() {
     if (name !== 'Ledger') url.searchParams.delete('node')
     window.history.pushState({}, '', url)
   }, [])
+
+  // Keyboard navigation. An analyst comparing two views does it dozens of times in a
+  // session, and reaching for the mouse each time is the difference between a tool and a
+  // demo. Deliberately inert while typing: a `1` in a filter box is a character, not a
+  // view change, and the one thing worse than no shortcut is one that fires mid-word.
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null
+      const typing =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.isContentEditable
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+
+      if (event.key === 'Escape' && typing) {
+        ;(target as HTMLInputElement).value = ''
+        target?.dispatchEvent(new Event('input', { bubbles: true }))
+        target?.blur()
+        return
+      }
+      if (typing) return
+
+      if (event.key === '/') {
+        const box = document.querySelector<HTMLInputElement>('[data-analyst-filter]')
+        if (box) {
+          event.preventDefault()
+          box.focus()
+        }
+        return
+      }
+      const index = Number.parseInt(event.key, 10)
+      if (Number.isInteger(index) && index >= 1 && index <= TABS.length) {
+        selectTab(TABS[index - 1].name)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectTab])
 
   const selectJob = useCallback((id: string) => {
     setJobId(id)
@@ -284,7 +325,12 @@ export default function App() {
                 </div>
               )}
 
-              {!jobId ? (
+              {/* Runs sits beside the job gate rather than inside it: a history page that
+                  required you to already have a job open would be useless on a fresh
+                  load, and every other view genuinely does need one. */}
+              {tab === 'Runs' ? (
+                <RunsTab currentJobId={jobId} onSelectJob={selectJob} />
+              ) : !jobId ? (
                 <Welcome />
               ) : (
                 <>
@@ -317,7 +363,20 @@ export default function App() {
                       onSelect={setSelectedNode}
                     />
                   )}
-                  {tab === 'Report' && <ReportTab jobId={jobId} revision={revision} />}
+                  {tab === 'Report' && (
+                    <ReportTab
+                      jobId={jobId}
+                      revision={revision}
+                      sha256={job?.sha256 ?? null}
+                      packageName={staticReport?.state === 'ready' ? staticReport.value.package : null}
+                      urls={staticReport?.state === 'ready' ? staticReport.value.urls : []}
+                      hosts={
+                        dynamic?.state === 'ready'
+                          ? dynamic.value.network_flows.map((flow) => flow.host)
+                          : []
+                      }
+                    />
+                  )}
                 </>
               )}
             </div>
