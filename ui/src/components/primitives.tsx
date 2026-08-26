@@ -312,10 +312,20 @@ export function ArtefactGate<T>({
  */
 export function DegradedNotice({ result }: { result: AnalyserResult }) {
   if (!result.partial && result.errors.length === 0) return null
+  // `partial` is the degradation flag. When it is false the analyser ran to completion,
+  // so whatever is in `errors` is a disclosure rather than a failure — "no dynamic
+  // evidence available" on a static-only run is a fact about the run, not something
+  // that went wrong. Labelling it "Completed with errors" in warning amber made a
+  // correct result look broken, which is the opposite of what this notice is for.
+  const degraded = result.partial
   return (
-    <div className="mb-3 rounded-[var(--radius-tile)] border border-warn/30 bg-warn/[0.07] px-4 py-3 text-xs">
-      <span className="font-semibold text-warn">
-        {result.partial ? 'Partial result' : 'Completed with errors'}
+    <div
+      className={`mb-3 rounded-[var(--radius-tile)] px-4 py-3 text-xs ${
+        degraded ? 'border border-warn/30 bg-warn/[0.07]' : 'border border-line bg-ground-2'
+      }`}
+    >
+      <span className={`font-semibold ${degraded ? 'text-warn' : 'text-muted'}`}>
+        {degraded ? 'Partial result' : 'Notes on this result'}
       </span>
       <ul className="mt-1.5 space-y-1 text-muted">
         {result.errors.map((error, i) => (
