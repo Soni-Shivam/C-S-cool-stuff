@@ -28,12 +28,32 @@ ungrounded training example.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from typing import Any
 
 import numpy as np
 
 from drishti.m5_ml.dataset import SEED
+
+
+def _worker_count() -> int:
+    """Threads each model may use. Deliberately NOT `n_jobs=-1`.
+
+    Measured on the dev box: with an Android emulator, a browser and another agent's
+    test run already on it, a 400-round XGBoost fit over a 276x478 matrix asking for all
+    sixteen cores did not finish in three minutes, at 1030% CPU and load average 35 —
+    OpenMP's spin-wait burns more time fighting for cores than the fit needs. Capped, the
+    same fit is seconds. Grabbing every core on a shared machine is both antisocial and,
+    here, measurably slower.
+    """
+    override = os.environ.get("DRISHTI_ML_JOBS", "").strip()
+    if override.isdigit() and int(override) > 0:
+        return int(override)
+    return max(1, min(4, os.cpu_count() or 1))
+
+
+N_JOBS = _worker_count()
 
 #: Human-readable, stable, and used as the key in every metrics table and figure legend.
 MODEL_NAMES: tuple[str, ...] = ("logreg_l2", "linear_svm", "random_forest", "xgboost", "mlp")
@@ -108,7 +128,7 @@ def build(name: str, labels: np.ndarray) -> Any:
             n_estimators=400,
             min_samples_leaf=2,
             class_weight="balanced_subsample",
-            n_jobs=-1,
+            n_jobs=N_JOBS,
             random_state=SEED,
         )
 
@@ -124,7 +144,7 @@ def build(name: str, labels: np.ndarray) -> Any:
             scale_pos_weight=_scale_pos_weight(labels),
             eval_metric="aucpr",
             tree_method="hist",
-            n_jobs=-1,
+            n_jobs=N_JOBS,
             random_state=SEED,
         )
 
@@ -139,7 +159,11 @@ def build(name: str, labels: np.ndarray) -> Any:
                         activation="relu",
                         solver="adam",
                         alpha=1e-4,
-                        batch_size=256,
+                        # "auto" is min(200, n_samples). A fixed 256 exceeds the sample
+                        # count on every cross-validation fold of a small corpus, which
+                        # sklearn clips with a warning per fit — noise that buries the
+                        # warnings worth reading.
+                        batch_size="auto",
                         learning_rate_init=1e-3,
                         max_iter=300,
                         early_stopping=True,

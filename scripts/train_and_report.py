@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from datetime import UTC, datetime
@@ -43,10 +44,29 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import numpy as np
+# Must precede numpy/sklearn/xgboost: their OpenMP and BLAS backends read these once, at
+# load. Unset, each layer independently claims every core, and on a shared machine the
+# resulting oversubscription is slower than running single-threaded — measured, see
+# `models._worker_count`.
+for _var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+    os.environ.setdefault(_var, str(max(1, min(4, os.cpu_count() or 1))))
+os.environ.setdefault("OMP_WAIT_POLICY", "PASSIVE")
 
-from drishti.m5_ml import anomaly, bundle, calibrate, dataset, evaluate, explain, figures, models
-from drishti.m5_ml.features import FEATURE_SCHEMA_VERSION
+# E402 on the next three: they MUST come after the thread-cap block above, because the
+# OpenMP and BLAS runtimes read those variables exactly once, when numpy first loads.
+import numpy as np  # noqa: E402
+
+from drishti.m5_ml import (  # noqa: E402
+    anomaly,
+    bundle,
+    calibrate,
+    dataset,
+    evaluate,
+    explain,
+    figures,
+    models,
+)
+from drishti.m5_ml.features import FEATURE_SCHEMA_VERSION  # noqa: E402
 
 #: Below this many of either class in an evaluation split, no metric is reported.
 #: A PR-AUC over nine test samples is noise with a decimal point on it.
