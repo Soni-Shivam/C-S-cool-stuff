@@ -270,6 +270,16 @@ land. The bar for this hackathon is a working PoC per idea, not a finished produ
   tooling limit; 35 `internal_error` = sample self-exited/crashed under Frida; 2
   `install_failed`). Containment gate is now also a standalone demo: `make
   demo-containment` (`0422fb9`) accepts a sealed net and rejects the v1 `nc -z` probe.
+- **RAG selection ratio MEASURED on real banking trojans** (`2c681de`,
+  `data/measurements/rag_selection_ratio.json`). The REPORT §4.2.2 headline — "we never
+  send the whole app" — measured on 11 MalwareBazaar-tagged trojans on the extractor VM
+  (the only place a corpus APK legally lives; the inert decoy has zero reachable sinks).
+  The backward walk selects **4–9 methods regardless of app size** (117 to 48,449 internal
+  methods), holding the workspace to **689–4832 tokens against the 12,000 prompt budget**.
+  Largest sample (Hydra, 48,449 methods) → 8 methods, 0.017%, 4758 tokens. Far stronger
+  than the canary's 1/6790. The ≤12k prompt budget holds with ≥60% headroom on every
+  sample; the ≤25-call budget was not re-measured here (the VM checkout predates the
+  controller `apk_path` signature) but is unchanged in code.
 - **First reportable model comparison SHIPPED** (`b432c31`, `cbc781d`). Five models,
   both splits, every n stated; winner random_forest by CV, time-split PR-AUC 0.954 on
   n=107 (57 malware). Past the 25-per-class gate — no longer PILOT-only. `docs/ML_RESULTS.md`.
@@ -317,11 +327,24 @@ land. The bar for this hackathon is a working PoC per idea, not a finished produ
   *proposals* and the applicator are built and unit-tested. The **Frida morph scripts
   themselves** (`build_props`, `sim_locale`, `install_packages`, `clock_skew`,
   `files_present`) were missing entirely — they landed 2026-08-26; `detonator_run.sh
-  morph` and `compose_hooks` were wired to a directory that did not exist. A live
-  morph-then-wake capture on a real evasive sample is the next step now that the scripts
-  exist. Content-provider kinds (sms_history/contacts/accounts) are deliberately
-  unshipped — an absent script is refused, which is honest; a stub would claim a morph it
-  did not apply.
+  morph` and `compose_hooks` were wired to a directory that did not exist. The scripts
+  landed and were deployed to the detonator, and the before/after harness works end to
+  end. Content-provider kinds (sms_history/contacts/accounts) are deliberately unshipped —
+  an absent script is refused, which is honest; a stub would claim a morph it did not
+  apply.
+  **A clean morph-then-wake was ATTEMPTED but NOT captured (2026-08-26), and the negative
+  is instructive.** Five real stall candidates were morphed (build_props+sim_locale+
+  files_present [+install_packages]). Four AndroZoo quiet samples did not wake: two query
+  their OWN package (a repackaging/integrity check no environment morph addresses), two
+  crash at Frida instrumentation regardless. One banking trojan (BankBot `8166dfba`,
+  x86 ABI) *looked* like the money shot — pass-1 `failed`/0 obs → pass-2 morphed
+  `completed`/4 obs (T1417 overlay, T1418 package discovery). **A three-run UNMORPHED
+  control refuted it: the sample completes with the same 4 observations unmorphed**, so
+  the pass-1 failure was a Frida cold-start spawn flake (the documented issue, runbook
+  §0.0), not sandbox evasion the morph unlocked. Claiming it would have been dishonest;
+  the control is exactly why it is not claimed. Infrastructure is proven and one command
+  from a real capture; what is missing is a corpus sample with a genuine, checkable
+  environment gate — the banking trojans available mostly detonate passively already.
 - **The end-to-end judge demo** (good-app-passes / bad-app-blocked on the emulator, with
   the Device-Owner veto) is being built by a dedicated worker and not yet rehearsed cold.
 
