@@ -120,6 +120,67 @@ def _three_way_random(labels: np.ndarray, seed: int) -> tuple[np.ndarray, np.nda
     )
 
 
+def _learning_curve(
+    name: str,
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    fractions: tuple[float, ...],
+) -> list[dict[str, Any]]:
+    """Time-split PR-AUC for the winner as the TRAINING set grows. Test is held fixed.
+
+    Extraction fills test and calib before train, so the binding constraint on this
+    corpus is training data rather than evaluation data. That makes the interesting
+    question not "what is the PR-AUC" but "how much of it did the last thousand training
+    samples buy" — a curve that is still climbing says the number would improve with more
+    extraction; a flat one says it would not. Both are useful and neither is a guess.
+
+    Subsamples are stratified and drawn from one seeded shuffle, so each size is a
+    superset of the one before it and the curve reflects added data rather than a
+    different draw.
+    """
+    from sklearn.metrics import average_precision_score
+
+    rng = np.random.default_rng(dataset.SEED)
+    order_by_label = {}
+    for value in (0, 1):
+        members = np.flatnonzero(y_train == value)
+        rng.shuffle(members)
+        order_by_label[value] = members
+
+    curve: list[dict[str, Any]] = []
+    for fraction in fractions:
+        index = np.concatenate(
+            [
+                members[: max(1, round(fraction * len(members)))]
+                for members in order_by_label.values()
+            ]
+        )
+        subset_y = y_train[index]
+        if len(np.unique(subset_y)) < 2:
+            continue
+        subset_model = models.fit(name, x_train[index], subset_y)
+        probabilities = models.scores(subset_model, x_test)
+        curve.append(
+            {
+                "fraction": fraction,
+                "n_train": len(index),
+                "n_train_malware": int((subset_y == 1).sum()),
+                "pr_auc_time_split": round(
+                    float(average_precision_score(y_test, probabilities)), 4
+                ),
+            }
+        )
+        print(
+            f"  learning curve: n_train={curve[-1]['n_train']} "
+            f"({curve[-1]['n_train_malware']} malware) -> time-split PR-AUC "
+            f"{curve[-1]['pr_auc_time_split']}",
+            flush=True,
+        )
+    return curve
+
+
 def _fmt(value: Any) -> str:
     if value is None:
         return "n/a"
@@ -176,6 +237,12 @@ def main() -> int:
             "drop feature names seen in fewer than N training samples; 0 picks the rule "
             "(2 once the training split reaches 500 rows, otherwise 1)"
         ),
+    )
+    parser.add_argument(
+        "--no-learning-curve",
+        dest="learning_curve",
+        action="store_false",
+        help="skip the winner's training-size sweep (five extra fits of one model)",
     )
     parser.add_argument(
         "--upload",
@@ -460,6 +527,22 @@ def main() -> int:
         anomaly_summary = {"performed": False, "reason": f"{type(exc).__name__}: {exc}"}
         print(f"anomaly skipped: {anomaly_summary['reason']}")
 
+    # ── learning curve: how much did the last slice of training data buy? ────
+    learning_curve: list[dict[str, Any]] = []
+    if args.learning_curve and len(y_test) and y_test.min() != y_test.max():
+        print("\nlearning curve (winner, training set grown, test held fixed):", flush=True)
+        learning_curve = _learning_curve(
+            winner, x_train, y_train, x_test, y_test, (0.125, 0.25, 0.5, 0.75, 1.0)
+        )
+        if len(learning_curve) > 1:
+            figures.learning_curve(
+                learning_curve,
+                args.figures / "ml_learning_curve.png",
+                model_name=winner,
+                n_test=len(y_test),
+                n_test_malware=int((y_test == 1).sum()),
+            )
+
     # ── explanation of the winner (T2.6) ─────────────────────────────────────
     explainer = explain.Explainer(model, x_train, vocabulary)
     global_rows = explain.permutation_importance(
@@ -565,6 +648,7 @@ def main() -> int:
         "example_attribution": [
             {"feature": row.feature, "value": row.value, "weight": row.weight} for row in shap_rows
         ],
+        "learning_curve": learning_curve,
         "pilot": pilot,
         "runtime_seconds": round(time.monotonic() - started, 1),
         "seconds_per_model": timings,
@@ -856,6 +940,35 @@ def _write_results(
         lines.append("![Anomaly](figures/ml_anomaly.png)\n")
     else:
         lines.append(f"**Not performed.** {anomaly_summary.get('reason', 'no reason recorded')}\n")
+
+    curve = metrics.get("learning_curve") or []
+    if len(curve) > 1:
+        lines.append("## 6b. How much did the training data buy?\n")
+        lines.append(
+            "The corpus was extracted **test split first**, so the binding constraint on "
+            "this build is training data, not evaluation data. That makes the useful "
+            "question not what the PR-AUC is but whether it is still climbing. The winner "
+            "was refitted on stratified nested subsamples of the training split, with the "
+            "test split held fixed:\n"
+        )
+        lines.append("| training n | of which malware | time-split PR-AUC |")
+        lines.append("|---:|---:|---:|")
+        for point in curve:
+            lines.append(
+                f"| {point['n_train']} | {point['n_train_malware']} | "
+                f"{point['pr_auc_time_split']:.4f} |"
+            )
+        first, last = curve[0], curve[-1]
+        delta = last["pr_auc_time_split"] - first["pr_auc_time_split"]
+        gained = last["n_train"] - first["n_train"]
+        lines.append("")
+        lines.append(
+            f"Going from {first['n_train']} to {last['n_train']} training samples moved "
+            f"time-split PR-AUC by **{delta:+.4f}** — {gained} additional samples. Whether "
+            'that curve has flattened is the measured answer to "would more extraction '
+            'have helped", and it is a claim about this corpus rather than a guess.\n'
+        )
+        lines.append("![Learning curve](figures/ml_learning_curve.png)\n")
 
     lines.append("## 7. What the model leans on (T2.6)\n")
     lines.append(

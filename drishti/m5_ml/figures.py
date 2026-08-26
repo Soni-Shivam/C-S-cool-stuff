@@ -263,3 +263,43 @@ def anomaly_distribution(
     _style(ax, "IsolationForest novelty score on the test split", "normalised novelty", "samples")
     ax.legend(frameon=False, fontsize=8)
     return _save(fig, out)
+
+
+def learning_curve(
+    points: list[dict[str, Any]],
+    out: Path,
+    *,
+    model_name: str,
+    n_test: int,
+    n_test_malware: int,
+) -> Path:
+    """Time-split PR-AUC against training-set size, with the test split held fixed.
+
+    Answers the question a truncated extraction run actually raises: is the number still
+    climbing? A curve that has flattened says more corpus would not have helped; one that
+    has not says the reported figure is a floor, not a ceiling. Each point is annotated
+    with its training n so nobody reads the shape without the sample sizes.
+    """
+    xs = [point["n_train"] for point in points]
+    ys = [point["pr_auc_time_split"] for point in points]
+    fig, ax = plt.subplots(figsize=(6.4, 4.2), dpi=200)
+    ax.plot(xs, ys, "o-", color=PALETTE.get(model_name, ACCENT), linewidth=1.8, markersize=5)
+    for x, y, point in zip(xs, ys, points, strict=True):
+        ax.annotate(
+            f"{y:.3f}\nn={x} ({point['n_train_malware']} mal)",
+            (x, y),
+            textcoords="offset points",
+            xytext=(0, 9),
+            ha="center",
+            fontsize=6.5,
+            color=MUTED,
+        )
+    _style(
+        ax,
+        f"{model_name}: time-split PR-AUC vs training size "
+        f"(test held fixed at n={n_test}, {n_test_malware} malware)",
+        "training samples",
+        "PR-AUC on the time-split test set",
+    )
+    ax.set_ylim(min(ys) - 0.08, min(1.04, max(ys) + 0.12))
+    return _save(fig, out)
