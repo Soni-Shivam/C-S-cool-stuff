@@ -68,7 +68,7 @@ export function DeviceFeed({
   const live = newest != null && newest.stage !== 'done' && newest.stage !== 'failed'
 
   return (
-    <div className="flex shrink-0 items-center gap-3 overflow-x-auto border-b border-line bg-ground-2 px-4 py-2 text-xs">
+    <div className="flex shrink-0 items-center gap-3 border-b border-line bg-ground-2 px-4 py-2 text-xs">
       <span className="flex shrink-0 items-center gap-1.5 font-medium text-muted">
         {live ? (
           <Radio size={14} strokeWidth={2} className="animate-pulse text-accent" />
@@ -86,8 +86,25 @@ export function DeviceFeed({
         </span>
       )}
 
-      <div className="flex min-w-0 items-center gap-1.5">
-        {jobs.slice(0, 6).map((job) => {
+      {jobs.length > 0 && (
+        // The count is here because the strip scrolls: a run that has come off the
+        // visible end still has to be countable from the screen, or a session looks
+        // like it analysed however many samples happen to fit the window.
+        <span
+          className="shrink-0 font-mono text-dim"
+          title="Every run this API process has seen, newest first"
+        >
+          {jobs.length} {jobs.length === 1 ? 'run' : 'runs'}
+        </span>
+      )}
+
+      {/* Every job, never a slice. This used to render `jobs.slice(0, 6)`, which
+          silently dropped the rest of the session's history — the seventh run back
+          was unreachable from the UI even though the API still served it. The strip
+          is its own scroll container so that the count above and the follow toggle
+          below stay pinned while the list scrolls under them. */}
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
+        {jobs.map((job) => {
           const selected = job.id === currentJobId
           const score = job.final ?? job.preliminary
           return (

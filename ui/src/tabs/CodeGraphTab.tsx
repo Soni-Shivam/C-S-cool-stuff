@@ -182,9 +182,11 @@ function Workspace({
           value={calls.length}
           label={plural(calls.length, 'retrieval tool call')}
           hint={
-            calls.length === 0
-              ? 'No model tool call was made in this run.'
-              : 'Each one is replayable across the graph below.'
+            calls.length > 0
+              ? 'Each one is replayable across the graph below.'
+              : retrievalFailed(verdict)
+                ? 'The retrieval stage did not complete — this zero is a failure, not a choice.'
+                : 'No model tool call was made in this run.'
           }
         />
       </div>
@@ -591,6 +593,21 @@ function Lineage({ node, ledger }: { node: GraphNode; ledger: EvidenceNode[] }) 
 
 /* ─── retrieval timeline ─────────────────────────────────────────────────── */
 
+/**
+ * Did the retrieval stage fail, as opposed to running and retrieving nothing?
+ *
+ * An empty `tool_calls` has two very different meanings and they are not
+ * distinguishable from the array itself. A provider error, a rate limit or a
+ * timeout inside the code interpreter leaves it empty exactly as a model that
+ * decided it had enough from the static stage does — the difference is recorded
+ * in `errors`, and reporting the first case as the second asserts a decision the
+ * run cannot support. That is the same rule as the numbers: nothing on screen
+ * claims more than the artefact carries.
+ */
+function retrievalFailed(verdict: GenAIVerdict | null): boolean {
+  return verdict != null && verdict.errors.length > 0
+}
+
 function RetrievalTimeline({
   graph,
   verdict,
@@ -619,11 +636,22 @@ function RetrievalTimeline({
       right={<Wrench size={15} className="text-v300" />}
     >
       {calls.length === 0 ? (
-        <Empty>
-          {verdict
-            ? 'No model tool call was made in this run, so nothing was retrieved beyond what the static stage had already selected.'
-            : 'The GenAI stage has not produced a verdict yet.'}
-        </Empty>
+        !verdict ? (
+          <Empty>The GenAI stage has not produced a verdict yet.</Empty>
+        ) : retrievalFailed(verdict) ? (
+          <>
+            <DegradedNotice result={verdict} />
+            <Empty>
+              The retrieval stage did not complete, so nothing was retrieved. An empty trail
+              here is a failure of the stage — not a reading the model chose not to take.
+            </Empty>
+          </>
+        ) : (
+          <Empty>
+            The stage ran and made no tool call, so nothing was retrieved beyond what the static
+            stage had already selected.
+          </Empty>
+        )
       ) : (
         <div className="space-y-2.5">
           {calls.map((call, index) => {

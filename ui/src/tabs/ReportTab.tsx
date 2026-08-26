@@ -122,11 +122,29 @@ export function ReportTab({ jobId, revision }: { jobId: string; revision: number
   const [dossier, setDossier] = useState<Artefact<Dossier> | null>(null)
   const urls = exportUrls(jobId)
 
+  // A change of job invalidates what is already rendered, not just what is in
+  // flight — otherwise the previous run's report sits here under the new run's
+  // heading until its replacement lands.
   useEffect(() => {
-    void getReportHtml(jobId).then(setReport)
-    void getYara(jobId).then(setYara)
-    void getStix(jobId).then(setStix)
-    void getDossier(jobId).then(setDossier)
+    setReport(null)
+    setYara(null)
+    setStix(null)
+    setDossier(null)
+  }, [jobId])
+
+  // These four are fetched here rather than through `useArtefact`, so they need
+  // the same late-response guard it applies: this component stays mounted across
+  // a change of job, and a response for the job the operator left would otherwise
+  // land in a panel the shell is rendering as the current one.
+  useEffect(() => {
+    let current = true
+    void getReportHtml(jobId).then((next) => current && setReport(next))
+    void getYara(jobId).then((next) => current && setYara(next))
+    void getStix(jobId).then((next) => current && setStix(next))
+    void getDossier(jobId).then((next) => current && setDossier(next))
+    return () => {
+      current = false
+    }
   }, [jobId, revision])
 
   return (
