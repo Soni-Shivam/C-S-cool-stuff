@@ -55,11 +55,98 @@ CHARS_PER_TOKEN = 4
 MAX_TRANSPORT_ATTEMPTS = 3
 BACKOFF_BASE_S = 1.0
 
-#: Status codes worth another attempt. 5xx is the overloaded upstream; 429 is rate
-#: limiting. A 400/401/404 is our bug and retrying it just wastes the demo's clock.
-RETRYABLE_STATUS = frozenset({408, 429, 500, 502, 503, 504, 520, 522, 524})
+#: Statuses worth another attempt. 5xx is the overloaded upstream; 429 is rate
+#: limiting; a 400/401/404 is our bug and retrying it just wastes the demo's clock. 413 is here for a provider-specific reason worth
+#: writing down: **Groq reports tokens-per-minute exhaustion as 413**, not only as 429.
+#: Measured 2026-08-26 against the live endpoint — the code interpreter's real payload is
+#: ~17 KiB / ~3.7k tokens (an order of magnitude under the 12k budget), a deliberately
+#: oversized 40k-character message returns 200, and the identical tool-calling request
+#: returns 200 with a genuine `read_method` call when the account is not throttled. Under
+#: back-to-back runs the same request alternates 413 and 429.
+#:
+#: While 413 was excluded, `_exchange_with_retry` re-raised on the first attempt, the tool
+#: loop returned None, and `_guarded` swallowed it — so one momentary quota ceiling cost
+#: the job its entire code-interpretation stage and the dashboard rendered the result as
+#: "0 retrieval tool calls", which reads as a choice rather than a failure.
+RETRYABLE_STATUS = frozenset({408, 413, 429, 500, 502, 503, 504, 520, 522, 524})
+
+#: Longest provider-requested pause we will actually sit through. Groq's free tier asks
+#: for ~19s when TPM is exhausted, which is worth waiting for; an unbounded sleep read out
+#: of an error body would be a hang rather than a retry.
+MAX_RETRY_AFTER_S = 30.0
+
+#: "Please try again in 18.87s" — the provider states the wait in prose when it does not
+#: send a Retry-After header.
+_RETRY_AFTER_TEXT = re.compile(r"try again in\s+([0-9]+(?:\.[0-9]+)?)\s*s", re.IGNORECASE)
+
+#: Groq answers with 413 in two situations that need OPPOSITE handling, and the status
+#: alone cannot tell them apart. Measured on 2026-08-26 within a single job:
+#:
+#:   round 0  "Rate limit reached ... Used 4932, Requested 5584. Please try again in
+#:             18.87s"                        -> transient. The window rolls; waiting works.
+#:   round 1  "Request too large ... Limit 8000, Requested 8528, please reduce your
+#:             message size and try again"    -> permanent for THIS request. One request
+#:                                               exceeds the whole per-minute ceiling, so
+#:                                               no amount of waiting can ever help.
+#:
+#: Retrying the second kind burned 38 seconds per job to arrive at the same failure.
+_TOO_LARGE_TO_EVER_SUCCEED = re.compile(
+    r"reduce your message size|request too large", re.IGNORECASE
+)
 
 _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.MULTILINE)
+
+
+def is_permanently_too_large(exc: Exception | None) -> bool:
+    """True when the provider says this single request can never fit, so do not retry.
+
+    Distinguished from an ordinary rate limit by the provider's own wording: a rolling
+    window says "try again in Ns", while an oversized request says "reduce your message
+    size". Only the first is worth waiting for.
+    """
+    if not isinstance(exc, httpx.HTTPStatusError):
+        return False
+    return bool(_TOO_LARGE_TO_EVER_SUCCEED.search(exc.response.text or ""))
+
+
+def retry_delay_from(exc: Exception | None) -> float | None:
+    """How long the provider asked us to wait, or None if it did not say.
+
+    Retrying sooner than the stated delay is arithmetically the same as not retrying.
+    Groq's free tier answers an over-TPM request with "Please try again in 18.87s" while
+    our own backoff waits 1s then 2s — so every attempt was guaranteed to fail and the
+    code interpreter never ran. The `Retry-After` header is preferred when present because
+    a header is a contract and a message is prose.
+    """
+    if not isinstance(exc, httpx.HTTPStatusError):
+        return None
+    header = exc.response.headers.get("retry-after")
+    if header:
+        try:
+            return min(max(float(header), 0.0), MAX_RETRY_AFTER_S) or None
+        except ValueError:
+            pass  # a date-formatted Retry-After is not worth parsing for this
+    match = _RETRY_AFTER_TEXT.search(exc.response.text or "")
+    if not match:
+        return None
+    seconds = float(match.group(1))
+    if seconds <= 0:
+        return None
+    return min(seconds, MAX_RETRY_AFTER_S)
+
+
+def _explain(exc: Exception | None) -> str:
+    """Include the provider's own words, not just the status line.
+
+    `raise_for_status()` produces "Client error '413 Payload Too Large'" and discards the
+    body — which is where Groq actually says *why*, e.g. whether a 413 is a real size
+    limit or tokens-per-minute exhaustion. Debugging the code interpreter cost an hour
+    for exactly this reason: the status was visible and the explanation was not.
+    """
+    if isinstance(exc, httpx.HTTPStatusError):
+        body = (exc.response.text or "").strip().replace("\n", " ")
+        return f"{exc.response.status_code}: {body[:300]}" if body else str(exc)
+    return str(exc)
 
 
 class LLMError(Exception):
@@ -411,7 +498,7 @@ class LLMClient:
                     max_output_tokens=max_output_tokens,
                 )
             except Exception as exc:
-                log.error("llm_tool_round_failed", round=round_index, error=str(exc))
+                log.error("llm_tool_round_failed", round=round_index, error=_explain(exc))
                 self._record(
                     f"{purpose}:round{round_index}",
                     prompt,
@@ -472,14 +559,30 @@ class LLMClient:
             except httpx.HTTPStatusError as exc:
                 if exc.response.status_code not in RETRYABLE_STATUS:
                     raise
+                if is_permanently_too_large(exc):
+                    # Waiting cannot shrink the request. Fail now with the provider's own
+                    # words so the fix (a smaller workspace) is obvious from the log.
+                    raise LLMError(
+                        f"request cannot fit the provider limit: {_explain(exc)}"
+                    ) from exc
                 last = exc
             except (httpx.TimeoutException, httpx.TransportError) as exc:
                 last = exc
             if attempt < MAX_TRANSPORT_ATTEMPTS:
-                delay = BACKOFF_BASE_S * (2 ** (attempt - 1)) + random.uniform(0, 0.25)
-                log.warning("llm_tool_retrying", attempt=attempt, delay_s=round(delay, 2))
+                # Same rule on the tool loop, where it matters most: the code interpreter
+                # runs after the checklist has already spent most of the minute's tokens.
+                stated = retry_delay_from(last)
+                delay = stated or BACKOFF_BASE_S * (2 ** (attempt - 1)) + random.uniform(0, 0.25)
+                log.warning(
+                    "llm_tool_retrying",
+                    attempt=attempt,
+                    delay_s=round(delay, 2),
+                    stated=bool(stated),
+                )
                 time.sleep(delay)
-        raise LLMError(f"tool round failed after {MAX_TRANSPORT_ATTEMPTS} attempts: {last}")
+        raise LLMError(
+            f"tool round failed after {MAX_TRANSPORT_ATTEMPTS} attempts: {_explain(last)}"
+        )
 
     def _groq_exchange(
         self,

@@ -13,7 +13,9 @@
  *
  * "Follow the phone" is on by default and is a real toggle: an operator inspecting an
  * older job mid-demo must not have the view yanked out from under them by the next
- * submission.
+ * submission. Clicking a job in the strip leaves follow mode for that reason — a judge
+ * asking to see the malicious sample again is answered by the click, not undone by the
+ * next tick. Re-checking the box rejoins the phone.
  */
 
 import { useEffect, useRef, useState } from 'react'
@@ -94,7 +96,12 @@ export function DeviceFeed({
               type="button"
               onClick={() => {
                 // An explicit click is also a decision to stop being dragged around.
+                // The ref alone cannot express that — it only ever suppresses
+                // re-following the *same* newest job, so a click on an older job left
+                // the auto-follow condition true and the next poll snapped straight
+                // back. Leaving follow mode is what pins the view.
                 followed.current = job.id
+                setFollow(false)
                 onSelectJob(job.id)
               }}
               title={`${job.filename} · ${job.sha256.slice(0, 16)}… · ${job.stage}`}

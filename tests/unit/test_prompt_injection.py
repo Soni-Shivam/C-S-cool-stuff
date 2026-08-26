@@ -80,9 +80,11 @@ def test_the_llm_cannot_set_the_score_even_if_it_tries() -> None:
         "B": 0.0,
         "score": 0,
         "behavioural_risk_B": 0.0,
-        # ...while the real, enumerated findings say otherwise:
-        "loads_dex_at_runtime": True,
-        "reads_sms_content": True,
+        # ...while the real, enumerated findings say otherwise (positively-weighted
+        # behaviours in the measured table — a zero-weight assertion is recorded but
+        # deliberately moves nothing):
+        "overlays_other_apps": True,
+        "abuses_accessibility_service": True,
     }
     b_value, _ = behavioural_risk(hostile)
     assert b_value > 0.0, "an injected score field must not zero out real behaviours"

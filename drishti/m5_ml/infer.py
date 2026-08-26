@@ -227,9 +227,16 @@ def predict(static: StaticReport, models_dir: Path) -> MLPrediction:
         )
     else:
         method = explainer.method if explainer is not None else "unavailable"
+        # Name the CAUSE, not just the consequence. "SHAP unavailable" alone reads as
+        # "shap is not installed", which sent an operator down the wrong path when the
+        # truth was that an incompatible shap (0.46 under numpy 2) was installed and
+        # failing at import. The reason is the difference between a diagnosable
+        # degradation and a panel that is quietly empty forever.
+        reason = getattr(explainer, "unavailable_reason", None) if explainer else None
         errors.append(
-            f"per-sample SHAP attribution unavailable ({method}); top_features is left "
-            "empty rather than filled with a global importance labelled as SHAP"
+            f"per-sample SHAP attribution unavailable ({method}"
+            f"{f': {reason}' if reason else ''}); top_features is left empty rather "
+            "than filled with a global importance labelled as SHAP"
         )
 
     return MLPrediction(

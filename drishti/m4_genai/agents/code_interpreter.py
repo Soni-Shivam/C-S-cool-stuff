@@ -106,6 +106,20 @@ def build_user_turn(pack: RetrievalPack, static: StaticReport) -> str:
     return "\n".join([*header, render_workspace(pack), *footer])
 
 
+def _output_budget(client: LLMClient) -> int:
+    """Output tokens to reserve, leaving room for the tool results to come back.
+
+    The tool loop's expensive round is the second one: it repeats round 0's prompt, adds
+    the assistant's tool calls and every tool result, and still has to reserve room for
+    the answer. Reserving a flat 3,000 made that round exceed the provider limit on the
+    shipped tier, so the model called its tools and its findings were then discarded.
+    """
+    ceiling = getattr(client._settings, "llm_max_request_tokens", 8_000)
+    # Half the ceiling for the answer is still far more than a validated JSON
+    # InterpretationSet needs, and it leaves the other half for prompt + tool results.
+    return max(512, min(3_000, ceiling // 5))
+
+
 def interpret_methods(
     static: StaticReport,
     ledger: LedgerStore,
@@ -132,6 +146,11 @@ def interpret_methods(
         execute=toolbox.execute,
         schema=InterpretationSet,
         purpose="code_interpreter",
+        # Sized to the provider's per-request ceiling rather than to a round number.
+        # Round 1 carries every tool result back on top of round 0's prompt, and the
+        # reserved output counts toward the same limit, so an over-generous reservation
+        # is what rejects the round that actually produces the interpretations.
+        max_output_tokens=_output_budget(client),
     )
     if response is None:
         log.warning("code_interpreter_unavailable", chains=len(workspace.chains))

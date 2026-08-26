@@ -160,6 +160,13 @@ class GenAIVerdict(AnalyserResult):
     behavioural_risk_B: float = 0.0
     B_rationale: str = ""
     behaviours: dict[str, bool] = Field(default_factory=dict)
+    #: Context flags that shifted `B` — deterministic static facts (signer stability,
+    #: lookalike verdict, financial-app targeting) merged with the model's two
+    #: enumerated purpose answers. Stored so `B` is recomputable from the verdict
+    #: alone: `behavioural_risk(behaviours, context=behaviour_context)`, and so the
+    #: report can SAY when a genuine app's risky capability was judged consistent with
+    #: its purpose rather than silently down-weighting it.
+    behaviour_context: dict[str, bool] = Field(default_factory=dict)
     techniques: tuple[TechniqueMapping, ...] = ()
     victim: VictimProfile | None = None
     impersonation: VisionMatch | None = None

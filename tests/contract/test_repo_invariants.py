@@ -37,6 +37,33 @@ FORBIDDEN_SUFFIXES = {
 
 ALLOWLIST_PREFIXES = ("canary/",)
 
+#: The one narrow exception to the model-binary rule.
+#:
+#: A trained classifier is neither a sample nor a secret: it executes nothing, it
+#: carries no key material, and it discloses nothing an attacker could not obtain by
+#: querying the deployed model. The reason `.pkl`/`.joblib` are in FORBIDDEN_SUFFIXES
+#: at all is H7 — v1 shipped a *synthetic* model reported as real — and that is a
+#: provenance problem, guarded by `models/model_card.json` and by the metrics recorded
+#: in STATUS.md, not by whether the bytes live in git.
+#:
+#: `gs://<proj>-models/` (DRISHTI_GCS_MODELS_BUCKET) remains the runtime source of
+#: truth; these committed copies exist so a reviewer who clones the repo can reproduce
+#: inference without GCP credentials.
+#:
+#: The exception is deliberately scoped to *model binaries under `models/`*, not to
+#: `models/` as a whole — a sample or a private key dropped in that directory is still
+#: an offender. `test_the_models_exception_is_narrow` is what keeps it that way.
+MODEL_ARTIFACT_PREFIX = "models/"
+MODEL_ARTIFACT_SUFFIXES = {".joblib", ".pkl"}
+
+
+def _is_permitted(path: str) -> bool:
+    """True if a tracked path with a forbidden suffix is nonetheless allowed."""
+    if path.startswith(ALLOWLIST_PREFIXES):
+        return True
+    suffix = Path(path).suffix.lower()
+    return path.startswith(MODEL_ARTIFACT_PREFIX) and suffix in MODEL_ARTIFACT_SUFFIXES
+
 
 def _git(*args: str) -> str:
     return subprocess.run(
@@ -76,17 +103,51 @@ def _is_ignored(path: str) -> bool:
 
 
 def test_no_forbidden_artifacts_tracked() -> None:
-    """No sample, model binary, or private key is committed."""
+    """No sample or private key is committed, and no model binary outside models/."""
     offenders = [
         path
         for path in _tracked_files()
-        if Path(path).suffix.lower() in FORBIDDEN_SUFFIXES
-        and not path.startswith(ALLOWLIST_PREFIXES)
+        if Path(path).suffix.lower() in FORBIDDEN_SUFFIXES and not _is_permitted(path)
     ]
     assert offenders == [], (
-        "Forbidden artifacts are tracked in git. Samples, trained models and key "
-        f"material must never be committed: {offenders}"
+        "Forbidden artifacts are tracked in git. Samples and key material must never "
+        f"be committed, and model binaries only under models/: {offenders}"
     )
+
+
+@pytest.mark.parametrize(
+    "candidate",
+    [
+        "models/evil.apk",  # a sample is a sample wherever it is parked
+        "models/dropped.dex",
+        "models/signing.pem",  # key material never rides along with a model
+        "models/keystore.jks",
+        "models/client.p12",
+        "models/nested/deeper.apk",
+        "drishti/m5_ml/classifier_v1.pkl",  # models/ only — not anywhere in the tree
+        "data/samples/evil.apk",
+    ],
+)
+def test_the_models_exception_is_narrow(candidate: str) -> None:
+    """Allowlisting trained models must not open a hole for samples or keys.
+
+    This is the test that pays for the exception above. If someone widens it to a
+    bare `models/` prefix, or to every path ending in `.pkl`, this fails.
+    """
+    assert Path(candidate).suffix.lower() in FORBIDDEN_SUFFIXES
+    assert not _is_permitted(candidate), (
+        f"{candidate!r} must still be an offender — the models/ exception covers "
+        "trained model binaries only."
+    )
+
+
+@pytest.mark.parametrize(
+    "candidate",
+    ["models/classifier_v1.pkl", "models/calibrator_v1.pkl", "models/anomaly_v1.pkl"],
+)
+def test_trained_model_binaries_are_permitted_under_models(candidate: str) -> None:
+    """The committed classifiers are the intended exception, not an oversight."""
+    assert _is_permitted(candidate)
 
 
 def test_no_env_file_tracked() -> None:

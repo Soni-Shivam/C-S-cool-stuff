@@ -42,6 +42,16 @@ class Settings(BaseSettings):
     # Budgets are asserts, not hopes (00_GUIDING_MAP.md §12).
     llm_max_calls_per_job: int = 25
     llm_max_prompt_tokens: int = 12_000
+    #: Hard ceiling ONE request may occupy at the provider, prompt + reserved output.
+    #: Distinct from `llm_max_prompt_tokens`, which is our own budget assert: this one is
+    #: the provider's, and exceeding it is refused rather than billed.
+    #:
+    #: MEASURED 2026-08-26 on the shipped Groq free tier: "Limit 8000, Requested 8528,
+    #: please reduce your message size". The reserved `max_tokens` counts toward it, so a
+    #: 5,300-token prompt asking for 3,000 output is an 8,300-token request and is
+    #: rejected outright — which is why the code interpreter's second round, the one
+    #: carrying the tool results back, never completed. Raise this after a tier upgrade.
+    llm_max_request_tokens: int = 8_000
     llm_cache_enabled: bool = True
     llm_cache_dir: Path = Path(".cache/llm")
 

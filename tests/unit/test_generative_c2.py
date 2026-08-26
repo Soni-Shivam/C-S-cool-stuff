@@ -203,7 +203,25 @@ def test_derive_hints_finds_the_decoys_dead_beacons() -> None:
     from drishti.m2_static.engine import analyse as static_analyse
     from drishti.m3_dynamic.generative_c2 import derive_hints
 
-    apk = Path(__file__).resolve().parents[2] / "canary" / "decoy-challan" / "dist" / "RTO_Challan.apk"
+    apk = (
+        Path(__file__).resolve().parents[2]
+        / "canary"
+        / "decoy-challan"
+        / "dist"
+        / "RTO_Challan.apk"
+    )
+    if not apk.is_file():
+        # The decoy is a *build artifact*: its sources are tracked, its APK is
+        # gitignored (canary/dist/ is the only committed APK), so a clean clone does
+        # not have it. Building it needs the JDK/Android SDK/Gradle toolchain that
+        # canary/decoy-challan/build.sh downloads — neither cheap nor hermetic, so
+        # this skips rather than builds. It must never quietly pass: the assertions
+        # below are the only thing proving derive_hints() reads a real static report.
+        pytest.skip(
+            f"decoy APK not built: {apk} is absent (gitignored build artifact). "
+            "Build it with `bash canary/decoy-challan/build.sh` (requires the "
+            "Android toolchain under $DRISHTI_TOOLS), then re-run."
+        )
     import tempfile
 
     d = Path(tempfile.mkdtemp())

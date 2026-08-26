@@ -411,6 +411,12 @@ class GenAIVerdict(AnalyserResult):
     claims: tuple[GroundedClaim, ...]     # ALL claims incl. rejected ones
     behavioural_risk_B: float             # 0..1 — feeds M6. NOT the score.
     B_rationale: str
+    behaviours: dict[str, bool]           # the model's enumerated checklist answers
+    behaviour_context: dict[str, bool]    # context flags that shifted B: deterministic
+                                          # static facts (signer stability, lookalike
+                                          # verdict, financial-app targeting) + the two
+                                          # model-answered purpose booleans. B is
+                                          # recomputable from (behaviours, behaviour_context).
     techniques: tuple[TechniqueMapping, ...]
     victim: VictimProfile
     impersonation: VisionMatch | None
@@ -427,8 +433,13 @@ class GenAIVerdict(AnalyserResult):
 
 **Note `behavioural_risk_B` is a bounded 0–1 derived from an enumerated checklist,
 not a free-form LLM number.** See `PHASE_3 §3.6` — the LLM emits booleans for
-12 named behaviours; `B` is computed from them by a deterministic table. This is
-the difference between "we asked an LLM to rate it" and defensible engineering.
+the named behaviours; `B` is computed from them by a deterministic table. The table's
+weights are measured log-likelihood ratios of the model's own assertions over the
+labelled corpus (derivation: `scripts/fit_behaviour_weights.py`), clamped at zero so a
+model-asserted boolean can never carry negative weight; exculpatory evidence enters
+through `behaviour_context`, whose heavyweight entries are computed deterministically in
+Python from static facts. This is the difference between "we asked an LLM to rate it"
+and defensible engineering.
 
 ---
 
@@ -678,7 +689,7 @@ correctness risk.
 | `MLPrediction` | `feature_schema_version` | Feature skew (risk R3) is only detectable if the prediction records which schema produced it. |
 | `ThreatIntel` | `label_derived` | AndroZoo labels are VT-derived, so a VT feed in `R` leaks the label and makes composite metrics circular. Refused by default. |
 | `CompositeScore` | `limitations`, `anomaly_escalated` | The report's Limitations section is generated from real flags, never hardcoded. |
-| `GenAIVerdict` | `behaviours`, `provider` | `B` is computed from the enumerated behaviour booleans; storing them makes the derivation auditable rather than asserted. |
+| `GenAIVerdict` | `behaviours`, `behaviour_context`, `provider` | `B` is computed from the enumerated behaviour booleans plus context flags; storing both makes the derivation auditable rather than asserted, and lets the report say when exculpatory context reduced B. |
 | `MorphPlan` | `human_reviewed` | Mirrors the `MORPH_ACTION` ledger content shape in §1.3. |
 | `SandboxPlan` | `pass_num` | `PHASE_4` T4.8 varies duration by pass. |
 | `PermissionCombo`, `Severity` | — | `Severity` StrEnum extracted so combo severity and YARA severity share one vocabulary. |

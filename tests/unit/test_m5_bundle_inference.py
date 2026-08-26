@@ -166,6 +166,66 @@ def test_attribution_is_left_empty_rather_than_mislabelled_when_shap_is_unavaila
     assert any("SHAP attribution unavailable" in error for error in result.errors)
 
 
+def test_an_incompatible_shap_is_named_rather_than_reported_as_merely_unavailable(
+    trained_bundle: Path, canary_report, monkeypatch
+) -> None:
+    """The version is the whole diagnosis, so the error has to carry it.
+
+    shap 0.46 raises at IMPORT under numpy>=2.3, the `except` swallowed it, and the job
+    reported only "SHAP unavailable" — which reads as "shap is not installed" and hides
+    the one-line fix. This is what shipped a permanently empty attribution panel.
+    """
+    import builtins
+
+    from drishti.m5_ml import explain
+
+    real_import = builtins.__import__
+
+    def broken_shap(name, *args, **kwargs):
+        if name == "shap" or name.startswith("shap."):
+            raise TypeError("Converting `np.inexact` to a dtype not allowed")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", broken_shap)
+    monkeypatch.setattr(explain, "_installed_shap_version", lambda: "0.46.0")
+
+    result = predict(canary_report, trained_bundle)
+    assert result.top_features == ()
+    assert any("0.46.0" in error and "shap>=0.48" in error for error in result.errors)
+
+
+def test_a_shap_old_enough_to_be_wrong_is_refused_even_when_it_imports(
+    trained_bundle: Path, canary_report, monkeypatch
+) -> None:
+    """Importing is not the bar — being the version the pipeline was validated on is."""
+    from drishti.m5_ml import explain
+
+    monkeypatch.setattr(explain, "_installed_shap_version", lambda: "0.46.0")
+    monkeypatch.setattr(
+        explain, "_import_shap", lambda: (None, "shap 0.46.0 is installed but shap>=0.48")
+    )
+    result = predict(canary_report, trained_bundle)
+    assert result.top_features == ()
+    assert any("0.46.0" in error for error in result.errors)
+
+
+@pytest.mark.parametrize(
+    ("version", "expected"),
+    [
+        ("0.46.0", (0, 46, 0)),
+        ("0.51.0", (0, 51, 0)),
+        ("0.48", (0, 48)),
+        ("1.0.0rc1", (1, 0, 0)),
+    ],
+)
+def test_the_shap_version_gate_parses_what_pypi_actually_publishes(version, expected) -> None:
+    from drishti.m5_ml.explain import SHAP_MIN_VERSION, _version_tuple
+
+    assert _version_tuple(version) == expected
+    # An unreadable version must not silently disable the whole explainer.
+    assert _version_tuple(None) >= SHAP_MIN_VERSION
+
+
 def test_a_bundle_without_a_calibrator_labels_its_probability_uncalibrated(
     trained_bundle: Path, canary_report
 ) -> None:

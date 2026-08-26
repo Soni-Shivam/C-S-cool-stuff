@@ -19,7 +19,13 @@ from drishti.m4_genai.agents.technique_mapper import load_kb
 from drishti.util import new_id
 
 MAX_TOOL_CALLS = 8
-MAX_TOOL_RESULT_CHARS = 8_000
+#: ~500 tokens per tool result. Sized against a MEASURED ceiling, not a round number:
+#: on the shipped Groq tier one request may not exceed 8,000 tokens, round 0 of the tool
+#: loop already costs ~5,300, and round 1 must carry every tool result back. At the old
+#: 8,000 chars (~2,000 tokens each) three tool calls needed 8,528 tokens and round 1 was
+#: rejected outright — so the model called its tools and its findings were then thrown
+#: away. A smaller window that completes beats a larger one that never returns.
+MAX_TOOL_RESULT_CHARS = 2_000
 
 
 class ToolRejectedError(ValueError):
