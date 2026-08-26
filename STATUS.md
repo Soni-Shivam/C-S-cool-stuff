@@ -614,6 +614,22 @@ not caught by any test or gate, only by reading `git log`. Single agent from her
   current `drishti/` and `infra/` layout, exclude historical banking APK fixtures, and
   permit only the project-authored inert canary. The runtime fake endpoint has no upstream.
 
+- **The evidence catalogue and the claim verifier had drifted** (2026-08-26).
+  `build_evidence_catalogue` offered `certificate` nodes, and `Verifier.check_claim`
+  refused a claim that cited one alone (`REJECTED_TYPE_MISMATCH`, because a certificate
+  carries no behavioural information). The model would have been recorded as citing
+  badly for taking an id we handed it, and a grounded sentence would have been dropped.
+  Fixed by deriving the catalogue's exclusion set from the verifier's
+  `NON_BEHAVIOURAL_TYPES` rather than restating it, so the two cannot drift again;
+  certificate facts already reach the prompt as trusted derived facts and feed the
+  deterministic score, so nothing is lost. Surfaced as an intermittent
+  `PYTHONHASHSEED`-dependent failure in
+  `tests/unit/test_grounded_claims.py::test_one_bad_citation_does_not_sink_the_good_ones`,
+  which picked an arbitrary member of a `set[str]`; that test now picks its node
+  explicitly, and `test_every_catalogue_id_can_ground_a_claim_alone` pins the invariant.
+  **Verification:** 494 contract+unit tests pass, and the file passes under
+  `PYTHONHASHSEED` 0–7; ruff check and format clean.
+
 ## Open risks
 
 - **All v1 GCP provenance is unrecoverable** (2026-08-17). See the salvage section for

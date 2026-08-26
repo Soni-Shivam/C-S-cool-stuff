@@ -28,7 +28,7 @@ from drishti.contracts.evidence import EvidenceType
 from drishti.contracts.genai_verdict import GenAIVerdict, GroundedClaim, VerifierStatus
 from drishti.contracts.static_report import StaticReport
 from drishti.ledger.store import LedgerStore
-from drishti.ledger.verifier import Verifier
+from drishti.ledger.verifier import NON_BEHAVIOURAL_TYPES, Verifier
 from drishti.logging import get_logger
 from drishti.m4_genai.client import LLMClient
 from drishti.m4_genai.safety import BEHAVIOUR_WEIGHTS, behavioural_risk, wrap_untrusted
@@ -37,13 +37,21 @@ log = get_logger(__name__)
 
 _PROMPTS = Path(__file__).parent / "prompts"
 
+#: Derived nodes: our own output, not evidence. Citing one would be circular.
+_DERIVED = {EvidenceType.AI_CLAIM, EvidenceType.SCORE_FACTOR, EvidenceType.ERROR}
+
+#: Node types the catalogue must not offer. Anything here is either derived (above) or
+#: non-behavioural — a type `Verifier.check_claim` refuses as the sole support for a
+#: claim. The second half is imported from the verifier rather than restated, because
+#: the two lists drifting apart is exactly the bug this guards: the certificate node
+#: used to be offered and then rejected, which recorded a bad-citation against a model
+#: that had cited precisely what we told it to. Keep them out of the catalogue rather
+#: than offering bait it will be punished for taking.
+#: `tests/unit/test_grounded_claims.py` pins the invariant.
+_NON_CITABLE = _DERIVED | set(NON_BEHAVIOURAL_TYPES)
+
 #: Caps on how much sample-derived text reaches the prompt. The budget is 12k tokens in
 #: (00_GUIDING_MAP.md §12) and a real APK carries far more strings than that.
-#: Node types that carry no behavioural information and so cannot ground a claim on
-#: their own. Listing them here keeps them out of the catalogue entirely, rather than
-#: offering the model bait it will be rejected for taking.
-_NON_CITABLE = {EvidenceType.AI_CLAIM, EvidenceType.SCORE_FACTOR, EvidenceType.ERROR}
-
 MAX_CATALOGUE_ENTRIES = 60
 MAX_URLS = 15
 MAX_STRINGS = 20
@@ -124,8 +132,6 @@ def _describe(node: Any) -> str | None:
         return f"sink {content.get('sink_id')}"
     if kind == "call_path":
         return f"{content.get('sink_id')} reachable from {str(content.get('entrypoint', ''))[-40:]}"
-    if kind == "certificate":
-        return f"age_days={content.get('age_days')} debug={content.get('debug_cert')}"
     if kind == "string_const":
         return "extracted string constant"
     if kind == "decompiled_method":
