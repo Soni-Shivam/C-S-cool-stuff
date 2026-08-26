@@ -148,6 +148,15 @@ def main() -> int:
         default=0.3,
         help="share of the held-out bands assigned to calib when repartitioning",
     )
+    parser.add_argument(
+        "--upload",
+        default="",
+        help=(
+            "GCS destination for the bundle, e.g. gs://cybershield-505518-models. "
+            "Refused for a PILOT run — a provisional bundle in the models bucket is one "
+            "someone will later mistake for the real one"
+        ),
+    )
     args = parser.parse_args()
 
     started = time.monotonic()
@@ -511,8 +520,54 @@ def main() -> int:
     _write_results(args.results, metrics, card, results, zoo, cv_scores)
     print(f"wrote {args.results}")
     print(f"figures -> {args.figures}")
+
+    if args.upload:
+        _upload(args.models, args.upload, pilot=pilot)
+
     print(f"\n{evaluate.markdown_table(results)}")
     return 0
+
+
+def _upload(models_dir: Path, destination: str, *, pilot: bool) -> None:
+    """Copy the bundle to GCS. A failed upload is reported, never fatal.
+
+    The model is a build artefact, not evidence: losing the upload costs a re-run, and
+    aborting the whole training job over a transient `*.googleapis.com` failure would
+    throw away the measurements that just took an hour to make.
+    """
+    import subprocess
+
+    if pilot:
+        print(
+            "NOT UPLOADING: this run is marked PILOT. A provisional bundle in the models "
+            "bucket is one someone will later mistake for the real one."
+        )
+        return
+    target = destination.rstrip("/") + "/"
+    # Named files rather than `cp --recursive models/`, which would land the bundle at
+    # <dest>/models/… and quietly break every path that expects it at the prefix root.
+    payload = sorted(str(p) for p in Path(models_dir).iterdir() if p.is_file())
+    if not payload:
+        print(f"nothing to upload: {models_dir} is empty")
+        return
+    try:
+        result = subprocess.run(
+            ["gcloud", "storage", "cp", *payload, target],
+            capture_output=True,
+            text=True,
+            timeout=900,
+            check=False,
+        )
+    except Exception as exc:
+        print(f"upload failed ({type(exc).__name__}: {exc}); the bundle is still in {models_dir}")
+        return
+    if result.returncode == 0:
+        print(f"uploaded {models_dir} -> {target}")
+    else:
+        print(
+            f"upload failed (rc={result.returncode}): {result.stderr.strip()[:300]}\n"
+            f"the bundle is still in {models_dir}"
+        )
 
 
 def _write_results(
@@ -780,9 +835,26 @@ def _write_results(
             "This run is marked **PILOT**: at least one class in train/test fell under the "
             "reporting gate. Treat every figure as provisional."
         )
+    limitations.append(
+        "Binary maliciousness only. The corpus carries no family labels that are not "
+        "derived from `vt_detection`, and weak-labelling from the same signal that "
+        "produced the binary label would be circular — so the multi-label panel is "
+        "GenAI-derived, as PHASE_2 T2.3 allows, and must be labelled that way in the UI."
+    )
     for item in limitations:
         lines.append(f"- {item}")
     lines.append("")
+    lines.append("## 9. Figures this run supersedes\n")
+    lines.append(
+        "`docs/figures/precision_recall.png`, `reliability.png`, "
+        "`feature_importance.png`, `corpus_composition.png` and `docs/figures/metrics.json` "
+        "come from an earlier 397-sample pilot and are **not** regenerated here — this run "
+        "writes `ml_`-prefixed files instead, so nothing is silently overwritten. "
+        "`REPORT/main.tex` still `\\includegraphics` the old names and its prose still "
+        "quotes the pilot's PR-AUC. **Whoever owns the paper must repoint those figures at "
+        "the `ml_` files and requote from this document**, or the paper will cite a model "
+        "that is no longer the one in `models/`.\n"
+    )
     lines.append(
         f"Raw metrics: `{Path('docs/figures/ml_metrics.json')}` and `models/metrics.json`. "
         f"Model card: `models/model_card.json`.\n"
