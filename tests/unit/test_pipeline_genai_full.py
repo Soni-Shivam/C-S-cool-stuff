@@ -63,13 +63,27 @@ def test_reusing_a_complete_static_verdict_does_not_mark_it_partial(ctx: Context
     assert result.behaviours == {"gates_behaviour_on_installed_apps": True}
 
 
-def test_the_reuse_is_still_disclosed_in_errors(ctx: Context) -> None:
-    """Honesty is preserved by saying what happened, not by faking degradation."""
+def test_the_reuse_is_still_disclosed(ctx: Context) -> None:
+    """Honesty is preserved by saying what happened, not by faking degradation.
+
+    The disclosure moved OUT of `errors` and into the ledger node. `errors` means a
+    sub-analyser failed (CLAUDE.md rule 2), and the dashboard renders any non-empty
+    `errors` on a non-partial result as "Completed with errors" — so filing a deliberate
+    design decision there put a warning banner on every successful run and taught the
+    reader to ignore the banner that reports real failures. The requirement this test
+    protects is unchanged: what happened must be recorded somewhere a reader can find.
+    """
     ctx.artefacts["genai"] = _static_pass_verdict()
 
     result = _genai_full(ctx, SHA)
 
-    assert any("no dynamic evidence" in e for e in result.errors)
+    assert result.errors == (), "reuse is an outcome, not a failure"
+    notes = [
+        str(node.content.get("note", ""))
+        for node in ctx.ledger.query(job_id=ctx.ledger._job_id)
+        if isinstance(node.content, dict) and "note" in node.content
+    ]
+    assert any("no dynamic evidence" in note for note in notes), notes
 
 
 def test_a_genuinely_partial_static_verdict_stays_partial(ctx: Context) -> None:

@@ -9,7 +9,6 @@ a third party being up, and it must not spend anyone's quota.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from types import MethodType
 

@@ -343,45 +343,71 @@ def _with_impersonation(ctx: Context, verdict: GenAIVerdict, apk_path: Path) -> 
 
 
 def _genai_full(ctx: Context, sha256: str) -> GenAIVerdict:
-    """The post-sandbox GenAI pass.
+    """The post-sandbox GenAI pass. Reuses the static verdict, and says why truthfully.
 
     Re-reasoning only earns its cost when there is dynamic evidence the static pass did
-    not see. Until M3 produces a real trace there is none, so this reuses the static
-    verdict and says so rather than re-sending an identical prompt and presenting the
-    same answer as though it were a second, corroborating opinion.
+    not see, so this stage reuses rather than re-sending an identical prompt and
+    presenting the same answer as a second, corroborating opinion.
+
+    Two things this used to get wrong, both of which reached the screen:
+
+    * **It claimed "no dynamic evidence available" unconditionally**, without looking at
+      the trace. A job that replayed a real captured detonation — dropped-dex path, C2
+      URL, pre-encryption plaintext in hand — still reported that no dynamic evidence
+      existed. The reason is now derived from the trace, so it matches what happened.
+    * **It filed the note under `errors`**, and the dashboard renders any non-empty
+      `errors` on a non-partial result as "Completed with errors". `errors` means a
+      sub-analyser failed (CLAUDE.md rule 2); deliberate reuse is not a failure, and
+      putting it there trained the reader to ignore the banner that reports real ones.
+      The decision now lives in the ledger node, which is where a stage's reasoning
+      belongs and where the report already reads it from.
+
+    The honest gap this exposes, recorded rather than papered over: when dynamic evidence
+    DOES exist we still do not re-reason over it, because `m4_genai.controller.analyse`
+    takes no trace. That is the paper's §4.3 step 4 (ledger integration and recursion)
+    and it is not built.
     """
     existing: GenAIVerdict | None = ctx.artefacts.get("genai")
+    trace: DynamicTrace | None = ctx.artefacts.get("dynamic")
+
+    # "Evidence" means the sandbox actually observed something, not merely that a trace
+    # object exists — a stub trace is an object too.
+    observed = bool(
+        trace
+        and trace.detonated
+        and (trace.api_events or trace.dex_loads or trace.network_flows or trace.decrypted_blobs)
+    )
+    note = (
+        "reused the static-pass verdict; dynamic evidence WAS available but re-reasoning "
+        "over a trace is not implemented (controller.analyse takes no DynamicTrace)"
+        if observed
+        else "reused the static-pass verdict; no dynamic evidence was available"
+    )
     node = ctx.ledger.append(
         type=EvidenceType.TECHNIQUE_MAP,
         source_tool="m4_genai",
         content={
             "stage": JobStage.GENAI_FULL.value,
-            "note": "reused the static-pass verdict; no dynamic evidence was available",
+            "note": note,
+            "dynamic_evidence_observed": observed,
         },
         confidence=0.0,
     )
     if existing is None:
+        # This one IS a failure: there is nothing to carry forward.
         return GenAIVerdict(
             sha256=sha256,
             partial=True,
             errors=("no static-pass verdict to build on",),
             ledger_refs=(node.id,),
         )
-    # `partial` is deliberately NOT set here. Reusing a complete static verdict is
-    # not a degradation of it, and m6_score drops B from the fused term for any
-    # partial GenAI report — so stamping it cost every un-detonated run its whole
-    # behavioural signal. What actually happened is disclosed in `errors`, in the
-    # ledger node above, and in the STATIC_ONLY provenance; gamma carries the
-    # confidence penalty. A static pass that really did degrade stays partial,
-    # because this preserves whatever `existing` already carried.
+    # `partial` is deliberately NOT set. Reusing a complete static verdict is not a
+    # degradation of it, and m6_score drops B from the fused term for any partial GenAI
+    # report — so stamping it cost every un-detonated run its whole behavioural signal.
+    # A static pass that really did degrade stays partial, because this preserves
+    # whatever `existing` already carried, including its own errors.
     updated: GenAIVerdict = existing.model_copy(
-        update={
-            "errors": (
-                *existing.errors,
-                "full pass reused the static verdict: no dynamic evidence available",
-            ),
-            "ledger_refs": (*existing.ledger_refs, node.id),
-        }
+        update={"ledger_refs": (*existing.ledger_refs, node.id)}
     )
     return updated
 
