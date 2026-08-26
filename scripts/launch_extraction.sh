@@ -7,7 +7,7 @@
 # EXTRACTOR VM ONLY. corpus_extract.py refuses to start anywhere else, and it is right
 # to: it downloads real malware. Copy this file to the VM and run it there.
 #
-# ── Four things this encodes, each measured rather than assumed ──────────────
+# ── Five things this encodes, each measured rather than assumed ──────────────
 #
 # 1. THROUGHPUT SCALES WITH PROCESSES, NOT THREADS. Each shard pegs ~95% of one core
 #    inside androguard while the NIC moves ~1 MB/s. The job is CPU-bound on DEX
@@ -36,6 +36,17 @@
 #    so the script collects every hash completed by ANY previous shard before
 #    re-splitting. Without this, changing the shard count silently re-downloads work.
 #
+# 3b. A HANDFUL OF ENORMOUS APKs WILL EAT EVERY ANDROZOO SHARD AND LOOK LIKE A STALL.
+#    MEASURED 2026-08-26: eight shards produced 39 records in 80 minutes while `uptime`
+#    showed load 13 and every unit reported `active`. They were not throttled and not
+#    thrashing — each was inside `AnalyzeAPK` on a single 45-59 MB APK it had downloaded
+#    at 04:04 and had still not finished at 05:23. androguard's call-graph construction
+#    has no time bound and scales badly with DEX size, and there is no per-sample
+#    timeout, so one 59 MB game can hold a core for over an hour.
+#    It presents as "extraction stopped": no new rows, no errors, all units healthy.
+#    MAX_APK_MB drops those rows before sharding, and prints how many it dropped so the
+#    corpus composition stays auditable. 20 MB keeps ~95% of the list.
+#
 # 4. EVALUATION SPLITS GO FIRST. The full list will not always finish inside a
 #    deadline, so SOME prefix is what you get. Test and calib are extracted to
 #    completion before any training row, because confidence-interval width is driven
@@ -46,6 +57,10 @@ cd "$HOME/CyberShield"
 
 N=${1:-14}
 W=${2:-4}
+# Rows larger than this are dropped before sharding. See finding 5 in the header: a
+# single 59 MB APK held one shard inside AnalyzeAPK for over an hour with no timeout
+# and no error, which reads as a dead extractor.
+MAX_APK_MB=${MAX_APK_MB:-20}
 
 # Stop every previous shard unit, whatever the old shard count was.
 for u in $(systemctl --user list-units --all --plain --no-legend 'drishti-shard-*' 2>/dev/null | awk '{print $1}') drishti-corpus drishti-fast; do
@@ -65,9 +80,10 @@ mkdir -p features
 # inside corpus_extract.py is not enough -- a sample already done under a 4-way split
 # would be re-downloaded under a 14-way one. Collect every sha256 completed by ANY
 # previous shard and drop those rows before re-splitting.
-python3 - "$LIST" "$N" <<'PY'
+python3 - "$LIST" "$N" "$MAX_APK_MB" <<'PY'
 import csv, glob, json, re, sys
 list_path, n = sys.argv[1], int(sys.argv[2])
+max_apk_bytes = int(sys.argv[3]) * 1_000_000
 
 # A sample that failed for a TRANSIENT reason must not be treated as done.
 #
@@ -114,6 +130,20 @@ with open(list_path, newline="") as fh:
     reader = csv.DictReader(fh)
     header = reader.fieldnames
     rows = [r for r in reader if r["sha256"].lower() not in done]
+
+# Size cap, applied before sharding so an oversized row cannot land on any shard.
+# Reported rather than silent: dropping rows changes corpus composition, and a
+# composition change nobody can quote a number for is not auditable.
+def _too_big(row: dict) -> bool:
+    try:
+        return int(row.get("apk_size") or 0) > max_apk_bytes
+    except (TypeError, ValueError):
+        return False
+
+
+oversized = [r for r in rows if _too_big(r)]
+rows = [r for r in rows if not _too_big(r)]
+print(f"dropped {len(oversized)} row(s) over {max_apk_bytes // 1_000_000} MB")
 
 # Evaluation splits FIRST, training rows last.
 #
@@ -170,6 +200,10 @@ for i in $(seq 0 $((N-1))); do
     --property=RestartSec=15 \
     --setenv=PATH="$HOME/.local/bin:/usr/bin:/bin" \
     --setenv=LC_ALL=C \
+    `# androguard logs through loguru at DEBUG. Left alone it wrote 15 GB of` \
+    `# per-instruction trace across twelve shards, which is disk, page cache and` \
+    `# formatting CPU spent on output nobody reads.` \
+    --setenv=LOGURU_LEVEL=WARNING \
     --setenv=DRISHTI_ANDROZOO_API_KEY="$KEY" \
     bash -c "cd \$HOME/CyberShield && uv run python scripts/corpus_extract.py \
       features/pending-$i.csv features/shard-n${N}-$i.jsonl \
