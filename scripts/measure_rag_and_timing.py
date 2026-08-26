@@ -382,13 +382,28 @@ def main() -> int:
         help="where to write the measured record",
     )
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument(
+        "apks",
+        nargs="*",
+        type=Path,
+        help=(
+            "APK path(s) to measure. On the extractor VM these are corpus samples pulled "
+            "to scratch — the only place the pitch RATIO can be measured honestly, since "
+            "CLAUDE.md forbids a corpus APK on a laptop and the inert decoy has zero "
+            "reachable sinks. With no path given, falls back to the local demo samples."
+        ),
+    )
     args = parser.parse_args()
 
-    samples = [
-        ("decoy_rto_challan", Path("canary/decoy-challan/dist/RTO_Challan.apk")),
-        ("benign_sanchay", Path("canary/benign-sanchay/dist/Sanchay_Expenses.apk")),
-        ("canary", Path("canary/dist/canary.apk")),
-    ]
+    if args.apks:
+        # A caller-supplied sample: label it by its filename stem (a sha256 on the VM).
+        samples = [(path.stem[:16] or "sample", path) for path in args.apks]
+    else:
+        samples = [
+            ("decoy_rto_challan", Path("canary/decoy-challan/dist/RTO_Challan.apk")),
+            ("benign_sanchay", Path("canary/benign-sanchay/dist/Sanchay_Expenses.apk")),
+            ("canary", Path("canary/dist/canary.apk")),
+        ]
     available = [(label, path) for label, path in samples if path.exists()]
     if not available:
         print("no sample APKs found", file=sys.stderr)
