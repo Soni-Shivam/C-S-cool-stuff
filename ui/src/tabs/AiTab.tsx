@@ -75,7 +75,7 @@ export function AiTab({
                         className={`rounded border p-2.5 ${
                           claim.verifier_status !== 'PASS'
                             ? 'border-bad/40 bg-bad/5'
-                            : 'border-line-soft bg-panel-2'
+                            : 'border-line-soft bg-ground-2'
                         }`}
                       >
                         <div className="flex items-start gap-2">
@@ -107,7 +107,7 @@ export function AiTab({
                       {verdict.techniques.map((technique) => (
                         <div
                           key={technique.technique_id}
-                          className="rounded border border-line-soft bg-panel-2 p-2"
+                          className="rounded-[var(--radius-tile)] border border-line-soft bg-ground-2/60 p-2"
                         >
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs text-accent">{technique.technique_id}</span>
@@ -198,7 +198,7 @@ export function AiTab({
 
               {Object.keys(prediction.labels).length > 0 && (
                 <div>
-                  <h4 className="mb-1 text-[11px] tracking-widest text-muted">
+                  <h4 className="eyebrow mb-2">
                     MULTI-LABEL (independent sigmoids)
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
@@ -213,7 +213,7 @@ export function AiTab({
 
               {prediction.top_features.length > 0 ? (
                 <div>
-                  <h4 className="mb-1 text-[11px] tracking-widest text-muted">TOP SHAP CONTRIBUTIONS</h4>
+                  <h4 className="eyebrow mb-2">TOP SHAP CONTRIBUTIONS</h4>
                   <ul className="space-y-1">
                     {prediction.top_features.map((feature) => (
                       <li key={feature.feature} className="flex items-center gap-2 text-xs">

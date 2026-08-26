@@ -3,7 +3,15 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Artefact } from '../api/client'
 import type { GenAIVerdict, StaticReport } from '../api/types'
 import { EvidenceChips } from '../components/Evidence'
-import { ArtefactGate, DegradedNotice, Empty, Panel, Tag } from '../components/primitives'
+import {
+  ArtefactGate,
+  count,
+  DegradedNotice,
+  Empty,
+  Panel,
+  SectionHead,
+  Tag,
+} from '../components/primitives'
 import { AiTab } from './AiTab'
 import type { MLPrediction } from '../api/types'
 
@@ -55,36 +63,35 @@ function Workspace({ report, verdict }: { report: StaticReport; verdict: GenAIVe
   }, [signature])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <DegradedNotice result={report} />
       <DegradedNotice result={verdict} />
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
-        <div>
-          <h2 className="text-lg font-semibold text-fg">Reverse engineering workspace</h2>
-          <p className="mt-0.5 text-xs text-muted">
-            Sink-reachable code, model reasoning, and immutable evidence in one traceable view.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Tag tone="accent">{report.decompiled_methods.length} methods recovered</Tag>
-          <Tag tone={verdict.tool_calls.some((call) => call.status !== 'ok') ? 'warn' : 'good'}>
-            {verdict.tool_calls.length} audited tool calls
-          </Tag>
-          <Tag>{verdict.provider}</Tag>
-        </div>
-      </div>
+      <SectionHead
+        eyebrow="Reverse engineering"
+        title="Code, reasoning, evidence"
+        lede="Sink-reachable method bodies beside the model's reading of them and the ledger nodes both are anchored to. For the same material as a navigable graph, see view 02."
+        right={
+          <>
+            <Tag tone="accent">{count(report.decompiled_methods.length, 'method')} recovered</Tag>
+            <Tag tone={verdict.tool_calls.some((call) => call.status !== 'ok') ? 'warn' : 'good'}>
+              {count(verdict.tool_calls.length, 'audited tool call')}
+            </Tag>
+            <Tag>{verdict.provider}</Tag>
+          </>
+        }
+      />
 
       {report.decompiled_methods.length === 0 ? (
-        <div className="border border-line bg-panel px-5 py-6">
+        <div className="rounded-[var(--radius-card)] border border-line bg-ground-1/70 px-6 py-7">
           <Empty>
             No sink-reachable method body was recovered. The graph and static findings remain valid,
             but this run cannot support code-level model claims.
           </Empty>
         </div>
       ) : (
-        <div className="grid min-h-[540px] border border-line bg-panel xl:grid-cols-[260px_minmax(360px,1fr)_340px]">
+        <div className="shadow-card grid min-h-[540px] overflow-hidden rounded-[var(--radius-card)] border border-line bg-ground-1/70 xl:grid-cols-[260px_minmax(360px,1fr)_340px]">
           <section className="border-b border-line xl:border-r xl:border-b-0">
-            <header className="border-b border-line-soft px-3 py-2.5 text-[11px] font-semibold tracking-widest text-muted">
+            <header className="eyebrow border-b border-line-soft px-4 py-3">
               SINK PATH METHODS
             </header>
             <div className="max-h-52 overflow-auto p-2 xl:max-h-[500px]">
@@ -100,8 +107,8 @@ function Workspace({ report, verdict }: { report: StaticReport; verdict: GenAIVe
                     onClick={() => setSignature(item.signature)}
                     className={`mb-1 w-full border-l-2 px-2.5 py-2 text-left transition-colors ${
                       selected
-                        ? 'border-accent bg-accent-soft text-fg'
-                        : 'border-transparent text-muted hover:bg-panel-2 hover:text-fg'
+                        ? 'border-v400 bg-v500/15 text-fg'
+                        : 'border-transparent text-muted hover:bg-ground-2 hover:text-fg'
                     }`}
                     title={item.signature}
                   >
@@ -127,7 +134,7 @@ function Workspace({ report, verdict }: { report: StaticReport; verdict: GenAIVe
               </div>
               {method && <EvidenceChips refs={[method.evidence_ref]} max={1} />}
             </header>
-            <pre className="max-h-[470px] overflow-auto bg-ink p-3 font-mono text-[12px] leading-6">
+            <pre className="max-h-[470px] overflow-auto bg-ground p-3 font-mono text-[12px] leading-6">
               {method?.body.split('\n').map((line, index) => {
                 const number = method.line_start + index
                 return (
@@ -144,7 +151,7 @@ function Workspace({ report, verdict }: { report: StaticReport; verdict: GenAIVe
           </section>
 
           <section className="min-w-0">
-            <header className="border-b border-line-soft px-3 py-2.5 text-[11px] font-semibold tracking-widest text-muted">
+            <header className="eyebrow border-b border-line-soft px-4 py-3">
               GROUNDED REASONING
             </header>
             <div className="max-h-[500px] space-y-4 overflow-auto p-3">

@@ -70,7 +70,14 @@ def test_vlm_brand_outside_the_known_set_is_dropped(monkeypatch) -> None:
     monkeypatch.setattr(vision.httpx, "post", lambda *a, **k: _Resp())
     brand, confidence, notes = vision._vlm_brand(
         _icon((0, 0, 128)),
-        Settings(llm_provider="openrouter", openrouter_api_key="sk-or-v1-test", _env_file=None),
+        Settings(
+            groq_api_key="gsk-test",
+            vlm_enabled=True,
+            vlm_base_url="https://vision.test/v1/chat/completions",
+            vlm_api_key="vk-test",
+            vlm_model="test-vision",
+            _env_file=None,
+        ),
     )
     assert brand is None
     assert confidence == 0.0
@@ -97,7 +104,14 @@ def test_vlm_brand_in_the_known_set_is_kept(monkeypatch) -> None:
     monkeypatch.setattr(vision.httpx, "post", lambda *a, **k: _Resp())
     brand, confidence, _ = vision._vlm_brand(
         _icon((13, 71, 161)),
-        Settings(llm_provider="openrouter", openrouter_api_key="sk-or-v1-test", _env_file=None),
+        Settings(
+            groq_api_key="gsk-test",
+            vlm_enabled=True,
+            vlm_base_url="https://vision.test/v1/chat/completions",
+            vlm_api_key="vk-test",
+            vlm_model="test-vision",
+            _env_file=None,
+        ),
     )
     assert brand == "HDFC Bank"
     assert confidence == 0.9
@@ -113,7 +127,7 @@ def test_no_key_means_no_vlm_call(monkeypatch) -> None:
 
     monkeypatch.setattr(vision.httpx, "post", _boom)
     brand, _confidence, _notes = vision._vlm_brand(
-        _icon((0, 0, 0)), Settings(llm_provider="mock", openrouter_api_key=None, _env_file=None)
+        _icon((0, 0, 0)), Settings(groq_api_key="gsk-test", vlm_api_key=None, _env_file=None)
     )
     assert brand is None
     assert called is False
@@ -128,7 +142,7 @@ def test_a_missing_icon_yields_an_honest_no_match(tmp_path) -> None:
     with zipfile.ZipFile(empty, "w") as z:
         z.writestr("classes.dex", b"not a dex")
     result = vision.assess_icon(
-        empty, Settings(llm_provider="mock", vlm_enabled=False, _env_file=None)
+        empty, Settings(groq_api_key="gsk-test", vlm_enabled=False, _env_file=None)
     )
     assert isinstance(result, VisionMatch)
     assert result.matched_brand is None
@@ -140,6 +154,6 @@ def test_assess_never_raises_on_a_bad_file(tmp_path) -> None:
     junk = tmp_path / "junk.apk"
     junk.write_bytes(b"this is not a zip")
     result = vision.assess_icon(
-        junk, Settings(llm_provider="mock", vlm_enabled=False, _env_file=None)
+        junk, Settings(groq_api_key="gsk-test", vlm_enabled=False, _env_file=None)
     )
     assert result.matched_brand is None

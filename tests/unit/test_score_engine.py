@@ -54,7 +54,7 @@ def test_noisy_or_fusion() -> None:
     genai = GenAIVerdict(
         sha256="a" * 64,
         behavioural_risk_B=0.7,
-        provider="openrouter",
+        provider="groq",
         ledger_refs=("ev_ai",),
     )
     result = score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None)
@@ -74,7 +74,7 @@ def test_scorer_is_deterministic() -> None:
     genai = GenAIVerdict(
         sha256="a" * 64,
         behavioural_risk_B=0.7,
-        provider="openrouter",
+        provider="groq",
         ledger_refs=("ev_ai",),
     )
     baseline = score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None)
@@ -219,7 +219,7 @@ def test_partial_model_outputs_do_not_reach_fused_score() -> None:
     partial_genai = GenAIVerdict(
         sha256="a" * 64,
         behavioural_risk_B=0.8,
-        provider="openrouter",
+        provider="groq",
         partial=True,
     )
 
@@ -292,7 +292,7 @@ def test_a_damning_manifest_can_now_reach_high_on_static_alone() -> None:
     report = _static(drift=True).model_copy(
         update={"permission_combos": (_combo("ACCESSIBILITY_ABUSE", Severity.CRITICAL),)}
     )
-    genai = GenAIVerdict(sha256="a" * 64, provider="openrouter", behavioural_risk_B=1.0)
+    genai = GenAIVerdict(sha256="a" * 64, provider="groq", behavioural_risk_B=1.0)
 
     without_g = score(static=report, ml=None, genai=genai, dynamic=None, intel=None)
     with_g = score(
@@ -318,7 +318,7 @@ def test_critical_still_requires_more_than_a_manifest() -> None:
     report = _static(drift=True).model_copy(
         update={"permission_combos": (_combo("X", Severity.CRITICAL),)}
     )
-    genai = GenAIVerdict(sha256="a" * 64, provider="openrouter", behavioural_risk_B=1.0)
+    genai = GenAIVerdict(sha256="a" * 64, provider="groq", behavioural_risk_B=1.0)
     result = score(
         static=report,
         ml=None,
@@ -380,7 +380,7 @@ def test_the_escalator_cannot_demote() -> None:
             update={"permission_combos": (_combo("X", Severity.CRITICAL),)}
         ),
         ml=_ml(probability=0.95, anomaly=True),
-        genai=GenAIVerdict(sha256="a" * 64, provider="openrouter", behavioural_risk_B=1.0),
+        genai=GenAIVerdict(sha256="a" * 64, provider="groq", behavioural_risk_B=1.0),
         dynamic=None,
         intel=None,
         yara_severity=1.0,

@@ -164,7 +164,7 @@ def test_a_substring_does_not_false_match() -> None:
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
     return Settings(
-        llm_provider="mock",
+        groq_api_key="gsk-test",
         db_path=tmp_path / "d.db",
         ledger_key_path=tmp_path / "k.pem",
         log_path=tmp_path / "l.jsonl",

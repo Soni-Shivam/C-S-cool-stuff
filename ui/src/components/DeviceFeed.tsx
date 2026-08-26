@@ -66,7 +66,7 @@ export function DeviceFeed({
   const live = newest != null && newest.stage !== 'done' && newest.stage !== 'failed'
 
   return (
-    <div className="flex shrink-0 items-center gap-3 overflow-x-auto border-b border-line bg-panel-2 px-4 py-2 text-xs">
+    <div className="flex shrink-0 items-center gap-3 overflow-x-auto border-b border-line bg-ground-2 px-4 py-2 text-xs">
       <span className="flex shrink-0 items-center gap-1.5 font-medium text-muted">
         {live ? (
           <Radio size={14} strokeWidth={2} className="animate-pulse text-accent" />
@@ -101,7 +101,7 @@ export function DeviceFeed({
               className={`flex shrink-0 items-center gap-2 rounded border px-2 py-1 transition-colors ${
                 selected
                   ? 'border-accent/40 bg-accent-soft text-accent'
-                  : 'border-line bg-panel text-muted hover:text-fg'
+                  : 'border-line bg-ground-1 text-muted hover:text-fg'
               }`}
             >
               <span className="max-w-36 truncate font-medium">{job.filename}</span>

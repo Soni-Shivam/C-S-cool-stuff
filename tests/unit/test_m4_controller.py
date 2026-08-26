@@ -21,7 +21,7 @@ CANARY = Path(__file__).resolve().parents[2] / "canary" / "dist" / "canary.apk"
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
     return Settings(
-        llm_provider="mock",
+        groq_api_key="gsk-test",
         db_path=tmp_path / "d.db",
         ledger_key_path=tmp_path / "k.pem",
         log_path=tmp_path / "l.jsonl",
@@ -78,12 +78,17 @@ def test_b_is_computed_locally_not_read_from_the_model(static_report, settings) 
 
 
 def test_a_provider_outage_degrades_rather_than_losing_the_report(
-    static_report, settings: Settings
+    static_report, settings: Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Losing M2's work to an LLM timeout would be absurd."""
     report, store = static_report
-    broken = settings.model_copy(update={"llm_provider": "gemini"})
-    verdict = analyse(report, store, broken, client=LLMClient(broken, use_cache=False))
+    import httpx
+
+    def unavailable(*_args: object, **_kwargs: object) -> httpx.Response:
+        raise httpx.ConnectError("offline")
+
+    monkeypatch.setattr(httpx, "post", unavailable)
+    verdict = analyse(report, store, settings, client=LLMClient(settings, use_cache=False))
     assert verdict.partial is True
     assert verdict.errors
     assert verdict.behavioural_risk_B == 0.0

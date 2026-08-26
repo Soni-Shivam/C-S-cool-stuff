@@ -233,7 +233,7 @@ def test_rejected_append_leaves_no_gap(store) -> None:
     with pytest.raises(UngroundedClaimError):
         store.append(
             type=EvidenceType.AI_CLAIM,
-            source_tool="gemini:code_interpreter",
+            source_tool="groq:code_interpreter",
             content={"claim": "It is bad.", "evidence_refs": []},
         )
     tail = _append_n(store, 1)[0]

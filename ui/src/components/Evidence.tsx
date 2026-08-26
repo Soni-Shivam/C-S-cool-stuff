@@ -46,9 +46,9 @@ export function EvidenceChip({ nodeId }: { nodeId: string }) {
       type="button"
       onClick={() => showEvidence(nodeId)}
       title={resolvable ? `Open evidence ${nodeId}` : `${nodeId} is not in this job's ledger`}
-      className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[11px] transition-colors ${
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[11px] transition-all duration-200 ${
         resolvable
-          ? 'border-accent/40 bg-accent-soft text-accent hover:border-accent hover:bg-accent/20'
+          ? 'border-v500/45 bg-v500/12 text-v300 hover:border-v400 hover:bg-v500/25 hover:shadow-[0_0_16px_-4px_rgba(168,85,247,0.9)]'
           : 'border-bad/50 bg-bad/10 text-bad line-through'
       }`}
     >
@@ -97,7 +97,7 @@ export function EvidenceChips({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="rounded border border-line px-1.5 py-0.5 text-[11px] text-muted hover:border-accent/60 hover:text-accent"
+          className="rounded-full border border-line-bright bg-ground-2 px-2 py-0.5 text-[11px] text-muted transition-colors hover:border-v400 hover:text-v300"
         >
           +{hidden} more
         </button>
@@ -106,7 +106,7 @@ export function EvidenceChips({
         <button
           type="button"
           onClick={() => setExpanded(false)}
-          className="rounded border border-line px-1.5 py-0.5 text-[11px] text-muted hover:border-accent/60 hover:text-accent"
+          className="rounded-full border border-line-bright bg-ground-2 px-2 py-0.5 text-[11px] text-muted transition-colors hover:border-v400 hover:text-v300"
         >
           show fewer
         </button>
@@ -172,7 +172,7 @@ export function EvidenceResolution({ nodeId }: { nodeId: string }) {
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-xs text-accent">{node.id}</span>
-        <span className="rounded border border-line bg-panel-2 px-1.5 py-0.5 font-mono text-[11px] text-muted">
+        <span className="rounded border border-line bg-ground-2 px-1.5 py-0.5 font-mono text-[11px] text-muted">
           {node.type}
         </span>
         <span className="text-[11px] text-muted">
@@ -182,7 +182,7 @@ export function EvidenceResolution({ nodeId }: { nodeId: string }) {
       {node.location && (
         <div className="font-mono text-[11px] break-all text-muted">{node.location}</div>
       )}
-      <pre className="max-h-64 overflow-auto rounded bg-ink p-3 font-mono text-xs leading-relaxed text-muted">
+      <pre className="max-h-64 overflow-auto rounded bg-ground p-3 font-mono text-xs leading-relaxed text-muted">
         {JSON.stringify(node.content, null, 2)}
       </pre>
       <div className="font-mono text-[10px] break-all text-dim">

@@ -387,7 +387,7 @@ FACTORIES: dict[str, Any] = {
         derived_from=("ev_01932ab8f4c1",),
     ),
     "MorphPlan": lambda: C.MorphPlan(
-        id="morph_01932ab90e2f", generated_by="gemini:adversarial_elicitor"
+        id="morph_01932ab90e2f", generated_by="groq:adversarial_elicitor"
     ),
     "SandboxPlan": lambda: C.SandboxPlan(hooks=("sms_read", "dex_load"), duration_s=120),
     # ── replay fixture format (drishti/m3_dynamic/trace_source.py) ──

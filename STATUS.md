@@ -13,6 +13,127 @@ Protocol: `docs/00_GUIDING_MAP.md` §13.
 
 ---
 
+<!-- Carried forward from origin/main at the merge. These three sections exist only
+     on main; the rest of this file is the branch's newer reconciliation, which
+     supersedes main's (main's header still read 468 tests and 'P4 execution half
+     unbuilt'). -->
+
+## GUI redesign + Code-Graph RAG navigation — 2026-08-26
+
+**Merged with `claude/malicious-apk-detection-1ffa62` on 2026-08-26.** The two
+branches independently reached for the same violet identity, so the merge kept the
+detection branch's *functionality* whole and the redesign's *styling* throughout.
+What survived from each, explicitly, because a silent drop here would be invisible:
+
+- **Kept from detection (all of it):** the shared `Verdict` projection (A15) and
+  `GET /api/jobs/{id}/verdict`, `VerdictHeadline`, `LookalikePanel` (A13),
+  `DeviceFeed`, `EvidenceResolution` in the ledger view, the
+  `ungrounded — not measured` factor labelling, the adversarial-elicitation panel,
+  the built report / YARA / STIX / dossier exports, and `verdict.gen.ts`.
+- **Kept from the redesign:** the token system, card tiers, numbered arc rail, boot
+  sequence, logo-as-loader, the eight-view shell, and view 02.
+- **Reconciled by hand, not by a merge tool:** `VerdictHeadline` became the hero of
+  view 01 and took the primary-card treatment — but deliberately *not* the violet
+  gradient, because threat score, confidence bar, provenance badge and the
+  BLOCK/REVIEW/MONITOR chip are all colour-coded and a violet field fights each one.
+  The detection branch's two-token accent (`accent` for type, `accent-strong` for
+  shapes) was carried onto the new ramp rather than dropped.
+- **A stale claim was corrected, not merged forward.** The redesign's Report lede
+  said report/YARA/STIX answer 501. On this branch all four are implemented, so the
+  copy now says so. Understating what exists is the same defect as overstating it.
+- **The UI tests caught a contract change**: `StaticReport` gained a required
+  `lookalike` field, which failed the vitest fixture at build time rather than at
+  runtime.
+
+
+Full visual overhaul of `ui/` onto the supplied brand (dark indigo ground, violet
+bloom, three card tiers, the numbered arc rail), plus one new view. No Python
+source was touched; the frozen T0.6 route surface is unchanged.
+
+- **Design system:** tokens rewritten in `ui/src/index.css`. Card tiers are used by
+  a rule — violet-gradient / lilac-wash / white for summary surfaces, dark ground
+  for code, tables, the graph and the log — so the theme survives a long triage
+  session. Severity colours are kept off the violet ramp (`high` is orange) so a
+  band stays separable from the accent on a washed-out projector.
+- **Fonts vendored, not linked.** Space Grotesk / Inter / JetBrains Mono latin
+  subsets live in `ui/src/fonts/` (217 KB). A Google Fonts `<link>` would fall back
+  to system sans on a projector with no network.
+- **The logo is the only loading indicator.** `LogoSpinner` at four sizes replaces
+  every previous spinner and bare "Loading…" string, including `ArtefactGate`'s
+  pending state. `BootSequence` plays once per browser session, skips on any input,
+  and collapses to one frame under `prefers-reduced-motion`.
+- **New view `02 Code Graph`** — Code-Graph RAG Navigation. Every edge comes from
+  `StaticReport.call_paths`; nothing is inferred. Node fill encodes retrieval
+  (hollow = no body ever recovered, so ungroundable by construction), and a tool
+  call can be replayed across the graph. `nodesTouchedBy` attributes a call only
+  through its validated arguments or a shared evidence ref — never by fuzzy name.
+- **Layout is pure and deterministic** (`ui/src/graph/layout.ts`): longest-path
+  layering, fixed barycentre sweeps, stable tie-break. A force sim would settle
+  differently per mount and make a graph screenshot unreproducible. A cycle-safe
+  DFS marks feedback edges rather than inflating depths — that bug was found by the
+  tests below, not by inspection.
+- **First JS tests in the repo:** `ui/src/graph/layout.test.ts`, 14 cases, run by
+  `make ui-test` (vitest, dev dependency). Justified because the only sample
+  available on a developer machine is the canary, whose graph is two nodes on one
+  path and exercises none of the layering, ordering or cycle handling.
+- **Verification after the merge:** `npm run build` (tsc + vite) green; 14/14
+  vitest; **1,232 contract+unit Python tests passing**; `ruff check` clean. Driven
+  in a real headless Chrome against a live API on the canary (`job_3da6d38ccf4f`)
+  at 1680×1050 — the verdict card, lookalike panel, device feed, ungrounded factor
+  labels and the real rendered report were all confirmed on screen, with no page
+  errors.
+- **One test failed for an environmental reason and was proved to be that:**
+  `test_derive_hints_finds_the_decoys_dead_beacons` needs
+  `canary/decoy-challan/dist/RTO_Challan.apk`, which `*.apk` gitignores. Restoring
+  the built artefact turned the run green. Anyone checking this branch out fresh
+  must build the decoy (`canary/decoy-challan/build.sh`) before `make test`.
+- **Not verified, and why:** no `GEMINI_API_KEY`, so the GenAI provider is `mock`
+  and this run has **zero tool calls and zero interpretations**. The retrieval
+  replay animation and the `interpreted` node treatment are therefore covered by
+  unit tests and by the code path only — they have not been seen on real model
+  output. No GCP resource was started.
+- **Pre-existing, untouched:** `ruff format --check` reports drift in
+  `scripts/make_report_figures.py`. That file is not modified by this work.
+
+## The three dead branches
+
+Recorded together because they share a shape and a fix cost, and because each is
+individually easy to mistake for working code: the contract field exists, the consumer
+exists, a unit test exercises the consumer with a hand-built input, and **nothing in a
+real run ever sets the field.**
+
+| Field | Set by | Consumed by | Effect today |
+|---|---|---|---|
+| `StaticReport.used_not_declared` | **nothing** | `m6_score/engine.py:136` — the entire `D` term | `D` = 0.000 on every sample |
+| `MLPrediction.anomaly_escalate` | **nothing** | `m6_score/engine.py:98` — LOW→HIGH escalation | Zero-day escalation never fires |
+| `GenAIVerdict.disagreement_flag` | **nothing** | `m6_score/engine.py:90` — confidence ×0.6 | Meta-check never fires |
+
+Two of the four terms in `S = 0.25R + 0.50F_AI + 0.15G + 0.10D` are therefore
+structurally zero in the shipped pipeline (`D` here, and `G` because no YARA ruleset is
+loaded — T6.1). Figure 12 already shows this on screen with a stated reason per term,
+which is the honest presentation. It is still worth knowing before a judge asks why
+three of four bars are empty.
+
+## Grand-finale priorities
+
+Recorded here so the next session does not have to re-derive them. Full reasoning in
+`docs/ROADMAP_GENAI_RE.md`; the cut order there still stands (A7 → A8 → B4 → A5, never A1).
+
+1. **Stop the extractor VM.** One command, ~$9/day.
+2. **A1 — decompilation feed (~4h, laptop-only, no GCP).** Closes the most quotable
+   weakness and unblocks A2/A3/A4. Never cut.
+3. **Track C, narrowed — one real detonation is worth twenty.** Write the two missing
+   harness scripts, fix the four Packer paths, fix `.env`'s region, build, detonate the
+   canary plus 2–3 real samples. The moment `NO TRACE` becomes a live badge once, §9's
+   caveat list shrinks and the Frontier story stops being hypothetical.
+4. **T6.6 demo script.** The four trust invariants each demonstrate in under a minute
+   (chain verify → one-byte tamper → rejected claim → confidence 0.02 on an undetonated
+   run). That sequence is the differentiator; rehearse it rather than improvising.
+5. **T6.8 Q&A prep** against this file's Open risks. Every one of them is a question a
+   judge can ask, and answering first is worth more than the number they were checking.
+
+---
+
 ## Verified environment facts
 
 Re-established by inspection on **2026-08-17**. Every row was checked with a command.

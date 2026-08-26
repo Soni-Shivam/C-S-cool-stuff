@@ -1,9 +1,9 @@
-"""Live OpenRouter check. Excluded from CI by the `gcp` marker.
+"""Live Groq check. Excluded from CI by the `gcp` marker.
 
 CI must not depend on a third party being reachable, and it must not spend anyone's
 quota. Run deliberately:
 
-    uv run pytest tests/lab/test_openrouter_live.py -m gcp
+    uv run pytest tests/lab/test_groq_live.py -m gcp
 """
 
 from __future__ import annotations
@@ -25,8 +25,8 @@ class Shape(BaseModel):
 @pytest.fixture
 def live_settings() -> Settings:
     settings = Settings()
-    if settings.llm_provider != "openrouter" or settings.openrouter_api_key is None:
-        pytest.skip("openrouter is not the configured provider")
+    if settings.llm_provider != "groq" or settings.groq_api_key is None:
+        pytest.skip("Groq is not configured")
     return settings
 
 

@@ -21,15 +21,22 @@
 
 import { useEffect, useState } from 'react'
 import type { Artefact } from '../api/client'
-import { exportUrls, getDossier, getReportHtml, getStix, getYara, ledgerExportUrl } from '../api/client'
-import { ArtefactGate, Panel, Tag } from '../components/primitives'
+import {
+  exportUrls,
+  getDossier,
+  getReportHtml,
+  getStix,
+  getYara,
+  ledgerExportUrl,
+} from '../api/client'
+import { ArtefactGate, Panel, SectionHead, Tag } from '../components/primitives'
 import type { Dossier } from '../api/types'
 
 function Payload({ artefact }: { artefact: Artefact<unknown> | null }) {
   return (
     <ArtefactGate artefact={artefact}>
       {(value) => (
-        <pre className="max-h-96 overflow-auto rounded bg-ink p-3 font-mono text-xs text-muted">
+        <pre className="max-h-96 overflow-auto rounded-[var(--radius-tile)] border border-line-soft bg-ground p-3.5 font-mono text-xs text-muted">
           {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
         </pre>
       )}
@@ -101,7 +108,7 @@ function ComplaintPackage({ dossier }: { dossier: Dossier }) {
         </div>
       </div>
 
-      <pre className="max-h-72 overflow-auto rounded bg-ink p-3 font-mono text-xs leading-relaxed text-muted">
+      <pre className="max-h-72 overflow-auto rounded bg-ground p-3 font-mono text-xs leading-relaxed text-muted">
         {dossier.text}
       </pre>
     </div>
@@ -123,8 +130,17 @@ export function ReportTab({ jobId, revision }: { jobId: string; revision: number
   }, [jobId, revision])
 
   return (
-    <div className="space-y-4">
-      <Panel title="Investigation report" subtitle="GET /api/jobs/{job}/report.html — self-contained, no external assets">
+    <div className="space-y-5">
+      <SectionHead
+        eyebrow="Deliverables"
+        title="Report and exports"
+        lede="Report, YARA, STIX and the complaint dossier are all implemented and download today. The complaint package is generated, never filed — India's cyber-crime portal has no submission API, so nothing on this screen tells a user their complaint has been lodged."
+      />
+
+      <Panel
+        title="Investigation report"
+        subtitle="GET /api/jobs/{job}/report.html — self-contained, no external assets"
+      >
         {report?.state === 'ready' ? (
           // Sandboxed: the report embeds sample-derived strings, and this is the one
           // place they are rendered as markup rather than as text.

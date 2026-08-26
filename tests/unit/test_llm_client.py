@@ -3,7 +3,7 @@
 docs/PHASE_3_GENAI_CORE.md T3.1, docs/00_GUIDING_MAP.md §9.4 and §12.
 
 No test here calls a real provider. The live check lives in
-`tests/lab/test_openrouter_live.py`, marked so CI never runs it — CI must not depend on
+`tests/lab/test_groq_live.py`, marked so CI never runs it — CI must not depend on
 a third party being up, and it must not spend anyone's quota.
 """
 
@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 from types import MethodType
 
+import httpx
 import pytest
 from pydantic import BaseModel
 
@@ -33,7 +34,7 @@ class Verdict(BaseModel):
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
     return Settings(
-        llm_provider="mock",
+        groq_api_key="gsk-test",
         db_path=tmp_path / "d.db",
         ledger_key_path=tmp_path / "k.pem",
         log_path=tmp_path / "l.jsonl",
@@ -123,19 +124,41 @@ def test_no_cache_flag_disables_reuse(settings: Settings) -> None:
 
 
 # ── degradation ──────────────────────────────────────────────────────────────
-def test_provider_failure_returns_none_rather_than_raising(settings: Settings) -> None:
+def test_provider_failure_returns_none_rather_than_raising(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A failed LLM call must never lose the static report (§9.2)."""
-    broken = settings.model_copy(update={"llm_provider": "gemini"})
-    client = LLMClient(broken, use_cache=False)
+
+    def unavailable(*_args: object, **_kwargs: object) -> httpx.Response:
+        raise httpx.ConnectError("offline")
+
+    monkeypatch.setattr(httpx, "post", unavailable)
+    client = LLMClient(settings, use_cache=False)
     assert client.complete(system="s", user="u") is None
 
 
-def test_the_mock_provider_is_deterministic(settings: Settings) -> None:
-    """Offline demos and tests need a stand-in that does not pretend to be a model."""
-    a = LLMClient(settings, use_cache=False).complete(system="s", user="u")
-    b = LLMClient(settings, use_cache=False).complete(system="s", user="u")
-    assert a == b and a is not None
-    assert not any(json.loads(a)["behaviours"].values())
+def test_completion_uses_groq_endpoint_and_key(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: dict[str, object] = {}
+
+    def groq_response(url: str, **kwargs: object) -> httpx.Response:
+        seen["url"] = url
+        seen.update(kwargs)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"summary": "ok", "behaviours": {}}'}}]},
+            request=httpx.Request("POST", url),
+        )
+
+    monkeypatch.setattr(httpx, "post", groq_response)
+    result = LLMClient(settings, use_cache=False).complete(system="s", user="u")
+    assert result is not None
+    assert seen["url"] == "https://api.groq.com/openai/v1/chat/completions"
+    assert seen["headers"] == {
+        "Authorization": "Bearer gsk-test",
+        "Content-Type": "application/json",
+    }
 
 
 def test_complete_as_validates_into_the_contract(settings: Settings) -> None:
@@ -150,7 +173,7 @@ def test_complete_as_validates_into_the_contract(settings: Settings) -> None:
     assert isinstance(result.behaviours, dict)
 
 
-def test_openrouter_tool_loop_executes_and_returns_validated_output(
+def test_groq_tool_loop_executes_and_returns_validated_output(
     settings: Settings,
 ) -> None:
     configured = settings.model_copy(
@@ -179,7 +202,7 @@ def test_openrouter_tool_loop_executes_and_returns_validated_output(
     def exchange(self, **kwargs):
         return next(replies)
 
-    client._openrouter_exchange = MethodType(exchange, client)  # type: ignore[method-assign]
+    client._groq_exchange = MethodType(exchange, client)  # type: ignore[method-assign]
     calls: list[tuple[str, str | dict]] = []
 
     result = client.complete_with_tools_as(
