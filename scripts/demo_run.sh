@@ -350,14 +350,22 @@ if (( RUN_BLOCKED )); then
     adbsh dumpsys user | grep -A3 'Device policy restrictions' | sed 's/^/│    /' || true
     echo
     printf '\033[1;37m│  adb shell pm list packages | grep -E "echallan|sanchay"\033[0m\n'
-    adbsh pm list packages | grep -E 'echallan|sanchay' | sed 's/^/│    /' \
-      || printf '│    (neither demo package is installed)\n'
+    # ONE read, used for BOTH the printed list and the verdict about it. Reading twice
+    # let the two disagree on screen — the list showed the decoy while the line under
+    # it said the decoy was absent — because the device is not frozen between two adb
+    # calls. Nothing is less convincing on stage than output contradicting itself.
+    installed_now=$(adbsh pm list packages | grep -E 'echallan|sanchay' || true)
+    if [[ -n "$installed_now" ]]; then
+      sed 's/^/│    /' <<<"$installed_now"
+    else
+      printf '│    (neither demo package is installed)\n'
+    fi
     # SAY WHAT THAT LIST MEANS. The cleared app SHOULD be in it — beat 1 installed it,
     # that is the point. The decoy should NOT be, and if it is, the audience is reading
     # the name of the app we just called blocked. That happens when a previous run left
     # it behind, so name the discrepancy rather than letting the list imply a failure
     # the demo did not actually have.
-    if adbsh pm list packages | grep -q "$DECOY_PKG"; then
+    if grep -q "$DECOY_PKG" <<<"$installed_now"; then
       bad "the decoy is still listed — left over from an earlier run, NOT installed just now."
       bad "Nothing above installed it: the OS refused. Clear it with scripts/demo_up.sh."
     else
