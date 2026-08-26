@@ -68,6 +68,28 @@ def _observation_event() -> C.ObservationEvent:
 
 
 #: One minimal-but-valid instance per concrete contract model.
+def _lookalike_signal() -> C.LookalikeSignal:
+    return C.LookalikeSignal(
+        id="financial_app_roster",
+        present=True,
+        weight=0.30,
+        detail="references 3 known banking/UPI package(s)",
+        evidence_refs=("ev_000000000001",),
+    )
+
+
+def _lookalike() -> C.LookalikeAssessment:
+    return C.LookalikeAssessment(
+        verdict=C.BenignLookalikeVerdict.TROJAN_SHAPE,
+        trojan_score=0.72,
+        signals=(_lookalike_signal(),),
+        shared_permissions=("android.permission.READ_SMS",),
+        targeted_financial_packages=("com.snapwork.hdfc",),
+        publisher_trusted=False,
+        rationale="permission set alone is not the finding",
+    )
+
+
 FACTORIES: dict[str, Any] = {
     # ── containment ──
     "ContainmentChecks": lambda: C.ContainmentChecks(
@@ -136,6 +158,8 @@ FACTORIES: dict[str, Any] = {
         mitre="T1582",
     ),
     "CertificateInfo": _certificate,
+    "LookalikeSignal": _lookalike_signal,
+    "LookalikeAssessment": _lookalike,
     "CallPath": lambda: C.CallPath(
         sink_id="sms_read",
         sink_signature="Landroid/telephony/SmsMessage;->getMessageBody()Ljava/lang/String;",

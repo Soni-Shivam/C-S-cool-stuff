@@ -4,7 +4,7 @@
 > If you need a field that isn't here, add it here first, update the version stamp,
 > then implement. All models live in `drishti/contracts/` as pydantic v2 models.
 >
-> Contract version: `1.4.0` — bump minor for additive, major for breaking.
+> Contract version: `1.5.0` — bump minor for additive, major for breaking.
 > See the Addendum at the end of this file for versioned additions.
 
 ---
@@ -884,3 +884,53 @@ to law enforcement as attacker infrastructure would be a provenance lie.
 app on the phone, so the dashboard has no job id to deep-link to and needs a way to
 discover the newest one. Returns every job the process has seen, newest first.
 Additive: no existing route's path, method, or response shape changes.
+
+### A13. Contract version 1.5.0 — the benign-lookalike assessment (T1.5)
+
+`LookalikeAssessment` is added, with `LookalikeSignal` and `BenignLookalikeVerdict`, and
+`StaticReport.lookalike` becomes an optional additive field. Implementation lives in
+`drishti/m2_static/lookalike.py`.
+
+**Why it exists.** Truecaller reads SMS, reads the call log, queries installed packages
+and draws overlays — the same four capabilities an overlay banking trojan needs, and
+roughly half of India has it installed. A detector keyed on the permission set flags
+both. A product that flags Truecaller is not shippable in this market, and a scoring
+model that treats `READ_SMS` as evidence has a false-positive rate it cannot explain.
+
+The permission is the *capability*. It is not the *intent*. This model records what
+separates them, all of it visible statically:
+
+| Signal | What it distinguishes |
+|---|---|
+| `financial_app_roster` | Truecaller does not ship a list of Indian bank package names. A trojan built for this market must, because it has to know what to draw over. |
+| `sms_and_network_share_entrypoint` | Truecaller's SMS access reaches a local spam classifier. A trojan reads the message *in order to send it*. A structural proxy for dataflow, not a taint claim. |
+| `otp_lexicon` | A spam classifier does not need to know what a CVV or an MPIN is. |
+| `overlay_after_package_enumeration` | Drawing over the screen is fine. Asking what is installed *first* is the overlay-attack shape. |
+| `launcher_icon_hiding` | Truecaller keeps its icon. |
+| `accessibility_acts_on_the_user` | Accessibility that clicks consent dialogs rather than assisting. |
+| `second_stage_dropper` | Reachable code-load plus `REQUEST_INSTALL_PACKAGES`. |
+| `freshly_minted_certificate` | Legitimate publishers reuse a signing key for years; Android requires it, because changing it breaks the upgrade path. |
+
+Three properties are load-bearing and are enforced by `tests/unit/test_lookalike.py`:
+
+* **There is no `BENIGN` verdict.** The best available answer is `INDETERMINATE`.
+  `LEGITIMATE_PRIVILEGED` is a statement about the *signer*, not a certification of the
+  code — a compromised publisher key would still be trusted, which is why publisher
+  trust can never be the only signal.
+* **`shared_permissions` names what the sample has in common with software the user
+  already trusts.** Without it the report says "it can read your SMS!" about an app
+  whose real problem is something else, and a reader who knows Truecaller does the same
+  stops believing the rest of the document.
+* **Absent signals are retained, not dropped.** "We looked for a banking roster and
+  found none" is a finding. Omitting it would make the assessment look like it only
+  ever collects evidence in one direction.
+
+Only lifecycle-reachable call paths count. Dead library code reaches dangerous sinks
+constantly, and counting it is how a detector acquires an unexplainable false-positive
+rate.
+
+Supporting knowledge base: `data/kb/financial_packages.txt` (Indian banking, UPI, wallet
+and broking package identifiers) and `data/kb/known_good_publishers.txt` (signing
+certificate fingerprints — **ships empty**, because an unverified fingerprint would
+silently exempt whatever it matched, and inventing plausible hashes would be fabricating
+evidence).

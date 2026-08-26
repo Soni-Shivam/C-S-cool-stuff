@@ -144,7 +144,7 @@ def analyse(apk_path: Path, ledger: LedgerStore) -> StaticReport:
                 parents=hypothesis.evidence_refs,
             )
             refs.append(node.id)
-        return StaticReport(
+        report = StaticReport(
             sha256=digest,
             package=package,
             app_label=label,
@@ -174,6 +174,40 @@ def analyse(apk_path: Path, ledger: LedgerStore) -> StaticReport:
             errors=tuple(errors),
             duration_ms=_duration(started),
         )
+
+        # The benign-lookalike assessment runs LAST, because it reasons over the
+        # assembled report — call paths, extracted strings, the certificate — rather
+        # than over the APK. Permissions alone cannot separate a banking trojan from
+        # Truecaller, which holds the same ones; this is what does.
+        #
+        # Wrapped: a failure here must degrade the report, never lose it. The whole
+        # static analysis is more valuable than this one field.
+        try:
+            from drishti.m2_static.lookalike import assess as _assess_lookalike
+
+            assessment = _assess_lookalike(report)
+            lookalike_node = ledger.append(
+                type=EvidenceType.OVERPRIVILEGE,
+                source_tool="m2.lookalike",
+                content=assessment.model_dump(mode="json"),
+            )
+            report = report.model_copy(
+                update={
+                    "lookalike": assessment,
+                    "ledger_refs": (*report.ledger_refs, lookalike_node.id),
+                }
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            report = report.model_copy(
+                update={
+                    "partial": True,
+                    "errors": (
+                        *report.errors,
+                        f"lookalike assessment failed: {type(exc).__name__}: {exc}",
+                    ),
+                }
+            )
+        return report
     except Exception as exc:
         errors.append(f"static analysis degraded: {type(exc).__name__}: {exc}")
         return _empty_report(digest, errors=tuple(errors), duration_ms=_duration(started))

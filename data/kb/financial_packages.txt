@@ -1,0 +1,69 @@
+# Indian banking, UPI, wallet and broking application package names.
+#
+# WHY THIS FILE EXISTS
+#
+# Permissions cannot separate a banking trojan from a legitimate app. Truecaller reads
+# SMS, reads the call log, and draws overlays — the same three capabilities an overlay
+# banking trojan needs. Any detector keyed on the permission set flags both, and a
+# product that flags Truecaller is dead on arrival in India.
+#
+# What separates them is INTENT, and intent shows up as target specificity. Truecaller
+# draws over the *dialer*. A banking trojan enumerates installed packages, checks them
+# against a list exactly like this one, and draws over *whichever bank you actually
+# have*. Truecaller does not ship a list of fifty Indian bank package names. A trojan
+# built for the Indian market must.
+#
+# So the signal is not "this app can draw overlays". The signal is "this app carries a
+# hardcoded roster of the banks it intends to impersonate".
+#
+# STATUS: a detection aid, not an exhaustive registry. A miss here weakens one signal
+# among several; it never causes a false positive on its own. Add freely.
+#
+# These are public package identifiers, the same strings the Play Store shows in a URL.
+
+# ── public sector banks ──────────────────────────────────────────────────────
+com.sbi.lotusintouch
+com.sbi.SBIFreedomPlus
+com.sbi.yono
+com.bankofbaroda.mconnect
+com.infrasofttech.CentralBank
+com.unionbank.ebanking
+com.canarabank.mobility
+com.pnb.pnbone
+com.bankofindia.boiimobile
+com.iob.iobmobile
+
+# ── private sector banks ─────────────────────────────────────────────────────
+com.snapwork.hdfc
+com.csam.icici.bank.imobile
+com.icicibank.pockets
+com.axis.mobile
+com.msf.kbank.mobile
+com.indusind.indusmobile
+com.yesbank
+com.idbibank.gomobile
+com.rblbank.mobank
+com.federalbank.fedmobile
+com.bandhanbank.mbanking
+
+# ── small finance and payments banks ─────────────────────────────────────────
+com.airtel.africa.selfcare
+com.myairtelapp
+com.fino.payments
+com.jio.myjio
+
+# ── UPI and wallets ──────────────────────────────────────────────────────────
+in.org.npci.upiapp
+com.google.android.apps.nbu.paisa.user
+net.one97.paytm
+com.phonepe.app
+com.mobikwik_new
+com.freecharge.android
+com.dreamplug.androidapp
+
+# ── broking and investment ───────────────────────────────────────────────────
+com.zerodha.kite3
+com.upstox.pro
+com.msf.angelmobile
+com.fivepaisa.trade
+com.groww.app

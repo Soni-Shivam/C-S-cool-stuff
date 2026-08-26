@@ -64,6 +64,7 @@ from drishti.contracts.score import (
     SeverityBand,
 )
 from drishti.contracts.static_report import (
+    BenignLookalikeVerdict,
     CallPath,
     CertificateInfo,
     Component,
@@ -72,6 +73,8 @@ from drishti.contracts.static_report import (
     FileMeta,
     Hypothesis,
     HypothesisKind,
+    LookalikeAssessment,
+    LookalikeSignal,
     PermissionCombo,
     Severity,
     StaticReport,
@@ -90,6 +93,7 @@ __all__ = [
     "TIME_BANDS",
     "AnalyserResult",
     "ApiEvent",
+    "BenignLookalikeVerdict",
     "CallPath",
     "CertificateInfo",
     "ChainVerification",
@@ -119,6 +123,8 @@ __all__ = [
     "HypothesisKind",
     "Job",
     "JobStage",
+    "LookalikeAssessment",
+    "LookalikeSignal",
     "MLPrediction",
     "Morph",
     "MorphKind",
