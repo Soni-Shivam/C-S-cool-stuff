@@ -21,7 +21,27 @@ stop() {
   rm -f "$pidfile"
 }
 
-"$ADB" emu kill >/dev/null 2>&1 && echo "stopped emulator" || echo "emulator not running"
+if "$ADB" emu kill >/dev/null 2>&1; then
+  # `emu kill` returns as soon as the console accepts it, but qemu takes a few seconds
+  # to flush and exit. The port check at the bottom used to run immediately and print
+  # the emulator's own 5554/5555 as "still listening" on a perfectly successful
+  # teardown — which reads, at the worst possible moment, as a teardown that failed.
+  echo -n "stopping emulator"
+  for _ in $(seq 1 20); do
+    pgrep -f 'qemu-system-x86' >/dev/null 2>&1 || break
+    echo -n "."
+    sleep 1
+  done
+  if pgrep -f 'qemu-system-x86' >/dev/null 2>&1; then
+    echo " did not exit — escalating"
+    pkill -f 'qemu-system-x86' 2>/dev/null || true
+    sleep 3
+  else
+    echo " stopped"
+  fi
+else
+  echo "emulator not running"
+fi
 rm -f "$STATE/emulator.pid"
 stop "dashboard" ui.pid
 stop "API" api.pid

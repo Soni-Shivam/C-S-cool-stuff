@@ -144,8 +144,21 @@ if curl -fsS --max-time 2 http://127.0.0.1:4173/ >/dev/null 2>&1; then
   ok "already running"
 else
   [[ -d "$REPO/ui/node_modules" ]] || ( cd "$REPO/ui" && npm install >"$STATE/ui-install.log" 2>&1 )
-  ( cd "$REPO/ui" && npm run build >"$STATE/ui-build.log" 2>&1 ) \
-    || { tail -30 "$STATE/ui-build.log"; die "dashboard build failed"; }
+  if ( cd "$REPO/ui" && npm run build >"$STATE/ui-build.log" 2>&1 ); then
+    ok "dashboard rebuilt"
+  elif [[ -f "$REPO/ui/dist/index.html" ]]; then
+    # LOUD, but not fatal. The dashboard is one surface of this demo; the phone, the
+    # four layers and the veto are the others, and a TypeScript error in someone
+    # else's in-flight edit must not take the whole stage down. Serve the last good
+    # build and say plainly that is what is happening — the alternative is an
+    # operator discovering at T-2 minutes that nothing comes up at all.
+    warn "dashboard build FAILED — serving the previous build from ui/dist instead"
+    warn "the dashboard on screen may not match the current source. Error was:"
+    grep -E 'error|Error' "$STATE/ui-build.log" | head -5 | sed 's/^/      /'
+  else
+    tail -30 "$STATE/ui-build.log"
+    die "dashboard build failed and there is no previous build in ui/dist to fall back to"
+  fi
   ( cd "$REPO/ui" && nohup npm run preview >"$STATE/ui.log" 2>&1 & echo $! >"$STATE/ui.pid" )
   wait_for "dashboard serving" 90 curl -fsS --max-time 2 http://127.0.0.1:4173/
 fi
@@ -200,7 +213,13 @@ step "Reset device state"
 # Order matters: the decoy is suspended and uninstall-blocked by Layer 4 after a
 # rehearsal, so the policy has to be lifted before the uninstall can succeed.
 if adbsh pm list packages | grep -q "$SHIELD_PKG"; then
-  adbsh "am start -n $SHIELD_PKG/.ui.MainActivity" >/dev/null || true
+  # Fire the demo reset, which releases the Layer 3 veto AND lifts every Layer 4
+  # quarantine. The quarantine matters here: it sets setUninstallBlocked, so the
+  # `adb uninstall` calls below return DELETE_FAILED_OWNER_BLOCKED and a device that
+  # once installed the decoy can never be cleaned by this script again.
+  # -f 0x10008000 (NEW_TASK|CLEAR_TASK) is what makes the extra actually arrive — see §7b.
+  adbsh "am start -n $SHIELD_PKG/.ui.MainActivity -f 0x10008000 --ez drishti_demo_reset true" >/dev/null || true
+  sleep 3
 fi
 if adbsh pm list packages | grep -q "$DECOY_PKG"; then
   adbsh pm unsuspend "$DECOY_PKG" >/dev/null || true
@@ -242,7 +261,22 @@ adbsh pm grant "$SHIELD_PKG" android.permission.POST_NOTIFICATIONS >/dev/null ||
 # ─── 7. LAYER 3 — device owner ───────────────────────────────────────────────
 step "Layer 3 — device owner provisioning"
 if adbsh dpm list-owners | grep -q "$SHIELD_PKG"; then
-  ok "already device owner"
+  ok "device owner record present"
+  # …which is NOT the same thing as a working veto, and the difference cost a
+  # rehearsal. `adb install -r` in section 6 drops the ACTIVE ADMIN record while the
+  # DEVICE OWNER record survives, so from the second run of the day onwards
+  # `dpm list-owners` says DeviceOwner while DevicePolicyManagerService says
+  #
+  #   SecurityException: Admin ComponentInfo{…} does not exist or is not owned by uid …
+  #
+  # and every addUserRestriction fails. `set-active-admin` re-registers the missing
+  # half. It is idempotent and costs nothing when the record is already intact, so it
+  # runs unconditionally rather than only when something already looks wrong.
+  if timeout 60 "$ADB" shell dpm set-active-admin "$SHIELD_ADMIN" 2>&1 | tr -d '\r' | grep -q Success; then
+    ok "active admin re-registered (survives the reinstall above)"
+  else
+    warn "could not re-register the active admin — the self-test below will catch it"
+  fi
 else
   # Device owner can only be set on a device with no accounts.
   accounts=$(adbsh dumpsys account | grep -c "Account {" || true)
@@ -304,6 +338,104 @@ fi
 adbsh "am start -n $SHIELD_PKG/.ui.MainActivity" >/dev/null || true
 sleep 3
 
+# ─── 7b. PROVE Layer 3, do not claim it ──────────────────────────────────────
+# A security property you have not exercised is a security property you do not have.
+# This engages the real veto through the real code path the demo uses, reads the
+# restriction back out of UserManager, and releases it — before the audience arrives.
+# See MainActivity.handleVetoSelfTest for the failure this was written against.
+step "Layer 3 — self-test (engage, observe, release)"
+if adbsh dpm list-owners | grep -q "$SHIELD_PKG"; then
+  # THE INTENT HAS TO ACTUALLY ARRIVE, and twice now it did not.
+  #
+  # 1. `adb install -r` in section 6 leaves the PREVIOUS build's MainActivity sitting
+  #    at the top of its task. A plain `am start` reports "intent has been delivered to
+  #    currently running top-most instance" and hands the extra to code that predates
+  #    it. So: force-stop first.
+  # 2. force-stop kills the process but NOT the task record, and `am start` then
+  #    reports "its current task has been brought to the front" — re-running onCreate
+  #    with the task's ORIGINAL intent, extras and all discarded. So: -f 0x10008000,
+  #    FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK, which tears the stale task
+  #    down and starts this intent as the new root.
+  #
+  # Both failures look identical from the outside — a self-test that times out, which
+  # reads as a broken veto — so the flags are not cosmetic.
+  adbsh am force-stop "$SHIELD_PKG" >/dev/null || true
+  adbsh input keyevent KEYCODE_HOME >/dev/null 2>&1 || true
+  sleep 1
+  "$ADB" logcat -c >/dev/null 2>&1 || true
+  adbsh "am start -n $SHIELD_PKG/.ui.MainActivity -f 0x10008000 --ez drishti_veto_selftest true" >/dev/null || true
+
+  selftest=""
+  deadline=$(( SECONDS + 30 ))
+  while (( SECONDS < deadline )); do
+    selftest=$("$ADB" logcat -d -s DrishtiShield:I 2>/dev/null | grep 'DrishtiShield: veto_selftest' | tail -1 || true)
+    [[ -n "$selftest" ]] && break
+    sleep 1
+  done
+
+  if [[ "$selftest" == *"observed=true"* ]]; then
+    ok "veto engaged and was observed in force by UserManager, then released"
+  else
+    msg="Layer 3 SELF-TEST FAILED: ${selftest:-no veto_selftest line appeared within 30s}"
+    if (( ALLOW_NO_OWNER )); then
+      warn "$msg"
+      warn "Continuing because --allow-no-owner was passed. The block will be advisory only."
+    else
+      die "$msg
+
+  The device owner record exists but the veto does not actually engage. That is the
+  exact state that lets this demo announce 'Layer 3 HELD' and then block nothing —
+  so it fails here, loudly, instead of on stage.
+
+  Fix it with:
+
+      scripts/demo_up.sh --fresh
+
+  Or run knowingly without the veto (Layers 1, 2 and 4 still work) with
+  --allow-no-owner."
+    fi
+  fi
+else
+  warn "no device owner — skipping the self-test (there is nothing to test)"
+fi
+
+# ─── 7c. clear demo packages the JUST-INSTALLED Shield can now unquarantine ──
+# Section 5 already tried this, and could not: at that point the Shield on the device
+# was the PREVIOUS build, and lifting a Layer 4 quarantine is a capability that only
+# exists in a build that has PolicyEngine.releaseAllQuarantines. So the uninstall of a
+# quarantined decoy has to be retried here, after section 6 replaced the app and 7b
+# proved the admin record is live. Without this pass a single rehearsal in which the
+# decoy actually installed leaves it wedged on the device permanently — every later
+# `adb uninstall` answering DELETE_FAILED_OWNER_BLOCKED.
+step "Clear any package left quarantined by a previous run"
+"$ADB" logcat -c >/dev/null 2>&1 || true
+adbsh "am start -n $SHIELD_PKG/.ui.MainActivity -f 0x10008000 --ez drishti_demo_reset true" >/dev/null || true
+# Wait for the app's own completion line rather than sleeping: releaseAllQuarantines
+# makes one binder call per installed package, and a flat sleep raced it — the
+# uninstalls below then ran against a still-blocked package. Same fix as demo_run.sh.
+reset_deadline=$(( SECONDS + 30 ))
+while (( SECONDS < reset_deadline )); do
+  # An `if`, not `… && break`: under `set -e` a bare AND-list whose left side fails —
+  # which is every poll before the line lands — aborts the whole script.
+  if "$ADB" logcat -d -s DrishtiShield:I 2>/dev/null | grep -q 'DrishtiShield: demo_reset'; then
+    break
+  fi
+  sleep 1
+done
+left=""
+for pkg in "$DECOY_PKG" "$BENIGN_PKG"; do
+  adbsh pm list packages | grep -q "$pkg" || continue
+  adbsh pm unsuspend "$pkg" >/dev/null || true
+  timeout 60 "$ADB" uninstall "$pkg" >/dev/null 2>&1 || left+=" $pkg"
+done
+if [[ -n "$left" ]]; then
+  warn "still installed after the reset:$left"
+  warn "The demo will still run, but beat 1's install is a no-op for anything listed."
+  warn "Recover with: scripts/demo_up.sh --fresh"
+else
+  ok "neither demo package is on the device"
+fi
+
 # ─── 8. stage both demo APKs ─────────────────────────────────────────────────
 step "Stage both demo APKs (NOT delivered — that is demo_deliver.sh / demo_run.sh)"
 # Hash-checked after the push rather than trusted: `adb push` reports success on a
@@ -332,7 +464,7 @@ cat <<EOF
   Emulator     $("$ADB" devices | sed -n 2p | tr -d '\r')
   Layer 1      watcher service $( [[ "${watcher:-0}" -gt 0 ]] && echo running || echo NOT RUNNING )
   Layer 2      intent filter registered at install time
-  Layer 3      device owner $( [[ "${owner:-0}" -gt 0 ]] && echo HELD || echo 'NOT HELD — block will be advisory only' )
+  Layer 3      device owner $( [[ "${owner:-0}" -gt 0 ]] && echo HELD || echo 'NOT HELD — block will be advisory only' )$( [[ "${selftest:-}" == *"observed=true"* ]] && echo ', veto self-test PASSED' || echo ', veto self-test NOT PASSED' )
   Layer 4      armed by the watcher at runtime
 
   Next:  scripts/demo_run.sh          # the whole scripted sequence, benign then blocked

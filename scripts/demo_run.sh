@@ -113,12 +113,41 @@ beat "Reset to the starting state"
 # The veto has to come off first: while it is engaged nothing installs, and the
 # benign beat's whole point is that its install proceeds. Guarded on FLAG_DEBUGGABLE
 # inside the app — see MainActivity.handleDemoReset.
-adbsh "am start -n $SHIELD_PKG/.ui.MainActivity --ez drishti_demo_reset true" >/dev/null || true
-sleep 2
+# -f 0x10008000 = FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK. Without it, when
+# MainActivity's task is already in front `am start` answers "its current task has been
+# brought to the front" and NEVER DELIVERS THE EXTRA — the reset silently does nothing
+# and the next run starts pre-blocked. See the same note in demo_up.sh §7b.
+"$ADB" logcat -c >/dev/null 2>&1 || true
+adbsh "am start -n $SHIELD_PKG/.ui.MainActivity -f 0x10008000 --ez drishti_demo_reset true" >/dev/null || true
+
+# WAIT FOR THE RESET TO FINISH, do not sleep at it. handleDemoReset lifts every Layer 4
+# quarantine, and releaseAllQuarantines makes one binder call per installed package —
+# well over a hundred on a Google-APIs image. A flat `sleep 2` raced it, so the
+# uninstalls below ran while the decoy was still uninstall-blocked, failed with
+# DELETE_FAILED_OWNER_BLOCKED into `|| true`, and the run continued with the blocked
+# app still on the device. Keying on the app's own completion line removes the race.
+reset_deadline=$(( SECONDS + 30 ))
+while (( SECONDS < reset_deadline )); do
+  # An `if`, not `… && break`: under `set -e` a bare AND-list whose left side fails —
+  # which is every poll before the line lands — aborts the whole script.
+  if "$ADB" logcat -d -s DrishtiShield:I 2>/dev/null | grep -q 'DrishtiShield: demo_reset'; then
+    break
+  fi
+  sleep 1
+done
+
+leftover=""
 for pkg in "$DECOY_PKG" "$BENIGN_PKG"; do
   if adbsh pm list packages | grep -q "$pkg"; then
     adbsh pm unsuspend "$pkg" >/dev/null || true
     timeout 60 "$ADB" uninstall "$pkg" >/dev/null 2>&1 || true
+  fi
+  # Re-read rather than trust the uninstall's exit status: `adb uninstall` on a
+  # device-owner-blocked package prints Failure and this loop used to swallow it.
+  # Written as an `if`, not `grep -q … && leftover+=…`: under `set -e` that AND-list
+  # returns non-zero in the ordinary case (package absent) and aborts the script.
+  if adbsh pm list packages | grep -q "$pkg"; then
+    leftover+=" $pkg"
   fi
 done
 adbsh "rm -f $WATCH_DIR/*.apk" >/dev/null || true
@@ -129,6 +158,12 @@ adbsh "service call notification 1" >/dev/null 2>&1 || true
 if veto_engaged; then
   bad "the veto is still engaged after the reset — beat 1's install will be refused."
   bad "Open DRISHTI Shield on the phone and tap 'Reset demo state', then re-run."
+elif [[ -n "$leftover" ]]; then
+  # Loud, because the closing `pm list packages` will show it and a judge reading that
+  # line sees the app we just said was blocked sitting on the device.
+  bad "still installed after the reset:$leftover"
+  bad "Beat 1's install is a no-op for anything listed, and the closing package list"
+  bad "will show it. Recover with: scripts/demo_up.sh --fresh"
 else
   ok "veto released, both demo packages absent, $WATCH_DIR clear"
 fi
@@ -146,7 +181,7 @@ run_beat() {
 
   bash "$REPO/scripts/demo_deliver.sh" $flavour || die "delivery failed"
 
-  line=$("$ADB" logcat -d -t 600 2>/dev/null | grep "verdict scan=$scan_id" | tail -1 || true)
+  line=$("$ADB" logcat -d -s DrishtiShield:I 2>/dev/null | grep "verdict scan=$scan_id" | tail -1 || true)
   [[ -n "$line" ]] || die "no verdict line for $scan_id"
   local blocked veto elapsed basis
   blocked=$(sed -n 's/.*block=\([a-z]*\).*/\1/p' <<<"$line")
@@ -179,11 +214,45 @@ run_beat() {
 # block that had not happened on this run.
 install_attempt() {
   local apk_name="$1"
+  # Shield's own verdict screen is very likely to be on top from the delivery beat that
+  # just ran, and it will still be on top if the installer never starts. Push it out of
+  # the way first so `topResumedActivity` afterwards means something.
+  adbsh input keyevent KEYCODE_HOME >/dev/null 2>&1 || true
+  sleep 1
   adbsh "am start -a $INSTALLER_INTENT -t $APK_MIME -d file://$WATCH_DIR/$apk_name \
     -n com.google.android.packageinstaller/com.android.packageinstaller.InstallStart" \
     >/dev/null 2>&1 || true
+
+  # POLL, do not sample once. VerdictActivity is `singleTask` with `turnScreenOn`, and
+  # it can come back to the front a second or two after the verdict lands — which is
+  # exactly when a single `sleep 3` then reads it and reports that the admin dialog
+  # never appeared. Return the moment the dialog is seen; otherwise return whatever was
+  # on top at the end, so the caller can say what it actually found.
+  local top="" deadline=$(( SECONDS + 12 ))
+  while (( SECONDS < deadline )); do
+    top=$(adbsh dumpsys activity activities | grep -m1 topResumedActivity || true)
+    if grep -q 'ActionDisabledByAdminDialog' <<<"$top"; then break; fi
+    sleep 1
+  done
+  printf '%s\n' "$top"
+}
+
+# What a victim actually does: tap the APK. This is the LAYER 2 route — no component
+# named, so the intent resolves the way it would from a file manager or a chat app,
+# and DRISHTI Shield's TapInterceptActivity is what answers. Used for the cleared beat,
+# where the OS installer is not a usable probe (see below).
+tap_attempt() {
+  local apk_name="$1"
+  adbsh input keyevent KEYCODE_HOME >/dev/null 2>&1 || true
+  sleep 1
+  adbsh "am start -a $INSTALLER_INTENT -t $APK_MIME -d file://$WATCH_DIR/$apk_name" >/dev/null 2>&1 || true
   sleep 3
   adbsh dumpsys activity activities | grep -m1 topResumedActivity || true
+}
+
+# Strip dumpsys's ActivityRecord noise down to just package/activity.
+top_component() {
+  sed 's/.*topResumedActivity=ActivityRecord{[^ ]* [^ ]* //;s/ t[0-9]*}//' <<<"$1"
 }
 
 # Dismiss whatever the attempt above left on screen, so the next beat starts clean.
@@ -205,14 +274,28 @@ if (( RUN_BENIGN )); then
   if (( DO_INSTALL )); then
     hold "$PAUSE_SHORT"
     beat "BEAT 1b — the install proceeds"
-    top=$(install_attempt "Sanchay_Expenses.apk" || true)
-    if grep -q 'ActionDisabledByAdminDialog' <<<"$top"; then
-      bad "the OS refused this install — the veto was still engaged. See the reset above."
+    # The claim being proved here is "the OS is not standing in the way", and the
+    # evidence for it is the ABSENCE of a device-policy restriction — read out of
+    # dumpsys, in the same command that beat 2b uses to show the restriction present.
+    # Two readings of one dial, which is what makes the pair legible.
+    #
+    # NOT proved by driving the package installer: with nothing to block,
+    # `InstallStart` finishes silently on a file:// URI and never comes to the front,
+    # so an earlier version of this beat printed a green "Android shows its ordinary
+    # install prompt" while Shield's own screen sat on top. A check that passes when
+    # the thing it checks never ran narrates a fiction on stage.
+    if veto_engaged; then
+      bad "a device-policy restriction IS in force — the veto was not released. See the reset above."
     else
-      ok "Android shows its ordinary install prompt, not a block:"
-      printf '│    %s\n' "$(sed 's/.*topResumedActivity=ActivityRecord{[^ ]* [^ ]* //;s/ t[0-9]*}//' <<<"$top")"
+      ok "no device-policy restriction is in force:"
+      adbsh dumpsys user | grep -A2 'Device policy restrictions' | sed 's/^/│    /' || true
       ok "no veto, no interference — DRISHTI did not stand in the way"
     fi
+
+    # And the tap route: the same gesture the victim makes on the fraud APK. Here it
+    # opens Shield's verdict screen in its CLEAR state — green, install permitted.
+    top=$(tap_attempt "Sanchay_Expenses.apk" || true)
+    printf '│    tap resolves to: %s\n' "$(top_component "$top")"
     dismiss_installer
     # Complete the install through adb rather than driving the installer's UI with
     # synthetic taps. `input tap` at fixed coordinates is the single most brittle
@@ -245,15 +328,22 @@ if (( RUN_BLOCKED )); then
   if (( DO_INSTALL )); then
     hold "$PAUSE_SHORT"
     beat "BEAT 2b — now try to install it anyway"
+    # `install_attempt` names com.google.android.packageinstaller's InstallStart
+    # explicitly, which is the STRICTER test than the tap route: it is what happens
+    # when the user bypasses DRISHTI entirely and hands the file straight to Android's
+    # own installer. If the OS still refuses, the refusal is the OS's, not ours.
     top=$(install_attempt "RTO_Challan.apk" || true)
     if grep -q 'ActionDisabledByAdminDialog' <<<"$top"; then
       ok "Android's own 'Blocked by your admin' screen is what is on top:"
-      printf '│    %s\n' "$(sed 's/.*topResumedActivity=ActivityRecord{[^ ]* [^ ]* //;s/ t[0-9]*}//' <<<"$top")"
+      printf '│    %s\n' "$(top_component "$top")"
       ok "That is com.android.settings, not DRISHTI. There is no 'install anyway'"
       ok "button, because there is no button to add."
+    elif ! veto_engaged; then
+      bad "the Layer 3 veto is NOT in force, so nothing refused this install."
+      bad "Re-run scripts/demo_up.sh — its Layer 3 self-test is what catches this."
     else
-      bad "expected ActionDisabledByAdminDialog, got: ${top:-nothing on top}"
-      bad "Layer 3 may not be held. Everything else in this demo still stands."
+      bad "the veto IS in force but the admin dialog did not surface: ${top:-nothing on top}"
+      bad "Show the dumpsys restriction below instead — that is the OS's own record."
     fi
     echo
     printf '\033[1;37m│  adb shell dumpsys user | grep -A3 "Device policy restrictions"\033[0m\n'
@@ -262,6 +352,17 @@ if (( RUN_BLOCKED )); then
     printf '\033[1;37m│  adb shell pm list packages | grep -E "echallan|sanchay"\033[0m\n'
     adbsh pm list packages | grep -E 'echallan|sanchay' | sed 's/^/│    /' \
       || printf '│    (neither demo package is installed)\n'
+    # SAY WHAT THAT LIST MEANS. The cleared app SHOULD be in it — beat 1 installed it,
+    # that is the point. The decoy should NOT be, and if it is, the audience is reading
+    # the name of the app we just called blocked. That happens when a previous run left
+    # it behind, so name the discrepancy rather than letting the list imply a failure
+    # the demo did not actually have.
+    if adbsh pm list packages | grep -q "$DECOY_PKG"; then
+      bad "the decoy is still listed — left over from an earlier run, NOT installed just now."
+      bad "Nothing above installed it: the OS refused. Clear it with scripts/demo_up.sh."
+    else
+      ok "the cleared app is installed; the decoy is not on the device at all."
+    fi
   fi
 fi
 

@@ -111,7 +111,7 @@ printf '    watch the phone. The verdict screen should appear by itself.\n\n'
 scan_id="scan_${expected:0:12}"
 deadline=$(( SECONDS + 90 ))
 while (( SECONDS < deadline )); do
-  line=$("$ADB" logcat -d -t 400 2>/dev/null | grep "DrishtiShield: verdict scan=$scan_id" | tail -1 || true)
+  line=$("$ADB" logcat -d -s DrishtiShield:I 2>/dev/null | grep "DrishtiShield: verdict scan=$scan_id" | tail -1 || true)
   if [[ -n "$line" ]]; then
     printf '\033[1;32m%s\033[0m\n\n' "${line#*DrishtiShield: }"
     exit 0
