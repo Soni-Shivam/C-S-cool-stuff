@@ -84,23 +84,40 @@ def wrap_untrusted(text: str, *, kind: str) -> str:
 #: and shown to the analyst — it just does not move `B`, because on measurement it does
 #: not separate malware from benign. Re-measure this table whenever the checklist
 #: question text changes: the weights are properties of the question as asked.
+# REFIT 2026-08-26 against the PURPOSE-phrased checklist, on 59 labelled corpus samples
+# (29 malware) analysed through the live pipeline. The previous table was measured against
+# the older CAPABILITY-phrased questions, so it described questions that were no longer
+# being asked — a weight is a property of the question, not of the behaviour name.
+#
+# Held-out B AUC: **0.754** (10x stratified 5-fold CV, weights refitted inside every fold,
+# min 0.736 max 0.770). The table below is fit on all 59 rows and is therefore in-sample;
+# only the CV figure may be quoted. Reproduce with scripts/fit_behaviour_weights.py.
+#
+# Progression, all held out: 0.473 (capability questions, hand-assigned severities)
+# -> 0.644 (purpose questions, weights still fitted to the old ones) -> 0.754.
 BEHAVIOUR_WEIGHTS: dict[str, float] = {
-    "abuses_accessibility_service": 1.74,
-    "impersonates_a_known_brand": 1.23,
-    "requests_device_admin": 1.23,
-    "overlays_other_apps": 0.67,
-    "sends_sms_without_user_action": 0.64,
-    "exfiltrates_over_network": 0.50,
-    "harvests_contacts_or_call_log": 0.46,
-    "monitors_clipboard": 0.36,
-    "detects_analysis_environment": 0.13,
-    "hides_or_disables_its_own_icon": 0.13,
-    "intercepts_notifications": 0.13,
-    "encrypts_data_before_sending": 0.0,
-    "gates_behaviour_on_installed_apps": 0.0,
-    "harvests_device_identifiers": 0.0,
-    "loads_dex_at_runtime": 0.0,
-    "reads_sms_content": 0.0,
+    "abuses_accessibility_service": 2.00,
+    "harvests_contacts_or_call_log": 2.00,
+    "intercepts_notifications": 2.00,
+    "overlays_other_apps": 2.00,
+    "requests_device_admin": 2.00,
+    "exfiltrates_over_network": 1.37,
+    "harvests_device_identifiers": 1.13,
+    "impersonates_a_known_brand": 1.13,
+    "gates_behaviour_on_installed_apps": 0.85,
+    "monitors_clipboard": 0.69,
+    "sends_sms_without_user_action": 0.65,
+    "encrypts_data_before_sending": 0.54,
+    "detects_analysis_environment": 0.03,
+    "hides_or_disables_its_own_icon": 0.03,
+    # Both measured at or below zero and clamped. `loads_dex_at_runtime` is the
+    # instructive one: it was 0.85 in the original hand-assigned table and measures
+    # NEGATIVE, because split-APK delivery means most benign apps do it. A model-asserted
+    # boolean may never carry negative weight (it would be an injection channel: goad the
+    # model into a benign-shaped assertion to lower the score), so it is clamped to zero
+    # and contributes nothing rather than exonerating.
+    "loads_dex_at_runtime": 0.00,
+    "reads_sms_content": 0.00,
 }
 
 #: Contextual evidence that shifts `B` in either direction — the exculpatory half the
@@ -116,9 +133,9 @@ BEHAVIOUR_WEIGHTS: dict[str, float] = {
 #:     them — an old, stable signing key or a trusted publisher cert has to actually
 #:     exist. `cert_signer_stable_years`, `debug_certificate` and
 #:     `targets_installed_financial_apps` are measured LLRs from the same corpus fit
-#:     (capped ±1.5); `publisher_trusted` and `lookalike_legitimate_privileged` never
-#:     fired on the 45-sample corpus, so their weights are declared priors, not
-#:     measurements.
+#:     (capped ±1.5, refit 2026-08-26 on 59 samples); `publisher_trusted` and
+#:     `lookalike_legitimate_privileged` never fired on the corpus, so their weights are
+#:     declared priors, not measurements.
 #:
 #:   * Two model-answered PURPOSE questions (`LLM_CONTEXT_KEYS`). These are priors
 #:     pending live measurement, and their magnitudes are deliberately small (±0.5,
@@ -127,11 +144,11 @@ BEHAVIOUR_WEIGHTS: dict[str, float] = {
 #:     goad the model into "consistent with purpose". Small weight = bounded damage.
 CONTEXT_WEIGHTS: dict[str, float] = {
     # deterministic static facts — Python-computed, model never touches them
-    "cert_signer_stable_years": -1.20,  # measured LLR, signer key ≥ 730 days, not debug
+    "cert_signer_stable_years": -1.13,  # measured LLR (refit), signer ≥ 730 days, not debug
     "publisher_trusted": -2.00,  # prior: never fired on the fit corpus
     "lookalike_legitimate_privileged": -1.00,  # prior: never fired on the fit corpus
     "targets_installed_financial_apps": 1.50,  # measured LLR, capped
-    "debug_certificate": 1.23,  # measured LLR
+    "debug_certificate": 1.50,  # measured LLR (refit), capped
     # model-answered purpose questions — priors, small on purpose (injection surface)
     "capability_use_consistent_with_declared_purpose": -0.50,
     "risky_capability_serves_no_plausible_feature": 0.50,

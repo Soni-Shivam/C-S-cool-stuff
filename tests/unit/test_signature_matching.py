@@ -114,3 +114,26 @@ def test_primitive_and_array_descriptors_count() -> None:
     assert signature_arity("La;->m(I[Ljava/lang/String;J)V") == 3
     assert signature_arity("La;->m()V") == 0
     assert signature_arity("La;->m") is None
+
+
+@pytest.mark.parametrize(
+    "written",
+    [
+        # A fourth dialect, observed live on the analysis VM: dotted like Java but
+        # keeping the JVM descriptor's trailing semicolon, and with no leading `L`.
+        # Stripping the wrapper only when BOTH halves were present left the owner as
+        # `com.b.a.c.a;` and silently dropped three real interpretations.
+        "com.b.a.c.a;->a(android.content.Context, String)",
+        "com/b/a/c/a;->a(android.content.Context, String)",
+        "Lcom.b.a.c.a;->a(android.content.Context, String)",
+    ],
+)
+def test_semicolon_without_the_l_wrapper_still_resolves(written: str) -> None:
+    assert resolve_signature(written, {CATALOGUE: "SLICE"}) == "SLICE"
+
+
+def test_a_lone_l_prefixed_class_is_not_confused_with_another(written: str = "") -> None:
+    """Stripping a leading `L` must not make `Lab` and `ab` the same class."""
+    from drishti.m4_genai.agents.code_interpreter import canonical_signature as canon
+
+    assert canon("Lcom/x/Lab;->m()") != canon("Lcom/x/ab;->m()")

@@ -21,6 +21,8 @@
 
 import { useEffect, useState } from 'react'
 import type { Artefact } from '../api/client'
+import { CopyButton } from '../components/Analyst'
+import { collectIocs } from '../components/analyst'
 import {
   exportUrls,
   getDossier,
@@ -115,12 +117,35 @@ function ComplaintPackage({ dossier }: { dossier: Dossier }) {
   )
 }
 
-export function ReportTab({ jobId, revision }: { jobId: string; revision: number }) {
+export function ReportTab({
+  jobId,
+  revision,
+  sha256,
+  packageName,
+  urls: sampleUrls,
+  hosts,
+}: {
+  jobId: string
+  revision: number
+  sha256?: string | null
+  packageName?: string | null
+  urls?: readonly string[]
+  hosts?: readonly string[]
+}) {
   const [report, setReport] = useState<Artefact<string> | null>(null)
   const [yara, setYara] = useState<Artefact<string> | null>(null)
   const [stix, setStix] = useState<Artefact<unknown> | null>(null)
   const [dossier, setDossier] = useState<Artefact<Dossier> | null>(null)
   const urls = exportUrls(jobId)
+  // Everything an analyst pastes elsewhere, in one place. The exports beside it are
+  // files for a SIEM; this is for the ticket, the blocklist and the chat message, which
+  // is where most of this actually goes first.
+  const iocs = collectIocs({
+    sha256: sha256 ?? null,
+    packageName: packageName ?? null,
+    hosts: hosts ?? [],
+    urls: sampleUrls ?? [],
+  })
 
   // A change of job invalidates what is already rendered, not just what is in
   // flight — otherwise the previous run's report sits here under the new run's
@@ -154,6 +179,24 @@ export function ReportTab({ jobId, revision }: { jobId: string; revision: number
         title="Report and exports"
         lede="Report, YARA, STIX and the complaint dossier are all implemented and download today. The complaint package is generated, never filed — India's cyber-crime portal has no submission API, so nothing on this screen tells a user their complaint has been lodged."
       />
+
+      <Panel
+        title="Indicators"
+        subtitle="Hash, package and every host and URL the sample referenced — one per line, prefixed by kind"
+        right={<CopyButton value={iocs} label="copy all IOCs" />}
+      >
+        {iocs ? (
+          <pre className="max-h-40 overflow-auto font-mono text-[11px] break-all whitespace-pre-wrap text-muted">
+            {iocs}
+          </pre>
+        ) : (
+          <p className="text-xs text-muted">
+            No indicators recovered for this sample. Nothing is emitted rather than a
+            prefixed line with nothing after it — a blank entry pasted into a blocklist
+            matches nothing, or everything.
+          </p>
+        )}
+      </Panel>
 
       <Panel
         title="Investigation report"
