@@ -45,6 +45,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -66,6 +67,30 @@ from drishti.m3_dynamic.proxy.capture_addon import (
 )
 
 log = get_logger(__name__)
+
+
+# ── Self-registration in sys.modules, and why this is not optional ────────────
+#
+# MEASURED 2026-08-27 on m3-detonator: `mitmdump -s drishti_proxy.py` refused to start
+# with `AttributeError: 'NoneType' object has no attribute '__dict__'` raised from
+# `dataclasses._is_type`, and because runtime_prepare.sh nohups mitmdump the only symptom
+# in the field is an EMPTY flow log — which reads as "the sample never beaconed".
+#
+# mitmproxy's script loader builds this module with `module_from_spec` and calls
+# `exec_module` WITHOUT putting it in `sys.modules`. `from __future__ import annotations`
+# makes every annotation below a string, so `@dataclass` asks
+# `sys.modules[cls.__module__].__dict__` whether an annotation names `dataclasses.KW_ONLY`
+# — and that lookup returns None. The facade below is an ordinary object whose `__dict__`
+# *is* this module's globals, so the lookup resolves against the real namespace rather
+# than an empty stand-in. `setdefault`, so a loader that does register us (the provision
+# check in detonator_provision.sh does) keeps its own module object.
+class _SelfFacade:  # noqa: D101 - internal shim, documented above
+    pass
+
+
+_self_facade = _SelfFacade()
+_self_facade.__dict__ = globals()
+sys.modules.setdefault(__name__, _self_facade)  # type: ignore[arg-type]
 
 #: Where the staged `C2Bundle` is read from. Unset for pass 1 (there is nothing to
 #: stage yet); the per-run wrapper sets it for pass 2.

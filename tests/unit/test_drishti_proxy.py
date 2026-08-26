@@ -25,24 +25,26 @@ from drishti.m3_dynamic.proxy.capture_addon import (
 _MODULE_PATH = pathlib.Path(__file__).resolve().parents[2] / "infra" / "gcp" / "drishti_proxy.py"
 
 
-def _load_proxy_module() -> Any:
+def _load_proxy_module(*, register: bool = True, name: str = "drishti_proxy") -> Any:
     """Load the on-VM proxy script.
 
     `DRISHTI_FLOW_LOG` is pointed at a temp file for the duration of the import: the
     module builds its addon chain at import time (mitmproxy reads a module-level
     `addons`), and the default log path is `/opt/drishti/results/`, which does not exist
     off the VM. The previous value is restored so no other test inherits it.
+
+    `register=False` reproduces mitmproxy's own script loader, which does **not** put the
+    module in `sys.modules` — see `test_module_loads_the_way_mitmdump_loads_it`.
     """
     tmp_dir = tempfile.mkdtemp(prefix="drishti-proxy-test-")
     previous = os.environ.get("DRISHTI_FLOW_LOG")
     os.environ["DRISHTI_FLOW_LOG"] = os.path.join(tmp_dir, "flows.jsonl")
     try:
-        spec = importlib.util.spec_from_file_location("drishti_proxy", _MODULE_PATH)
+        spec = importlib.util.spec_from_file_location(name, _MODULE_PATH)
         assert spec is not None and spec.loader is not None
         module = importlib.util.module_from_spec(spec)
-        # Registered before execution because `@dataclass` resolves annotations through
-        # `sys.modules[cls.__module__]`; mitmproxy's own script loader registers it too.
-        sys.modules[spec.name] = module
+        if register:
+            sys.modules[spec.name] = module
         spec.loader.exec_module(module)
         return module
     finally:
@@ -81,6 +83,20 @@ def _bundle() -> C2Bundle:
             ),
         ),
     )
+
+
+def test_module_loads_the_way_mitmdump_loads_it() -> None:
+    """Regression: mitmproxy execs the script WITHOUT registering it in `sys.modules`.
+
+    MEASURED 2026-08-27 on m3-detonator. `from __future__ import annotations` makes every
+    annotation a string, so `@dataclass` asks `sys.modules[cls.__module__].__dict__`
+    whether one names `KW_ONLY`; unregistered, that lookup returns None and mitmdump
+    exits during startup. runtime_prepare.sh nohups mitmdump, so the only symptom in the
+    field is an empty `flows.jsonl` — indistinguishable from a sample that never beaconed.
+    Every other test here registers the module first and so cannot see this.
+    """
+    module = _load_proxy_module(register=False, name="drishti_proxy_unregistered")
+    assert [type(a).__name__ for a in module.addons] == ["FlowCaptureAddon", "BundleResponder"]
 
 
 # ── the brief's three: matching, the inert second stage, and the miss ──────────

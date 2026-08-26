@@ -397,3 +397,26 @@ def test_dossier_does_not_embed_the_sample(meta, score, static) -> None:
     # sample itself or a route to it.
     for forbidden in ("base64,", "attachment", "download", "http://", "gs://"):
         assert forbidden not in blob.lower()
+
+
+def test_yara_strings_are_refanged_so_the_rule_can_actually_match() -> None:
+    """A YARA literal is matched against the file; the file contains `http`, not `hxxp`.
+
+    M2 defangs extracted URLs so a report can never become a live link. That is right
+    for a document and wrong for a matcher: emitting the defanged form produced rules
+    that were syntactically valid, shipped with a confidence score, and could never
+    fire on the sample they were generated from.
+    """
+    from drishti.m7_report.yara import _refang
+
+    assert (
+        _refang("hxxp://192.0.2.87:8443/rto/v3/collect") == "http://192.0.2.87:8443/rto/v3/collect"
+    )
+    assert (
+        _refang("hxxps://challan-verify.invalid/api/sync")
+        == "https://challan-verify.invalid/api/sync"
+    )
+    # Already-fanged input is left alone, so the function is safe to apply twice.
+    assert _refang("http://example.test/a") == "http://example.test/a"
+    # Only the scheme, and only at the start: `hxxp` mid-path is a real literal.
+    assert _refang("http://example.test/hxxp://nested") == "http://example.test/hxxp://nested"
