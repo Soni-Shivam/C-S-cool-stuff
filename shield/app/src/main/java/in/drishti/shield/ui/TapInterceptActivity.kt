@@ -67,12 +67,20 @@ class TapInterceptActivity : Activity() {
         }
 
         Log.i(TAG, "tap_intercepted uri=$uri sha256=${sha.take(16)} previously_seen=${known != null}")
+        val scanId = "scan_" + sha.take(12)
+        // A tap is the moment an install begins, and the person doing it is a victim,
+        // not an analyst. Which projection of the same analysis they land on is a
+        // preference, not two analyses — see `Config.consumerScreen`.
+        val next = if (Config.consumerScreen(this)) {
+            Intent(this, ConsumerVerdictActivity::class.java)
+                .putExtra(ConsumerVerdictActivity.EXTRA_SCAN_ID, scanId)
+                .putExtra(ConsumerVerdictActivity.EXTRA_APK_PATH, file.absolutePath)
+        } else {
+            Intent(this, VerdictActivity::class.java)
+                .putExtra(VerdictActivity.EXTRA_SCAN_ID, scanId)
+        }
         runOnUiThread {
-            startActivity(
-                Intent(this, VerdictActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    .putExtra(VerdictActivity.EXTRA_SCAN_ID, "scan_" + sha.take(12))
-            )
+            startActivity(next.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
             finish()
         }
     }

@@ -27,6 +27,26 @@ object Config {
 
     const val NCRP_URL: String = "https://cybercrime.gov.in/"
 
+    private const val KEY_CONSUMER_SCREEN = "consumer_screen"
+
+    /**
+     * Whether tapping an APK shows the **consumer** screen or the analyst one.
+     *
+     * On by default: at tap time the person holding the phone is a victim, not an
+     * analyst, and the evidence-first screen in `VerdictActivity` is written for the
+     * second audience. Both screens read the same analysis — this only chooses which
+     * projection of it a tap lands on. `VerdictActivity` remains reachable from the
+     * Shield app itself, which is where an analyst would be looking anyway.
+     */
+    fun consumerScreen(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getBoolean(KEY_CONSUMER_SCREEN, true)
+
+    fun setConsumerScreen(context: Context, value: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_CONSUMER_SCREEN, value).apply()
+    }
+
     fun backend(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(KEY_BACKEND, DEFAULT_BACKEND) ?: DEFAULT_BACKEND

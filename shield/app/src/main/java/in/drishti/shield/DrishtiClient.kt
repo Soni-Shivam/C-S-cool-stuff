@@ -142,6 +142,18 @@ object DrishtiClient {
     /** The job record, for the dossier. Null rather than throwing. */
     fun job(base: String, jobId: String): JSONObject? = getJson("$base/api/jobs/$jobId")
 
+    /**
+     * The flat cross-surface `Verdict` of contract A15, for the consumer screen.
+     *
+     * Null while the route does not answer — which today includes "the route does not
+     * exist yet". That is deliberate: `ConsumerVerdictSource` treats null as "fall
+     * through to a fixture, and say on screen that it is one", so the consumer screen
+     * could be built and rehearsed ahead of the endpoint and will pick up the real
+     * object the moment it appears, with no change to any screen.
+     */
+    fun consumerVerdict(base: String, jobId: String): JSONObject? =
+        getJson("$base/api/jobs/$jobId/verdict")
+
     /** The static report, for the dossier. Null while the stage is still pending. */
     fun staticReport(base: String, jobId: String): JSONObject? =
         getJson("$base/api/jobs/$jobId/static")

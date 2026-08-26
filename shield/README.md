@@ -57,6 +57,39 @@ asserted *why* the score was low — "the ML and GenAI layers are not admitted" 
 that sentence stopped being true the moment a model landed, while it stayed on
 screen. It now states the score, the floor, and points at the factor breakdown.
 
+## Two screens, two audiences, one analysis
+
+`ui/VerdictActivity.kt` is written for an analyst: evidence, MITRE IDs, a live
+millisecond counter, the basis card. `ui/ConsumerVerdictActivity.kt` is written for
+the person holding the phone — a breathing interstitial, then one sentence and one
+button. They read the same analysis; only the projection differs.
+
+A tap on an APK routes to the consumer screen by default (`Config.consumerScreen`),
+because at tap time the user is a victim, not an analyst. The analyst screen stays
+reachable from the Shield app itself.
+
+**The consumer screen shows no score, no confidence, no severity band, no MITRE ID
+and no evidence reference.** That is not a style preference: every extra element on a
+warning screen measurably reduces the chance the sentence is read at all.
+`tests/contract/test_verdict_kotlin_parity.py` fails if any of those fields is
+referenced in that file.
+
+**`ConsumerVerdict.kt` is a mirror of a contract, so it is tested like one.**
+Contract A15 lives in `drishti/contracts/verdict.py`; the Kotlin adapter is generated
+by nobody and maintained by a test that fails if a field is added on either side and
+not the other, in both directions.
+
+**The interstitial is held for a minimum of 3.4 s.** A verdict that lands before the
+screen has finished drawing reads as canned — to an audience and to a user. The
+analysis really runs underneath; when it takes longer, the screen waits. See
+`MIN_INTERSTITIAL_MS`.
+
+**A verdict that did not come from a live backend analysis says so on screen**, in the
+app's own words, derived from where the object came from rather than from a flag.
+Fixtures live in `app/src/main/assets/verdicts/` and every one of them is validated
+against the real pydantic model by the same contract test. Drive it all with
+`scripts/demo_consumer.sh`.
+
 ## The Report screen files nothing
 
 `ReportActivity` calls `GET /api/jobs/{id}/artifacts/dossier` and renders the

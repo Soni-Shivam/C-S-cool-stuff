@@ -77,6 +77,18 @@
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
 
+        <!-- The consumer-facing screen: the breathing interstitial, then the
+             warning. Driven entirely by the contract-A15 Verdict. singleTask for
+             the same reason as VerdictActivity — a second verdict replaces the one
+             on screen instead of stacking behind it. -->
+        <activity
+            android:name=".ui.ConsumerVerdictActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
+
         <activity
             android:name=".ui.ReportActivity"
             android:exported="false"
