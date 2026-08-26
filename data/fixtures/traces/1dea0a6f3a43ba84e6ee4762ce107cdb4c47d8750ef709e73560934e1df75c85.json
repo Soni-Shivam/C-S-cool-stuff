@@ -1,0 +1,37 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "1dea0a6f3a43ba84e6ee4762ce107cdb4c47d8750ef709e73560934e1df75c85",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of fruits.benefits.diary on the sealed GCE detonator, containment manifest 9e67213c3ea01ce954ad06977b9c5b80a7c2e56097506c259e6ecb8445163fd4.",
+    "authored_at": "2026-08-26T03:44:14.183837+00:00",
+    "source_sha256": "1dea0a6f3a43ba84e6ee4762ce107cdb4c47d8750ef709e73560934e1df75c85",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_1dea0a6f3a43",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "1 instrumented observations across 1 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 0,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "count": 1
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T03:44:14.183837+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

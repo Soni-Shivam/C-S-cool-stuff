@@ -1,0 +1,61 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "d3a8a1637b7ea8905a86d529068431205f832517c6f3a1b54ea485fe4b78ff5b",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.app.app81f306dfd250 on the sealed GCE detonator, containment manifest 921971555613548360c809653ba8dfea9ad4ef339b1e509350afd60b6b3dc9cb.",
+    "authored_at": "2026-08-26T04:11:18.849189+00:00",
+    "source_sha256": "d3a8a1637b7ea8905a86d529068431205f832517c6f3a1b54ea485fe4b78ff5b",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_d3a8a1637b7e",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "280 instrumented observations across 4 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 7246,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "count": 2
+      },
+      {
+        "t_ms": 8292,
+        "api": "Cipher.doFinal",
+        "args": [
+          "crypto op plaintext=e###b####a###fbd"
+        ],
+        "count": 122
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.google.android.gms"
+        ],
+        "count": 93
+      },
+      {
+        "t_ms": 135,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=https://graph.facebook.com/v#.#/###############?fields=supports_implicit_sdk_logging%#Cgdpv#_nux..."
+        ],
+        "count": 63
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T04:11:18.849189+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

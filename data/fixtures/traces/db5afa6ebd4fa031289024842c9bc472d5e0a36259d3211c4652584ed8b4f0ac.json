@@ -1,0 +1,77 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "db5afa6ebd4fa031289024842c9bc472d5e0a36259d3211c4652584ed8b4f0ac",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of get.baby.pregnancy.ovulation.tracker on the sealed GCE detonator, containment manifest 449d6c961ae6cf991fde54aac3a0d50fa429beae39ce5d8cc418fb8b710ecbe2.",
+    "authored_at": "2026-08-26T04:13:23.165275+00:00",
+    "source_sha256": "db5afa6ebd4fa031289024842c9bc472d5e0a36259d3211c4652584ed8b4f0ac",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_db5afa6ebd4f",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "165 instrumented observations across 6 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 343,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "count": 3
+      },
+      {
+        "t_ms": 785,
+        "api": "DexClassLoader.$init",
+        "args": [
+          "loaded dex path=/data/user/#/get.baby.pregnancy.ovulation.tracker/cache/#############.jar"
+        ],
+        "count": 1
+      },
+      {
+        "t_ms": 412,
+        "api": "ContentResolver.query",
+        "args": [
+          "queried provider content://com.google.android.gms.chimera/api/com.google.android.gms.ads.dynamite"
+        ],
+        "count": 10
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=get.baby.pregnancy.ovulation.tracker"
+        ],
+        "count": 83
+      },
+      {
+        "t_ms": 778,
+        "api": "Cipher.doFinal",
+        "args": [
+          "crypto op plaintext=\u0017\ufffd\ufffd\ufffd_j\ufffd\ufffdlyD%\ufffd\ufffd\u0017\ufffd\ufffd\ufffd\u000e\ufffdO\ufffd`\ufffdD\ufffd\u04fd=\ufffd\ufffdPB\ufffd#\u0006V\ufffd\u000f\ufffd|\ufffd\ufffdym\ufffd\ufffdK+\u0001\u0564n\u001b\ufffd\ufffd#]\u00ba\ufffd\ufffdY\ufffd.uUY\ufffd\u0005zq\\\ufffd[\u0014{\u0005\ufffd#kw\ufffd\ufffd\u0010\ufffd\ufffd'e#\ufffd\u0007\ufffd\u0012\ufffd\ufffd#MV..."
+        ],
+        "count": 57
+      },
+      {
+        "t_ms": 168,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=https://settings.crashlytics.com/spi/v#<b64>.baby.pregnancy.ovulation.tracker/settings?instance=..."
+        ],
+        "count": 11
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T04:13:23.165275+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "sha256": "047e3ecdb04d695b7e8a3c2789c29ec57da19f58bdcdb1d97fa926205ce718eb",
+  "package": "com.cable.liar",
+  "simulated": false,
+  "outcome": "failed",
+  "observations": [],
+  "failures": [
+    {
+      "code": "internal_error",
+      "stage": "harness",
+      "message": "NotSupportedError: unable to write to process memory: No such process",
+      "occurred_at": "2026-08-26T05:20:30.412618+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "21c9a8e573fcb1e04d0543a1bac74586db6330cc2640351c7ce17e0f41e17634",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T05:19:45.267811+00:00"
+  },
+  "started_at": "2026-08-26T05:19:55.619259+00:00",
+  "finished_at": "2026-08-26T05:20:32.768612+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": []
+}

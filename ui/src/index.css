@@ -10,18 +10,28 @@
  */
 
 @theme {
-  --color-ink: #05070c;
-  --color-panel: #0c111b;
-  --color-panel-2: #121a28;
-  --color-line: #1e2a3d;
-  --color-line-soft: #17202f;
-  --color-fg: #e8eef8;
-  --color-muted: #8ea0bb;
-  --color-dim: #5f7089;
+  --color-ink: #0a0a12;
+  --color-panel: #12121f;
+  --color-panel-2: #191927;
+  --color-line: #2a2a3f;
+  --color-line-soft: #1f1f30;
+  --color-fg: #eceaf6;
+  --color-muted: #9b98b8;
+  --color-dim: #6d6a90;
 
-  --color-accent: #4da3ff;
-  --color-accent-soft: #12314f;
+  /* One accent, violet, and two tokens for it rather than one.
+     #7c3aed is the brand violet from the deck and is used for fills, strokes and
+     rings — but at 3.4:1 on #0a0a12 it fails contrast as small text, and T6.4's
+     constraint is a washed-out projector three metres away. So `accent` is the
+     legible tint used for type, `accent-strong` is the brand violet used for
+     everything that is a shape rather than a word. Same hue, one accent. */
+  --color-accent: #a78bfa;
+  --color-accent-strong: #7c3aed;
+  --color-accent-soft: #241a3f;
 
+  /* Severity stays on its own scale. It is semantic, not decorative — folding it
+     into the violet accent would make CRITICAL and "this is a link" the same
+     colour, which is the one confusion a triage screen cannot afford. */
   --color-critical: #ff4d5e;
   --color-high: #ff9838;
   --color-medium: #ffd23f;

@@ -11,10 +11,11 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from drishti.api.deps import JobDep, RunnerDep, artefact_or_pending
-from drishti.contracts.dynamic_trace import DynamicTrace
+from drishti.contracts.dynamic_trace import DynamicTrace, TraceSourceKind
 from drishti.contracts.genai_verdict import GenAIVerdict
 from drishti.contracts.score import CompositeScore, MLPrediction
 from drishti.contracts.static_report import FileMeta, StaticReport
+from drishti.contracts.verdict import Verdict, build_verdict
 
 router = APIRouter(prefix="/api/jobs", tags=["analysis"])
 
@@ -64,3 +65,43 @@ def get_score(job: JobDep, runner: RunnerDep) -> CompositeScore:
     """
     result: CompositeScore = artefact_or_pending(runner, job, "score")
     return result
+
+
+@router.get("/{job_id}/verdict")
+def get_verdict(job: JobDep, runner: RunnerDep) -> Verdict:
+    """The shared `Verdict` projection — contract addendum A15/A16.
+
+    A projection endpoint, not a computation: the whole body is one call to
+    `build_verdict()` over artefacts the runner already holds. Every surface (the
+    consumer phone screen, the analyst portal, the demo scripts) reads this one shape,
+    so nothing here may decide a field. A second place that decides `provenance` is
+    precisely the drift the shared contract exists to prevent.
+
+    Pending until both `ingest` and `score` exist, because a `Verdict` without a score
+    would have to invent a band.
+    """
+    meta: FileMeta = artefact_or_pending(runner, job, "ingest")
+    composite: CompositeScore = artefact_or_pending(runner, job, "score")
+    return build_verdict(
+        meta=meta,
+        score=composite,
+        static=runner.artefact(job.id, "static"),
+        genai=runner.artefact(job.id, "genai"),
+        trace=_observed_trace(runner.artefact(job.id, "dynamic")),
+    )
+
+
+def _observed_trace(trace: DynamicTrace | None) -> DynamicTrace | None:
+    """Drop the declared stub the pipeline records when nothing could observe the sample.
+
+    `_sandbox()` records a trace with `source=unavailable`, `synthetic=True` and
+    `partial=True` when no trace source could produce anything — degradation expressed
+    in data rather than as an empty result. Forwarding that as a trace would project
+    `provenance="REPLAY"` over a run in which nothing was ever replayed, and a
+    `dynamic_trace` view of `detonated=false` with three empty lists, which the contract
+    defines as *the app ran and did nothing observable*. Neither is true; `STATIC_ONLY`
+    with no trace is. The stub itself stays fully visible on `GET .../dynamic`.
+    """
+    if trace is None or trace.source is TraceSourceKind.UNAVAILABLE:
+        return None
+    return trace

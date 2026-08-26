@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "sha256": "d65ae353ce5d975cea85bb0fab578590a90061173657ba2e1a0c1110d9b8eb91",
+  "package": "donor.mutual.draft",
+  "simulated": false,
+  "outcome": "failed",
+  "observations": [],
+  "failures": [
+    {
+      "code": "install_failed",
+      "stage": "install",
+      "message": "Performing Streamed Install\n\nadb: failed to install /opt/drishti/scratch/d65ae353ce5d975cea85bb0fab578590a90061173657ba2e1a0c1110d9b8eb91.apk: Failure [-124: Failed parse during installPackageLI: Targeting R+ (version 30 and above) requires the resources.arsc of installed APKs to be stored uncompressed and aligned on a 4-byte boundary]\n\n",
+      "occurred_at": "2026-08-26T06:41:26.984268+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "e5b1b78e49d2bb3a9c1984156ede5f30b36c291a58ad1634fc2166883f78ce11",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T06:41:09.833635+00:00"
+  },
+  "started_at": "2026-08-26T06:41:20.201826+00:00",
+  "finished_at": "2026-08-26T06:41:29.450005+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": []
+}

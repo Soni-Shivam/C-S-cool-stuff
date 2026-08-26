@@ -1,0 +1,218 @@
+{
+  "schema_version": "1.0",
+  "sha256": "dc2a780f6abb9f0ec0a6675f20acb91ebe2a8748297682a59daf9164fbea2ee8",
+  "package": "com.pagethan10",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Download new code at runtime",
+      "mitre": "T1407",
+      "detail": "loaded dex path=/data/user/#/com.pagethan##/cache/vkicna",
+      "source_hook": "DexClassLoader.$init",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:45:25.980717+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "enumerated installed packages",
+      "source_hook": "PackageManager.getInstalledPackages",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:45:26.112434+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:45:49.685222+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:45:59.722106+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:09.746047+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getLine1Number -> +###########",
+      "source_hook": "TelephonyManager.getLine1Number",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:19.565096+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getLine1Number -> +###########",
+      "source_hook": "TelephonyManager.getLine1Number",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:19.565281+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getSimOperatorName -> T-Mobile",
+      "source_hook": "TelephonyManager.getSimOperatorName",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:19.566264+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"e###a##b###f###d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:19.588735+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:19.762370+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:22.740704+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"e###a##b###f###d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:29.604318+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:29.779495+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:32.756853+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:39.794911+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"e###a##b###f###d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:42.768036+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:42.773940+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"gSWI\",\"lB\":\"chrome\",\"bI\":\"a#cafc#e#fd####d##d##a###d##e###\",\"iA\":\"#\",\"dA\":\"#\",\"lK\":\"#\",\"i...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:49.826290+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={\"xc\":\"bR\",\"tA\":\"e###a##b###f###d\",\"tB\":\"+###########\",\"tC\":\"us\",\"tD\":\"en\",\"tE\":\"##\",\"tF\":\"Googl...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:46:52.785122+00:00"
+    }
+  ],
+  "failures": [
+    {
+      "code": "hook_error",
+      "stage": "instrumentation",
+      "message": "spawn retry after: TimedOutError: unexpectedly timed out while waiting for app to launch",
+      "occurred_at": "2026-08-26T06:46:55.505875+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "56128ec61ca6b6e83881a230b0935eb47c4b2e038f883a9acc7e894a4fe8f8f1",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T06:44:21.226383+00:00"
+  },
+  "started_at": "2026-08-26T06:44:31.566045+00:00",
+  "finished_at": "2026-08-26T06:46:58.122792+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": [
+    "T1407",
+    "T1418",
+    "T1426",
+    "T1521"
+  ]
+}

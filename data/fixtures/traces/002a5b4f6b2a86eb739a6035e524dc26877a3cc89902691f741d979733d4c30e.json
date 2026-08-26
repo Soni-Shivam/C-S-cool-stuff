@@ -1,0 +1,37 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "002a5b4f6b2a86eb739a6035e524dc26877a3cc89902691f741d979733d4c30e",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.daihaoer.SMSjoke on the sealed GCE detonator, containment manifest 4399466e54e5f45bf7b76dfa1a0ce3e48ea17518a3e1ba129908215a720d5c76.",
+    "authored_at": "2026-08-13T10:25:37.146315Z",
+    "source_sha256": "002a5b4f6b2a86eb739a6035e524dc26877a3cc89902691f741d979733d4c30e",
+    "captured_from_image": "drishti-m3-tools-v1"
+  },
+  "pre_morph": {
+    "run_id": "run_002a5b4f6b2a",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "1 instrumented observations across 1 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 0,
+        "api": "TelephonyManager.getDeviceId",
+        "args": [
+          "[REDACTED:DEVICE_VALUE]"
+        ],
+        "count": 1
+      }
+    ],
+    "emulator_image": "drishti-m3-tools-v1",
+    "vm_instance_id": "7618811088902044349; hooks completed",
+    "harness_version": "m3-harness-1.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-13T10:25:37.146315Z",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

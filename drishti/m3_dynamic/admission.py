@@ -50,16 +50,36 @@ def checks_from_report(
     if not report.verified or not report.probe_trustworthy:
         raise RuntimeAdmissionError("containment report is not verified and trustworthy")
     reachability = {(result.host, result.port): result.reachable for result in report.results}
-    return ContainmentChecks(
-        probe_trustworthy=True,
-        emulator_internet_blocked=not any(
+
+    # Each field is `Literal[True]` on the contract, so a false check cannot be signed.
+    # They are evaluated and named HERE rather than passed straight in, so a failure
+    # says which containment property failed instead of surfacing a pydantic type
+    # error about a literal — the difference between an operator diagnosing a firewall
+    # rule in a minute and reading a stack trace.
+    #
+    # `.get(..., True)` defaults to REACHABLE for a destination the probe never tested:
+    # an untested destination must count as not-blocked, never as safe.
+    checks: dict[str, bool] = {
+        "emulator_internet_blocked": not any(
             reachability.get(destination, True)
             for destination in (("8.8.8.8", 53), ("1.1.1.1", 443))
         ),
-        emulator_metadata_blocked=not reachability.get(("169.254.169.254", 80), True),
-        emulator_vpc_blocked=not reachability.get(("10.0.0.1", 22), True),
-        nested_kvm_functional=kvm_ok,
-        host_firewall_default_drop=firewall_default_drop,
+        "emulator_metadata_blocked": not reachability.get(("169.254.169.254", 80), True),
+        "emulator_vpc_blocked": not reachability.get(("10.0.0.1", 22), True),
+        "nested_kvm_functional": kvm_ok,
+        "host_firewall_default_drop": firewall_default_drop,
+    }
+    failed = sorted(name for name, ok in checks.items() if not ok)
+    if failed:
+        raise RuntimeAdmissionError(f"containment checks failed: {', '.join(failed)}")
+
+    return ContainmentChecks(
+        probe_trustworthy=True,
+        emulator_internet_blocked=True,
+        emulator_metadata_blocked=True,
+        emulator_vpc_blocked=True,
+        nested_kvm_functional=True,
+        host_firewall_default_drop=True,
     )
 
 

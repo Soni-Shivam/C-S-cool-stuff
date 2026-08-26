@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "sha256": "43a4cbf63c0225346b4b719f1987cea2fed623bb7ac92279b4d213a92fe9cefa",
+  "package": "com.crescerance.VSH",
+  "simulated": false,
+  "outcome": "inconclusive",
+  "observations": [],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "924f632ff2baf2558b5162694d172e150608ce39c66be378b3a4ebc0593b7c4c",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T03:52:05.984567+00:00"
+  },
+  "started_at": "2026-08-26T03:52:16.305481+00:00",
+  "finished_at": "2026-08-26T03:53:39.120053+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339"
+  ],
+  "mitre_observed": []
+}

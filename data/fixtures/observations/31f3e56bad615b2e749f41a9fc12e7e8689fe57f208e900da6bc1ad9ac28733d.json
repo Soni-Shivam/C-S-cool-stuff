@@ -1,0 +1,2246 @@
+{
+  "schema_version": "1.0",
+  "sha256": "31f3e56bad615b2e749f41a9fc12e7e8689fe57f208e900da6bc1ad9ac28733d",
+  "package": "com.yore.cleaner.bigfile",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:27.997299+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.026921+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.035737+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.039445+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.043131+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebase-settings.crashlytics.com/spi/v#/platforms/android/gmp/#:#############:android:#...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.061215+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.166506+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.245415+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.261411+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.374825+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.376054+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.410155+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.434830+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Protected user data",
+      "mitre": "T1636",
+      "detail": "queried provider content://com.google.android.gms.phenotype/com.google.android.gms.measurement",
+      "source_hook": "ContentResolver.query",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.453061+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.542771+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.549417+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.561937+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.567691+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.589105+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.590472+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=projekt.substratum",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.593559+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.612739+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.616443+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.620898+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.625047+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.758954+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.764957+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.772992+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.794504+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.794636+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.850292+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.855246+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.886488+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.886611+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.887057+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.896472+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.905008+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.906306+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.907091+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.909102+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.924496+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.926208+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.926979+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.927065+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.931012+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.936976+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.939563+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.953510+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.972422+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.980196+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.981559+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Download new code at runtime",
+      "mitre": "T1407",
+      "detail": "loaded dex path=/data/user/#/com.yore.cleaner.bigfile/app_pccache/#/####CF##F##DE######DAE####C#A##BB###D#CC/pca...",
+      "source_hook": "DexClassLoader.$init",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:28.985131+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.027606+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.029051+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.077126+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.083937+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.084946+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.117555+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.134926+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.135446+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.136867+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.145306+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.165638+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.171704+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.176028+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.176713+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.176806+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.179590+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://api#.branch.io/v#/install",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:29.267226+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.280691+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.306645+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.433289+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.535427+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.639646+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.647868+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.651480+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.651604+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.824787+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.832781+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.836486+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.836624+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.836696+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:30.966865+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.465999+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.472262+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.519832+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.523805+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.535475+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.542299+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.547369+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.549295+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.555523+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.557014+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.561042+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.562565+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.570228+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.571480+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.577890+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.581353+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.585925+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.590584+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.597232+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.602754+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.610209+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.611686+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.618696+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.620879+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.628276+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.629704+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.634450+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.636390+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.641767+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.643748+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.650017+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.654010+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.658824+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.660399+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.665560+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.667379+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.671524+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.674729+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.679357+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.681993+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.687882+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.689590+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.696689+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.699274+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.724197+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.725158+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.744587+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.746028+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.750883+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.752300+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.756327+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.759805+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.766523+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.768447+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.771349+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.773020+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.777463+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.780868+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.785342+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.789539+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.792900+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.794102+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.800430+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.802087+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.805393+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.806623+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.815138+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.815319+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.822942+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.823070+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.864602+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.864810+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.864890+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.864976+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.865035+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.865121+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.865210+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.865289+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.866452+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.868114+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.874229+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.876302+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.880984+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.882642+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.885716+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.887099+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.890753+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.892210+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.900370+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.901494+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.905582+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.908797+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.912273+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.914021+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.918238+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.920008+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.925653+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.927927+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.933517+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.934442+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.940427+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.941152+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:38.943563+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://api#.branch.io/v#/install",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:40.352791+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:40.985230+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.000373+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.018124+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.021390+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.037828+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.046745+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.050014+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.052894+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.053887+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.063065+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.082203+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.123482+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.125527+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.136291+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.152981+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.153666+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://api#.branch.io/v#/install",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:41.365423+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.037321+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.062473+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.067479+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.077298+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.084879+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.087944+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.092967+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.095764+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.098316+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.104910+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.106599+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.112422+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.115506+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.119374+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.122641+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.127541+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.129544+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.135475+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.137473+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.143895+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.145682+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.150000+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.152107+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.159108+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.161623+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.167816+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.169680+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.175868+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.177884+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.183283+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.185286+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.189333+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.192275+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.196960+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.199444+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.203447+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.206357+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.212125+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/Fresh Space Cleaner-cb#e#/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.213787+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.yore.cleaner.bigfile",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.219042+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://api#.branch.io/v#/install",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T05:32:51.485981+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "8ef2612d2075b3b275e8cce80e7f95d23d76734f09c38cb52fec4f7188264dd5",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T05:31:51.388970+00:00"
+  },
+  "started_at": "2026-08-26T05:32:01.732543+00:00",
+  "finished_at": "2026-08-26T05:34:01.168710+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": [
+    "T1407",
+    "T1417",
+    "T1418",
+    "T1437",
+    "T1636"
+  ]
+}

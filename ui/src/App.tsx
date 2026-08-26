@@ -30,7 +30,9 @@ import {
   getMl,
   getScore,
   getStatic,
+  getVerdict,
 } from './api/client'
+import { DeviceFeed } from './components/DeviceFeed'
 import { Header } from './components/Header'
 import { LiveLog } from './components/LiveLog'
 import { ScoreRail } from './components/ScoreRail'
@@ -79,6 +81,10 @@ export default function App() {
   const dynamic = useArtefact(jobId, getDynamic, revision).artefact
   const score = useArtefact(jobId, getScore, revision).artefact
   const ledger = useArtefact(jobId, (id) => getLedger(id), revision).artefact
+  // The shared projection (contract A15). Fetched alongside the raw artefacts rather
+  // than derived from them: the Verdict every surface reads must be the one the server
+  // built, not one this app assembled from the same parts and hoped matched.
+  const verdict = useArtefact(jobId, getVerdict, revision).artefact
 
   useEffect(() => {
     void getHealth()
@@ -139,6 +145,7 @@ export default function App() {
     <EvidenceNavContext.Provider value={nav}>
       <div className="flex h-full min-w-0 flex-col overflow-hidden bg-ink">
         <Header job={job} streaming={streaming} onJobCreated={selectJob} version={version} />
+        <DeviceFeed currentJobId={jobId} onSelectJob={selectJob} />
         {job && <StageStrip events={events} current={job.stage} />}
 
         <main className="flex min-h-0 flex-1">
@@ -195,18 +202,21 @@ export default function App() {
                   {tab === 'Overview' && (
                     <OverviewTab
                       jobId={jobId}
+                      verdict={verdict}
                       score={score}
                       genai={genai}
                       ingest={ingest}
-                      dynamic={dynamic}
+                      staticReport={staticReport}
                     />
                   )}
                   {tab === 'Static' && <StaticTab report={staticReport} />}
                   {tab === 'Reverse Engineering' && (
                     <ReverseEngineeringTab report={staticReport} genai={genai} ml={ml} />
                   )}
-                  {tab === 'Sandbox' && <SandboxTab dynamic={dynamic} />}
-                  {tab === 'Frontier' && <FrontierTab nodes={nodes} dynamic={dynamic} />}
+                  {tab === 'Sandbox' && <SandboxTab dynamic={dynamic} verdict={verdict} />}
+                  {tab === 'Frontier' && (
+                    <FrontierTab nodes={nodes} dynamic={dynamic} verdict={verdict} />
+                  )}
                   {tab === 'Ledger' && (
                     <LedgerTab
                       jobId={jobId}

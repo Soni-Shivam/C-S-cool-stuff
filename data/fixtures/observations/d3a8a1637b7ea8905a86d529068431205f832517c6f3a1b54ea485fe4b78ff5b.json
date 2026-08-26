@@ -1,0 +1,2559 @@
+{
+  "schema_version": "1.0",
+  "sha256": "d3a8a1637b7ea8905a86d529068431205f832517c6f3a1b54ea485fe4b78ff5b",
+  "package": "com.app.app81f306dfd250",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.025794+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.029735+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.034556+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.047487+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.069278+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.110208+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.113240+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############?fields=supports_implicit_sdk_logging%#Cgdpv#_nux...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.161450+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.180591+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.344666+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.405054+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.412533+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.424881+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=projekt.substratum",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.425785+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.426490+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.437012+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.441417+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.760268+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.762208+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.839670+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.847783+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:47.956127+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:48.690080+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:48.801341+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:48.807374+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:48.815496+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:54.272651+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.018955+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.192673+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.318701+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.321073+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=L�Ɠ�\u0014N.��K�#��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.384637+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.448872+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.455165+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.455801+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.589504+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.591157+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.592731+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://data.flurry.com/aap.do",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:55.597723+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:56.606695+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:11:56.614417+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.601852+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.602683+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.602780+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.608311+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.623790+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.625142+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.632796+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.646982+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.648642+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.652632+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.662331+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.687968+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.716556+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.723127+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.727373+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.751887+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.760595+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.791907+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.793555+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.794373+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.797394+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.799118+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.803339+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.819034+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.832153+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.835907+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.837699+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.855707+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.882486+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.921947+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.947112+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:05.962423+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.011599+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.032873+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.034306+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.041052+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.094025+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.104027+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.105266+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.112667+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.159039+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.177755+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.178648+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.187331+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.235251+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.241725+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.242540+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.254978+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.297062+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.313608+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.314664+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.322835+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.375866+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.389883+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.391307+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.402337+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.451588+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.452321+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.453532+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.463030+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.511237+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.517928+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.519020+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.528798+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.577448+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.582472+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.583603+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.593930+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.645711+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.648239+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.649899+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.660567+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.705041+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.712166+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.713542+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.721014+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.747130+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.772924+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.775376+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.782126+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.808636+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.841507+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.843973+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.854803+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.878708+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.908236+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.910238+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.917271+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.945203+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.972351+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.973793+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:06.982049+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.012164+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.036642+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.037782+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.047556+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.078467+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.101232+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.109381+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.116374+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.138721+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.163682+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.173985+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.181498+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.214571+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.252889+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.258207+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.272989+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.306242+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.339889+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.341164+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.349225+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.404650+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.423469+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:07.424954+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.445717+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.446815+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.448332+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.454246+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.456797+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.458725+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.460269+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.471356+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.474566+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.476244+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.477534+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.485678+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.488791+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.491984+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.497287+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.510035+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.517092+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.522829+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.526236+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.533207+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.545733+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.548762+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.552405+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.554659+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.558217+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.559677+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.564374+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.568002+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.573228+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.574573+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.580350+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.590537+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.595063+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.605751+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.609548+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.613633+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.623632+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.630607+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.631294+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.639085+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.641953+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.647103+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.650857+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.651883+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.659955+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.661714+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.663817+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:17.673662+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.010922+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.011109+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.011237+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.015914+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.018697+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.018816+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.019909+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.031599+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.033035+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.034261+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.046643+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.055156+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.056654+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.058347+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.082945+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.094663+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.096338+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.097945+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.110852+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.116002+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.127686+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.128793+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.132881+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.134831+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.136527+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.145408+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.151226+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.154407+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.157433+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.159143+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.161955+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.170092+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.172519+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.173620+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.176478+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.202043+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.203402+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.221063+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.222577+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.236145+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.269337+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.271932+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.273475+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.279763+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.290708+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.296234+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.299645+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.300770+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.322043+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.323097+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.324062+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.324998+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.326940+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.334725+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.335881+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.341210+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.372463+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.375305+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.408291+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.408426+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.408498+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.408600+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.408675+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.409060+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.412100+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.416589+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.419553+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.424047+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.app.app##f###dfd###",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.436389+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.500544+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.503646+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.517226+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=e###b####a###fbd",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.520551+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=g*c�@FR�v\u0012JΛѤu��\u0018�u��\u0013���\u0005!��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.521940+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://www.downloadapparea.<b64>.php",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:35.523060+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:12:39.861025+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "921971555613548360c809653ba8dfea9ad4ef339b1e509350afd60b6b3dc9cb",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T04:11:08.458972+00:00"
+  },
+  "started_at": "2026-08-26T04:11:18.849189+00:00",
+  "finished_at": "2026-08-26T04:12:48.905671+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339"
+  ],
+  "mitre_observed": [
+    "T1417",
+    "T1418",
+    "T1437",
+    "T1521"
+  ]
+}

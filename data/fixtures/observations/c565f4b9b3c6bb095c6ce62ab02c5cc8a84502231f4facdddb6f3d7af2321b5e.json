@@ -1,0 +1,210 @@
+{
+  "schema_version": "1.0",
+  "sha256": "c565f4b9b3c6bb095c6ce62ab02c5cc8a84502231f4facdddb6f3d7af2321b5e",
+  "package": "com.grand.thinpad",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.grand.thinpad",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:18.269324+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=http://vgfgfttfyug###########.cfd/api/mirrors",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:18.577308+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:18.830417+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:18.861382+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=http://vgfgfttfyug###########.cfd/api/v#/device/check?screen=true",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:18.883880+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:21.910196+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:33.165135+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:36.499750+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:36.813404+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.teamviewer.host.market",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:38.098942+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=http://vgfgfttfyug###########.cfd/api/v#/device/server-log",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:38.100387+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:39.256307+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=http://vgfgfttfyug###########.cfd/api/v#/device/check?screen=true",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:46.844951+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.teamviewer.host.market",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:56.882824+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=http://vgfgfttfyug###########.cfd/api/v#/device/server-log",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:27:56.897256+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=http://vgfgfttfyug###########.cfd/api/v#/device/check?screen=true",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:28:14.867274+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.teamviewer.host.market",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:28:24.890026+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=http://vgfgfttfyug###########.cfd/api/v#/device/server-log",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:28:24.891029+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=http://vgfgfttfyug###########.cfd/api/v#/device/check?screen=true",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:28:42.898524+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "06737012b2eb3318cd7083b93d00b1373c3f0f9d915b046498b1c79df62eb80a",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T06:26:46.725650+00:00"
+  },
+  "started_at": "2026-08-26T06:26:57.066354+00:00",
+  "finished_at": "2026-08-26T06:28:50.388287+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": [
+    "T1417",
+    "T1418",
+    "T1437"
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "3acc8a25e891c5128b7a00b22b5086955bea069b059572c78e527382c6cb1377",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.dkapster.app on the sealed GCE detonator, containment manifest 49e2040817aae575d96b4e87cd171329f5a6ba7851dad7a21835845d315b6c44.",
+    "authored_at": "2026-08-26T03:48:45.183373+00:00",
+    "source_sha256": "3acc8a25e891c5128b7a00b22b5086955bea069b059572c78e527382c6cb1377",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_3acc8a25e891",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "94 instrumented observations across 4 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 112,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "count": 2
+      },
+      {
+        "t_ms": 0,
+        "api": "ContentResolver.query",
+        "args": [
+          "queried provider content://com.google.android.gms.chimera/api_force_staging/com.google.android.gms.measurement.dy..."
+        ],
+        "count": 3
+      },
+      {
+        "t_ms": 8,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.android.vending"
+        ],
+        "count": 52
+      },
+      {
+        "t_ms": 120,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations"
+        ],
+        "count": 37
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T03:48:45.183373+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

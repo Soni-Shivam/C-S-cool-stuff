@@ -1,0 +1,207 @@
+{
+  "schema_version": "1.0",
+  "sha256": "8856ac19f179461c4008249c342c8dadbd17118f80f43ce0229ddb1cda33bd67",
+  "package": "com.akbjmrnec.wiuvhfydb",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.193203+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.195053+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.290061+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.akbjmrnec.wiuvhfydb",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.369468+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.380808+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.akbjmrnec.wiuvhfydb",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.382169+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.385358+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=projekt.substratum",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.385482+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.396064+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.407164+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.413908+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.509450+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.509598+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.587020+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.642988+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:48.728720+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:53.482927+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:05:53.530925+00:00"
+    }
+  ],
+  "failures": [
+    {
+      "code": "hook_error",
+      "stage": "instrumentation",
+      "message": "spawn retry after: TimedOutError: unexpectedly timed out while waiting for app to launch",
+      "occurred_at": "2026-08-26T06:07:17.706458+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "61e801b51f1fc3941344fde56064809535f4d43db4afa81166bbbe9b4732e094",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T06:04:42.270517+00:00"
+  },
+  "started_at": "2026-08-26T06:04:52.618432+00:00",
+  "finished_at": "2026-08-26T06:07:20.060412+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": [
+    "T1417",
+    "T1418"
+  ]
+}

@@ -1,0 +1,886 @@
+{
+  "schema_version": "1.0",
+  "sha256": "1991daf7137164283d36547e8f90f8ede3b58004f827a8abaee9d250b6bf900d",
+  "package": "ahnafdev.kitabfutuhulghoib",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:37.762363+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:40.798763+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:40.804431+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Protected user data",
+      "mitre": "T1636",
+      "detail": "queried provider content://com.google.android.gms.chimera/api_force_staging/com.google.android.gms.ads.dynamite?r...",
+      "source_hook": "ContentResolver.query",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:40.840657+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:40.856133+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=ahnafdev.kitabfutuhulghoib",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:40.939787+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:40.949555+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=ahnafdev.kitabfutuhulghoib",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:41.234814+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=ahnafdev.kitabfutuhulghoib",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:41.261093+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:41.278866+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=projekt.substratum",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:41.280249+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:41.299959+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:41.312081+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:41.319204+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:41.347839+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:41.735374+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:41.736458+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=ahnafdev.kitabfutuhulghoib",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.024596+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Protected user data",
+      "mitre": "T1636",
+      "detail": "queried provider content://com.google.android.gms.chimera/api/com.google.android.gms.ads.dynamite?requestStartTim...",
+      "source_hook": "ContentResolver.query",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.108544+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.119874+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.122039+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.175834+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=ahnafdev.kitabfutuhulghoib",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.195835+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u0017���_j��lyD%��\u0017���\u000e�O�`�D�ӽ=��PB�#\u0006V�\u000f�|��ym��K+\u0001դn\u001b��#]º��Y�.uUY�\u0005zq\\�[\u0014{\u0005�#kw��\u0010��'e#�\u0007�\u0012��#MV...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.196532+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Download new code at runtime",
+      "mitre": "T1407",
+      "detail": "loaded dex path=/data/user/#/ahnafdev.<b64>#############.jar",
+      "source_hook": "DexClassLoader.$init",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.198167+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=����##��W#S�\u000fM�[>\u0006K\u0015o�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.198289+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��W P�L#�\u0010�W\ns\u0010\u0018",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.198370+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=���;��\u001c��j�]F^)��\u001f�����#��\\��'O",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.198458+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�\u001d���\u001fǵ�j��W{\u001c�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.198550+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=#B\u001a_�\u001c$�!��\t\u0011@(��~\u000fVmJc�O\u0010%l:�O\u0010",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.198623+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�����:+��=\u000b(#�~�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.198688+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�~��_�C�\u0006�����N!�y��#��e��Rؔ`�Z",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.237093+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=Z�F�zd�\u000ey~ٚ��h",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.246130+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u001e���\u001aW���/[p����m�%$\f�u�D��\u001e\n��\f",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.246299+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=;x�(�i#D��\\g#��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.246376+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��Qau��\u0018#�\u000e�(e�ٝ�\u0017\n�LUɰ��\"��Eg",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.252154+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�a���z\u0016�I#���`��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.253220+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=l#�[[��O\u0002�Ⱦv��k��k�n#\u0010#\u001f#�\u001f���-",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.283314+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=$Xll\u0016r#�;}���GC",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.287608+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=n��k#�\b�@X��\t�M���.�K�Y��#q��m,",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.289329+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=˲\u001b(����\u0006��&�߭",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.290391+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=?I�jm�S��V+j��\u0005�\u0005�#��R�i\t��b�\fj",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.295074+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�ٯ��b�[�c\u0002ָr��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.307769+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u0013V#��$� oI���\u000b:�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.309539+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�qfeUؒ#Ap\u0014\u000f�b�A",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.312151+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext={",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.316906+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�\u0005�.�`$\u0012��ů�LH�pC\u0011\u0014���W�r��[P�#",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.318757+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�\\�'{���F\u0013�N�%D",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.320057+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext= �\u0002-�K���O�\u001a��B_�̭)���a�\u0001��V�\u0014",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.321203+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=(�>\u0012�Z��V\bX�|��#",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.321946+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=w�hjB��ܰw\b�t�!�i�涯T�����\u001d\rY\u0012#",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.330018+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u0019�v\u001b��ñz)�w�)��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.331069+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��#F�#��E�>~��\u001cG�\u001d��y��I\u001a��\u0019�sC",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.331915+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=l���u�q@�����C;�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.333674+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=>ՖNI��\"���R:&�#�<\t\u0014�ht��\u000e\u001dǍ{�~",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.337011+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��ҁ!˗-B��N���M",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.337115+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=a\u001cv",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.341644+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=-��^\u0007��#�#�v$(�d",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.366700+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=ahnafdev.kitabfutuhulghoib",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.368626+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�-r��#�o��IC�f|\u001f��j�'#h�+�\tU��O�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.373040+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�Q\nh��@<�d�Q�=�=",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.374771+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u0016�\u001c˓�T�,�tL��q�W\u001f��&�~Lc�tU\u0012���",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.374904+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=aѐtQ�*'\u000b�h�e",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.374995+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�t��o;�\u0016��'�����L\r��V\u0011S������ϴ\u0015",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.375072+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�,�\u0006�:nW��+O��C�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.375133+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=c?rd��\u0004��H�Sj�\u000f��S���\u0018� =���\u0005��\u001d",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.375227+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=|���\f\u0001��[#\u0019�\u0011�\u001f�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.375293+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�#���#�\u000e��S�k�o�d�>��Sq���e\u0012Մ��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.375372+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�\u0017�U�;\u0010dі�Z�\u0006��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.375463+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�H���K�*",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.375537+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�e'�����+",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.375600+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�yx�Α�\u0016�\u001e�D���e\u0019��ƣ�\u0017�,�q\u0016�^!�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.375669+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=`�}ɫ\u0001�\u0004�Ȃ/���",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.375773+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��?�S \r�Z\u0014\u0006V�\f�o�[��g��z'�#\u0019�iΜ",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.375846+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u0007湿#���S�h���mB",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.380332+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=`!�#Eq�-\"����Ӫ���˹����؍�B��[",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.381409+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u0014I�~@��E:l�i+�Hx",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.381521+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��RK݃�A�?ʧ.�-�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.388701+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=o��}�klѵ�/z\u0004\u0002LyeKT�偘h#\u0010\u001e���I�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.391673+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��\u0015���\u001c������C#\b",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.393329+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u001b:#��F\u001b���'\u0016��XH�]\u000e\u0002\u0010�����\u0010�V>�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.393471+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��\u0004J}#����\fV� \\�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.393538+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=ahnafdev.kitabfutuhulghoib",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.422623+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=ahnafdev.kitabfutuhulghoib",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:42.466408+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:43.385118+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:43.730246+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:43.762336+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:43.777585+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:45.959794+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:53.056731+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:53.063666+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=ahnafdev.kitabfutuhulghoib",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:53.112972+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Protected user data",
+      "mitre": "T1636",
+      "detail": "queried provider content://com.google.android.gms.chimera/api/com.google.android.gms.ads.dynamite?requestStartTim...",
+      "source_hook": "ContentResolver.query",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:53.145106+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=ahnafdev.kitabfutuhulghoib",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:42:53.238758+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "1ffb44e69f7bdac009afaf2ace3ae60f29d26923ef91fca3a0a0b9cdc1703678",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T03:42:03.616080+00:00"
+  },
+  "started_at": "2026-08-26T03:42:13.984838+00:00",
+  "finished_at": "2026-08-26T03:43:39.950619+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339"
+  ],
+  "mitre_observed": [
+    "T1407",
+    "T1417",
+    "T1418",
+    "T1521",
+    "T1636"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "70fa305324d33a233ab7173c562f3ed9791061be71ad5fe2bab1bfde471e2569",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of appinventor.ai_s_boffelli.CO2Emissions on the sealed GCE detonator, containment manifest 42303c05432539a8688fe1969880738961f012c97afab5d16cbde57a9dec2981.",
+    "authored_at": "2026-08-26T03:57:41.515757+00:00",
+    "source_sha256": "70fa305324d33a233ab7173c562f3ed9791061be71ad5fe2bab1bfde471e2569",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_70fa305324d3",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "5 instrumented observations across 2 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 317,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "count": 4
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=appinventor.ai_s_boffelli.CO#Emissions"
+        ],
+        "count": 1
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T03:57:41.515757+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

@@ -68,6 +68,62 @@ def _observation_event() -> C.ObservationEvent:
 
 
 #: One minimal-but-valid instance per concrete contract model.
+def _lookalike_signal() -> C.LookalikeSignal:
+    return C.LookalikeSignal(
+        id="financial_app_roster",
+        present=True,
+        weight=0.30,
+        detail="references 3 known banking/UPI package(s)",
+        evidence_refs=("ev_000000000001",),
+    )
+
+
+def _lookalike() -> C.LookalikeAssessment:
+    return C.LookalikeAssessment(
+        verdict=C.BenignLookalikeVerdict.TROJAN_SHAPE,
+        trojan_score=0.72,
+        signals=(_lookalike_signal(),),
+        shared_permissions=("android.permission.READ_SMS",),
+        targeted_financial_packages=("com.snapwork.hdfc",),
+        publisher_trusted=False,
+        rationale="permission set alone is not the finding",
+    )
+
+
+def _victim_profile_view() -> C.VictimProfileView:
+    return C.VictimProfileView(language="Hindi", tactic="KYC urgency", segment="retail banking")
+
+
+def _dynamic_trace_view() -> C.DynamicTraceView:
+    return C.DynamicTraceView(
+        detonated=True,
+        api_calls=("SmsManager.sendTextMessage",),
+        decrypted_strings=("[REDACTED]",),
+        network_captures=("POST c2.example.test",),
+    )
+
+
+def _verdict() -> C.Verdict:
+    return C.Verdict(
+        sha256=SHA,
+        package_name="in.rto.challan",
+        threat_score=92,
+        severity_band=C.SeverityBand.CRITICAL,
+        confidence=0.83,
+        provenance="LIVE",
+        impersonated_target="SBI",
+        victim_profile=_victim_profile_view(),
+        behaviors_detected=("reads_sms",),
+        attack_techniques=("T1582",),
+        evidence_refs=("ev_000000000001",),
+        consumer_summary="This app is pretending to be SBI. Do not install it.",
+        recommended_action="BLOCK",
+        dynamic_trace=_dynamic_trace_view(),
+        adversarial_elicitation_deployed=("Generative_C2_Emulation",),
+        limitations=("ML prediction unavailable",),
+    )
+
+
 FACTORIES: dict[str, Any] = {
     # ── containment ──
     "ContainmentChecks": lambda: C.ContainmentChecks(
@@ -136,6 +192,11 @@ FACTORIES: dict[str, Any] = {
         mitre="T1582",
     ),
     "CertificateInfo": _certificate,
+    "Verdict": _verdict,
+    "VictimProfileView": _victim_profile_view,
+    "DynamicTraceView": _dynamic_trace_view,
+    "LookalikeSignal": _lookalike_signal,
+    "LookalikeAssessment": _lookalike,
     "CallPath": lambda: C.CallPath(
         sink_id="sms_read",
         sink_signature="Landroid/telephony/SmsMessage;->getMessageBody()Ljava/lang/String;",
@@ -187,6 +248,16 @@ FACTORIES: dict[str, Any] = {
     ),
     "NetworkFlow": lambda: C.NetworkFlow(
         t_ms=5000, method="POST", url="http://c2.invalid/a", host="c2.invalid", status=200
+    ),
+    "SyntheticC2Response": lambda: C.SyntheticC2Response(
+        t_ms=5000,
+        host="c2.invalid",
+        url="http://c2.invalid/gate",
+        response_kind="command_poll",
+        served_body='{"status": "ok", "cmd": "noop"}',
+        provably_inert=True,
+        neutralisations=("command field 'cmd': 'download' -> 'noop'",),
+        evidence_refs=("gc2_0001",),
     ),
     "DecryptedBlob": lambda: C.DecryptedBlob(
         t_ms=1200,

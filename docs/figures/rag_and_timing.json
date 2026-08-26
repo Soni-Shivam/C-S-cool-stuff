@@ -1,0 +1,533 @@
+{
+  "measured_at": "2026-08-26T07:08:58.315Z",
+  "sample_provenance": "locally-built real APKs. CLAUDE.md forbids copying a corpus APK to a developer machine, so these are NOT corpus malware samples. The decoy is a real Android application with a real call graph and real sinks, and it is the sample the demo runs.",
+  "retrieval": [
+    {
+      "sample": "decoy_rto_challan",
+      "apk": "canary/decoy-challan/dist/RTO_Challan.apk",
+      "sha256": "ba5100f52fce16e84758ee78f58a647c23f0112323594f8de5b70839bbb2f7b9",
+      "package": "com.rto.echallan.verify",
+      "static_partial": false,
+      "app": {
+        "total_internal_methods": 6805,
+        "total_classes": 937,
+        "errors": []
+      },
+      "backward_walk": {
+        "call_paths_recovered": 0,
+        "chains_considered": 0,
+        "chains_selected": 0,
+        "chains_dropped": 0,
+        "methods_selected": 0,
+        "methods_dropped": 0,
+        "methods_decompiled_by_m2": 0,
+        "strings_selected": 4,
+        "notes": []
+      },
+      "selection_ratio": 0.0,
+      "selection_ratio_pct": 0.0,
+      "tokens": {
+        "workspace_tokens_measured": 15,
+        "workspace_chars": 61,
+        "pack_estimated_tokens": 98,
+        "token_budget": 5000,
+        "within_budget": true,
+        "projected_whole_app_tokens": null,
+        "projection_basis": "no decompiled bodies; no projection made"
+      },
+      "seconds": {
+        "m2_static": 2.6026,
+        "retrieval_select": 0.0
+      }
+    },
+    {
+      "sample": "benign_sanchay",
+      "apk": "canary/benign-sanchay/dist/Sanchay_Expenses.apk",
+      "sha256": "b34ae3201a70027576001f6a1e1521bec9aed7bfa5264e61a403d8f5955e5b54",
+      "package": "in.co.sanchay.expenses",
+      "static_partial": false,
+      "app": {
+        "total_internal_methods": 6797,
+        "total_classes": 933,
+        "errors": []
+      },
+      "backward_walk": {
+        "call_paths_recovered": 0,
+        "chains_considered": 0,
+        "chains_selected": 0,
+        "chains_dropped": 0,
+        "methods_selected": 0,
+        "methods_dropped": 0,
+        "methods_decompiled_by_m2": 0,
+        "strings_selected": 2,
+        "notes": []
+      },
+      "selection_ratio": 0.0,
+      "selection_ratio_pct": 0.0,
+      "tokens": {
+        "workspace_tokens_measured": 15,
+        "workspace_chars": 61,
+        "pack_estimated_tokens": 63,
+        "token_budget": 5000,
+        "within_budget": true,
+        "projected_whole_app_tokens": null,
+        "projection_basis": "no decompiled bodies; no projection made"
+      },
+      "seconds": {
+        "m2_static": 3.2562,
+        "retrieval_select": 0.0
+      }
+    },
+    {
+      "sample": "canary",
+      "apk": "canary/dist/canary.apk",
+      "sha256": "9854900c809cb871cb988bc81131873e3c503deed4be3b5c1212008bc9c22663",
+      "package": "in.drishti.canary",
+      "static_partial": false,
+      "app": {
+        "total_internal_methods": 6790,
+        "total_classes": 930,
+        "errors": []
+      },
+      "backward_walk": {
+        "call_paths_recovered": 1,
+        "chains_considered": 1,
+        "chains_selected": 1,
+        "chains_dropped": 0,
+        "methods_selected": 1,
+        "methods_dropped": 0,
+        "methods_decompiled_by_m2": 1,
+        "strings_selected": 3,
+        "notes": []
+      },
+      "selection_ratio": 0.000147,
+      "selection_ratio_pct": 0.0147,
+      "tokens": {
+        "workspace_tokens_measured": 1282,
+        "workspace_chars": 5131,
+        "pack_estimated_tokens": 1211,
+        "token_budget": 5000,
+        "within_budget": true,
+        "projected_whole_app_tokens": 6790000,
+        "projection_basis": "mean decompiled body 4000 chars over 1 methods x 6790 app methods"
+      },
+      "seconds": {
+        "m2_static": 2.7218,
+        "retrieval_select": 0.0001
+      }
+    }
+  ],
+  "budgets": [
+    {
+      "sample": "decoy_rto_challan",
+      "provider": "mock",
+      "seconds": 0.023,
+      "calls": {
+        "made": 2,
+        "limit": 25,
+        "within_budget": true,
+        "headroom": 23,
+        "cache_hits": 0,
+        "failures": 0
+      },
+      "prompt_tokens": {
+        "max_single_prompt": 1931,
+        "limit": 12000,
+        "within_budget": true,
+        "headroom": 10069,
+        "total_across_job": 2703,
+        "measured_calls": 0,
+        "note": "provider is mock, so prompt sizes are the real prompts the controller built; completion tokens are not meaningful"
+      },
+      "per_call": [
+        {
+          "prompt_tokens": 1931,
+          "cached": false,
+          "outcome": "ok",
+          "measured": false
+        },
+        {
+          "prompt_tokens": 772,
+          "cached": false,
+          "outcome": "ok",
+          "measured": false
+        }
+      ],
+      "verdict_llm_calls": 2,
+      "verdict_partial": false
+    },
+    {
+      "sample": "benign_sanchay",
+      "provider": "mock",
+      "seconds": 0.0122,
+      "calls": {
+        "made": 1,
+        "limit": 25,
+        "within_budget": true,
+        "headroom": 24,
+        "cache_hits": 0,
+        "failures": 0
+      },
+      "prompt_tokens": {
+        "max_single_prompt": 1330,
+        "limit": 12000,
+        "within_budget": true,
+        "headroom": 10670,
+        "total_across_job": 1330,
+        "measured_calls": 0,
+        "note": "provider is mock, so prompt sizes are the real prompts the controller built; completion tokens are not meaningful"
+      },
+      "per_call": [
+        {
+          "prompt_tokens": 1330,
+          "cached": false,
+          "outcome": "ok",
+          "measured": false
+        }
+      ],
+      "verdict_llm_calls": 1,
+      "verdict_partial": false
+    },
+    {
+      "sample": "canary",
+      "provider": "mock",
+      "seconds": 0.0127,
+      "calls": {
+        "made": 2,
+        "limit": 25,
+        "within_budget": true,
+        "headroom": 23,
+        "cache_hits": 0,
+        "failures": 0
+      },
+      "prompt_tokens": {
+        "max_single_prompt": 2161,
+        "limit": 12000,
+        "within_budget": true,
+        "headroom": 9839,
+        "total_across_job": 3451,
+        "measured_calls": 0,
+        "note": "provider is mock, so prompt sizes are the real prompts the controller built; completion tokens are not meaningful"
+      },
+      "per_call": [
+        {
+          "prompt_tokens": 1290,
+          "cached": false,
+          "outcome": "ok",
+          "measured": false
+        },
+        {
+          "prompt_tokens": 2161,
+          "cached": false,
+          "outcome": "ok",
+          "measured": false
+        }
+      ],
+      "verdict_llm_calls": 2,
+      "verdict_partial": false
+    }
+  ],
+  "timing": [
+    {
+      "sample": "decoy_rto_challan",
+      "apk": "canary/decoy-challan/dist/RTO_Challan.apk",
+      "repeats": 3,
+      "runs": [
+        {
+          "run": 0,
+          "final_stage": "done",
+          "error": null,
+          "wall_seconds": 4.3235,
+          "stage_ms": {
+            "ingest": 13,
+            "static": 2630,
+            "ml": 1664,
+            "genai_static": 3,
+            "score_prelim": 3,
+            "sandbox_pass1": 0,
+            "frontier": 0,
+            "sandbox_pass2": 0,
+            "genai_full": 0,
+            "score_final": 2,
+            "report": 1
+          },
+          "fast_path_ms": 4313,
+          "fast_path_seconds": 4.313
+        },
+        {
+          "run": 1,
+          "final_stage": "done",
+          "error": null,
+          "wall_seconds": 2.6404,
+          "stage_ms": {
+            "ingest": 14,
+            "static": 2560,
+            "ml": 50,
+            "genai_static": 2,
+            "score_prelim": 4,
+            "sandbox_pass1": 0,
+            "frontier": 0,
+            "sandbox_pass2": 0,
+            "genai_full": 0,
+            "score_final": 2,
+            "report": 0
+          },
+          "fast_path_ms": 2630,
+          "fast_path_seconds": 2.63
+        },
+        {
+          "run": 2,
+          "final_stage": "done",
+          "error": null,
+          "wall_seconds": 2.9747,
+          "stage_ms": {
+            "ingest": 13,
+            "static": 2890,
+            "ml": 58,
+            "genai_static": 3,
+            "score_prelim": 2,
+            "sandbox_pass1": 0,
+            "frontier": 0,
+            "sandbox_pass2": 0,
+            "genai_full": 0,
+            "score_final": 2,
+            "report": 0
+          },
+          "fast_path_ms": 2966,
+          "fast_path_seconds": 2.966
+        }
+      ],
+      "median_stage_ms": {
+        "frontier": 0,
+        "genai_full": 0,
+        "genai_static": 3,
+        "ingest": 13,
+        "ml": 58,
+        "report": 0,
+        "sandbox_pass1": 0,
+        "sandbox_pass2": 0,
+        "score_final": 2,
+        "score_prelim": 3,
+        "static": 2630
+      },
+      "median_fast_path_seconds": 2.966,
+      "median_wall_seconds": 2.9747,
+      "fast_path_definition": [
+        "ingest",
+        "static",
+        "ml",
+        "genai_static",
+        "score_prelim"
+      ],
+      "note": "sandbox stages run against the configured trace source; with no live detonator they are near-instant and the total is NOT an end-to-end detonation time. The fast path is the honest number here."
+    },
+    {
+      "sample": "benign_sanchay",
+      "apk": "canary/benign-sanchay/dist/Sanchay_Expenses.apk",
+      "repeats": 3,
+      "runs": [
+        {
+          "run": 0,
+          "final_stage": "done",
+          "error": null,
+          "wall_seconds": 2.9169,
+          "stage_ms": {
+            "ingest": 11,
+            "static": 2839,
+            "ml": 53,
+            "genai_static": 3,
+            "score_prelim": 2,
+            "sandbox_pass1": 0,
+            "frontier": 0,
+            "sandbox_pass2": 0,
+            "genai_full": 0,
+            "score_final": 2,
+            "report": 0
+          },
+          "fast_path_ms": 2908,
+          "fast_path_seconds": 2.908
+        },
+        {
+          "run": 1,
+          "final_stage": "done",
+          "error": null,
+          "wall_seconds": 2.8547,
+          "stage_ms": {
+            "ingest": 10,
+            "static": 2762,
+            "ml": 68,
+            "genai_static": 2,
+            "score_prelim": 2,
+            "sandbox_pass1": 0,
+            "frontier": 0,
+            "sandbox_pass2": 0,
+            "genai_full": 0,
+            "score_final": 2,
+            "report": 0
+          },
+          "fast_path_ms": 2844,
+          "fast_path_seconds": 2.844
+        },
+        {
+          "run": 2,
+          "final_stage": "done",
+          "error": null,
+          "wall_seconds": 2.8309,
+          "stage_ms": {
+            "ingest": 11,
+            "static": 2758,
+            "ml": 48,
+            "genai_static": 2,
+            "score_prelim": 3,
+            "sandbox_pass1": 0,
+            "frontier": 0,
+            "sandbox_pass2": 0,
+            "genai_full": 0,
+            "score_final": 2,
+            "report": 0
+          },
+          "fast_path_ms": 2822,
+          "fast_path_seconds": 2.822
+        }
+      ],
+      "median_stage_ms": {
+        "frontier": 0,
+        "genai_full": 0,
+        "genai_static": 2,
+        "ingest": 11,
+        "ml": 53,
+        "report": 0,
+        "sandbox_pass1": 0,
+        "sandbox_pass2": 0,
+        "score_final": 2,
+        "score_prelim": 2,
+        "static": 2762
+      },
+      "median_fast_path_seconds": 2.844,
+      "median_wall_seconds": 2.8547,
+      "fast_path_definition": [
+        "ingest",
+        "static",
+        "ml",
+        "genai_static",
+        "score_prelim"
+      ],
+      "note": "sandbox stages run against the configured trace source; with no live detonator they are near-instant and the total is NOT an end-to-end detonation time. The fast path is the honest number here."
+    },
+    {
+      "sample": "canary",
+      "apk": "canary/dist/canary.apk",
+      "repeats": 3,
+      "runs": [
+        {
+          "run": 0,
+          "final_stage": "done",
+          "error": null,
+          "wall_seconds": 2.9633,
+          "stage_ms": {
+            "ingest": 10,
+            "static": 2872,
+            "ml": 66,
+            "genai_static": 4,
+            "score_prelim": 2,
+            "sandbox_pass1": 0,
+            "frontier": 0,
+            "sandbox_pass2": 0,
+            "genai_full": 0,
+            "score_final": 2,
+            "report": 0
+          },
+          "fast_path_ms": 2954,
+          "fast_path_seconds": 2.954
+        },
+        {
+          "run": 1,
+          "final_stage": "done",
+          "error": null,
+          "wall_seconds": 2.9453,
+          "stage_ms": {
+            "ingest": 8,
+            "static": 2873,
+            "ml": 47,
+            "genai_static": 4,
+            "score_prelim": 3,
+            "sandbox_pass1": 0,
+            "frontier": 0,
+            "sandbox_pass2": 0,
+            "genai_full": 0,
+            "score_final": 3,
+            "report": 0
+          },
+          "fast_path_ms": 2935,
+          "fast_path_seconds": 2.935
+        },
+        {
+          "run": 2,
+          "final_stage": "done",
+          "error": null,
+          "wall_seconds": 2.9832,
+          "stage_ms": {
+            "ingest": 9,
+            "static": 2900,
+            "ml": 59,
+            "genai_static": 4,
+            "score_prelim": 2,
+            "sandbox_pass1": 0,
+            "frontier": 0,
+            "sandbox_pass2": 0,
+            "genai_full": 0,
+            "score_final": 2,
+            "report": 0
+          },
+          "fast_path_ms": 2974,
+          "fast_path_seconds": 2.974
+        }
+      ],
+      "median_stage_ms": {
+        "frontier": 0,
+        "genai_full": 0,
+        "genai_static": 4,
+        "ingest": 9,
+        "ml": 59,
+        "report": 0,
+        "sandbox_pass1": 0,
+        "sandbox_pass2": 0,
+        "score_final": 2,
+        "score_prelim": 2,
+        "static": 2873
+      },
+      "median_fast_path_seconds": 2.954,
+      "median_wall_seconds": 2.9633,
+      "fast_path_definition": [
+        "ingest",
+        "static",
+        "ml",
+        "genai_static",
+        "score_prelim"
+      ],
+      "note": "sandbox stages run against the configured trace source; with no live detonator they are near-instant and the total is NOT an end-to-end detonation time. The fast path is the honest number here."
+    }
+  ],
+  "live_llm_latency": {
+    "available": true,
+    "source": "logs/drishti.jsonl",
+    "n_calls": 17,
+    "models": [
+      "nvidia/nemotron-3-ultra-550b-a55b:free"
+    ],
+    "min_ms": 6767,
+    "median_ms": 15506,
+    "p90_ms": 30710,
+    "max_ms": 58728,
+    "mean_ms": 19415.2,
+    "note": "these are real calls this system made to a free-tier endpoint. Free-tier latency is highly variable and is the dominant term in any live fast-path number \u2014 the local compute below is not what a user waits for."
+  },
+  "fast_path_live_estimate": {
+    "local_compute_seconds": 2.954,
+    "plus_one_live_llm_call_median_seconds": 15.506,
+    "projected_median_seconds": 18.46,
+    "projected_best_case_seconds": 9.721,
+    "projected_worst_case_seconds": 61.682,
+    "basis": "measured local compute plus the measured latency distribution of real calls. It is a SUM OF TWO MEASUREMENTS, not a single end-to-end timing of a live run, and is labelled as such."
+  }
+}

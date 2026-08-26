@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0",
+  "sha256": "cf61fac9386113d50a7138f27828bb3a91f7833c109c9a60cc5585270be934a7",
+  "package": "com.hcl.lcms.sg",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:09:42.917691+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:09:42.940335+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:09:42.940468+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:09:42.940565+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Protected user data",
+      "mitre": "T1636",
+      "detail": "queried provider content://com.google.android.gms.chimera/api_force_staging/com.google.android.gms.maps_dynamite",
+      "source_hook": "ContentResolver.query",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:09:42.940655+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:09:43.054761+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.hcl.lcms.sg",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:09:43.638286+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:09:44.226781+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:09:44.280797+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.hcl.lcms.sg",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T04:09:55.267127+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "c36d5ce0672fabbe74d6dc5f2e388445acdbce3b9f3b622357dbe7ce8d956825",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T04:09:05.473392+00:00"
+  },
+  "started_at": "2026-08-26T04:09:15.825958+00:00",
+  "finished_at": "2026-08-26T04:10:44.705431+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339"
+  ],
+  "mitre_observed": [
+    "T1417",
+    "T1418",
+    "T1636"
+  ]
+}

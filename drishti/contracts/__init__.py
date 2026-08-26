@@ -32,6 +32,7 @@ from drishti.contracts.dynamic_trace import (
     ObservationEvent,
     SnapshotLifecycle,
     StrictWireModel,
+    SyntheticC2Response,
     TraceSourceKind,
 )
 from drishti.contracts.evidence import (
@@ -64,6 +65,7 @@ from drishti.contracts.score import (
     SeverityBand,
 )
 from drishti.contracts.static_report import (
+    BenignLookalikeVerdict,
     CallPath,
     CertificateInfo,
     Component,
@@ -72,10 +74,20 @@ from drishti.contracts.static_report import (
     FileMeta,
     Hypothesis,
     HypothesisKind,
+    LookalikeAssessment,
+    LookalikeSignal,
     PermissionCombo,
     Severity,
     StaticReport,
     ThreatIntel,
+)
+from drishti.contracts.verdict import (
+    DynamicTraceView,
+    Provenance,
+    RecommendedAction,
+    Verdict,
+    VictimProfileView,
+    build_verdict,
 )
 
 CONTRACT_VERSION = "1.3.0"
@@ -90,6 +102,7 @@ __all__ = [
     "TIME_BANDS",
     "AnalyserResult",
     "ApiEvent",
+    "BenignLookalikeVerdict",
     "CallPath",
     "CertificateInfo",
     "ChainVerification",
@@ -105,6 +118,7 @@ __all__ = [
     "DexLoadEvent",
     "DrishtiModel",
     "DynamicTrace",
+    "DynamicTraceView",
     "EvasionObservation",
     "EvidenceNode",
     "EvidenceType",
@@ -119,6 +133,8 @@ __all__ = [
     "HypothesisKind",
     "Job",
     "JobStage",
+    "LookalikeAssessment",
+    "LookalikeSignal",
     "MLPrediction",
     "Morph",
     "MorphKind",
@@ -128,6 +144,8 @@ __all__ = [
     "ObservationEvent",
     "PermissionCombo",
     "ProposedAction",
+    "Provenance",
+    "RecommendedAction",
     "SandboxPlan",
     "ScoreFactor",
     "Severity",
@@ -137,12 +155,16 @@ __all__ = [
     "StageEvent",
     "StaticReport",
     "StrictWireModel",
+    "SyntheticC2Response",
     "TechniqueMapping",
     "ThreatIntel",
     "ToolCallRecord",
     "TraceSourceKind",
+    "Verdict",
     "VerifiedString",
     "VerifierStatus",
     "VictimProfile",
+    "VictimProfileView",
     "VisionMatch",
+    "build_verdict",
 ]

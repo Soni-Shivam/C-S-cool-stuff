@@ -1,0 +1,172 @@
+{
+  "schema_version": "1.0",
+  "sha256": "a0610f08c783ff5486a66022fedf483e1ac81dfe48935680b5d9d29b309338c5",
+  "package": "com.quadrigeminate.hydrocatalysis",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u0003��nҴ\\\u000e",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.379978+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=c\\h�z��f/��.e�[",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.393135+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�\u0002##�d̋�\u000f;\u001e�kًf/��.e�[",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.393386+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��#�\r�\u0001������b�}f/��.e�[",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.393502+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�\u0002##�d̋�\u000f;\u001e�kًf/��.e�[",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.393581+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��#�\r�\u0001������b�}f/��.e�[",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.393650+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=fC+�\n��F",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.393721+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�)�k�P\u0004#�v_��\u0010�\u0013+�#\u000b��͗",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.393780+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=���-����",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.394105+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u0013��\u0005\u0005�'\u0012",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.398303+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u0004#(�\r�\u0011H",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.400545+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:57.420604+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:58.056756+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:16:58.079023+00:00"
+    }
+  ],
+  "failures": [
+    {
+      "code": "hook_error",
+      "stage": "instrumentation",
+      "message": "spawn retry after: TransportError: agent connection closed unexpectedly",
+      "occurred_at": "2026-08-26T06:18:26.634965+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "0154198069a06ce304da35577712a9f500e6a42a7b4d271b96ce85ac10b320cf",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T06:16:08.393411+00:00"
+  },
+  "started_at": "2026-08-26T06:16:18.764056+00:00",
+  "finished_at": "2026-08-26T06:18:29.054078+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": [
+    "T1417",
+    "T1418",
+    "T1521"
+  ]
+}

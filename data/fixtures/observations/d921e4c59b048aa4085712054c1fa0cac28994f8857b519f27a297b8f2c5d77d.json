@@ -1,0 +1,561 @@
+{
+  "schema_version": "1.0",
+  "sha256": "d921e4c59b048aa4085712054c1fa0cac28994f8857b519f27a297b8f2c5d77d",
+  "package": "com.tumuluses.gastrocnemius",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=d�\u0001�z\u0017�a�Et��#�ي�GLf\r��h��\u0007��>V#�Q��ނ`ã�m#��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.094236+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��.:bL\u0010@W\u0007\u0003��#���\f#�\u0011���U%&�*##���#��)���j�P^A��.�\u0013�#\u0002Q��\t�M�rZ�\u000bx^�c�#+�l[ú'���>്�� w#g��\u001b\u0017Ԑ�...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.096285+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=O[�#��«C|�+�%�!",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.107034+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u0017���\u0014=O]��L�\u0001HM���\u0019�\u0015X�\u000f���\u0012����șh�\u0002�/��E�Ri,t���d\u001fW��\u0007�g\u001d��s\u001b��z�� \u0019�#�A��#G\u001b_#��\\)�+�Hj�E#W[...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.109026+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�!~\f\u0013�i����b�ƣ�Z\u0016�\u0012�#�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.111051+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=Q��Ho#\u0004U[#\u001a\u0007!ԋ�\u001e��J�&�f��ꎞ��pX��\u001f \u0003\u0019i\f�z#�N�)Y\u001bg�,>�j\u0017\u0003ݶ��췒nE����\n��Ҩ#�U����pO\u000e]�\u0012&��Ȳ�<�d�#YU...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.112672+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��#Χ�}��G萔b��B#����̥#E\u0014s\u001c���ͽw�{:��#z��\u000bO�k=#\u0014�\u000e\u000e�\n���E#\u001e��vu�h�H�-���q|�h����\u001baǘx;Q#_��M���\u0012\u0007��...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.113714+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=u�#τ��\u0013�'?��>\fpWl�\u0018��l�#�)����������\u0013�s\u0003��N�o�,�\u001ek�\u0015D�DET�թU�/�\u001ckPy\rhX&��G��cÜ�J�\u001f�I$#(\u0006\u0005�\u000f��#��...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.115385+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=*�����#�<%��\"T\u001f�sϾ\u0010���#���qM�\u0004����N���~�ȳ�\u0013\u0013CD�:��R",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.116674+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=&\u001dc`\u0016*��EF\n%#y�\u0001���\u0012������Db\b{���*",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.131601+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=����N�|�'}��\u0013H�ݳ�#\u0003I-����Ry>\u0017+~�a��\u0005��'��#[@K+#�\u0005m������>�N�:r�b\u0015џBE�\\X���p��q#�`�/ێ>�;�[�|�\u0018X�...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.133274+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u001e��s�#J�p���\u001a�H:#s�_\u000e\u0011\u0018�\u0016��\t'�۷BSN�H��\"k���/�\f�*�ʗ�/C#a��Y��!\u0011\u0006H�^#��Q�h�HÖj���o�ȁ��ȵ�\\nF��c��u...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.134777+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext==�ĳj��ۮ���ҩh������\u001e\u0006p��\u0016\u001d��',�l\u0005�m�>�����A��G",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.136303+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u0019�\u000e�π��",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.137563+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�۸�~)JK�\u0001\f�;�\f�\u0016w��[h\u0007᤽\r�(�y�M#��?W#ލ\u000fz=��و�o���Z�l�����C\u001b�#:L\"�W���\u001c-�x�\u0016�x�w�>\u001cM\u001c�ԑ�P��v+��}��...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.139171+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\f����e�LF�I\u000eN�K?VP����B:���@�A�\u0019H疪�)�\u0002�r\u001f\t�^�Y���#���\u0005�\")��#��^�/�_#���\u0019���[{b�s��V��\u0018��v`�,J�...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.140614+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�m���\u0002���c��\f[!\\D?��\u0012,&pw�i\u0015�\u000b��޻g���O\\�sL\u0001��O�̴,O\u0005?#�u�-���\u000e\u0005�\u0002\u001b��\r�\u001e\u0019�\u0012kj\u000f�S#뎆��;Ow",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.142111+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�\u000e|��%��~e�%�#�M���,�Y��\u001b\u0015-Q���&w�#�r��#S��f'��p$�]FDG\n���Η\u001e��g\u0019��㡭Q�u=�M;#۪�\u001c��}U���=�Xw�LٔNJ\r...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.143294+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��.��}���h]t.����W�^J��#����,#��U\b�ڄD��=�k�\u000e:�#�\fJ#O�=n=��\u000b�MI�/\u0005\u0003��#FT",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.150428+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=D��xr�v��\u0011�#���\"��!i\u001d�k#����Àn���\u001e��##�#��.(���o�!��O\u0004C��/Fw)\u0001h!#�Z�@�+�߽\u001c#���\u0003A�\u0011���ٺ׸�fd���f=...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.152265+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=���$�¦\u0010#�O>\"�j[t�d\u0002���\u000eJ�Z�D�@x",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.166833+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��,����\f�M/��,\\",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.398873+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�j�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.401347+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=���Dބ�kx�!\u0012\u0019T��>t�d��r�G#��> �",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.406253+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=G �(I\u001f�|�Fb�c �J#��X��n&\u001eK\u0002�+���",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.407836+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=#_ƍU�\u0018=bG�\u000e������K�n#�I�(\t�:_=�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.408998+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�]�vb�N`!\u001a\tv��\u0019�i.�}�s\u0011I�\u0001#N\u0019%",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.410296+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=EP|\u0004\u000f#z��#`�\u0015�\tY",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.414486+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�G§\u0018~\f#\u0004��]���_�\u0015|\r#�\u0015#\u0016���\u0013\u0015�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.415596+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��c��\u0007#���#�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.416828+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=m���IjC��\u0003\u0004��\u000e�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.425765+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=K\u0001U��\b\u0005*�\r����]",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.426912+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=#Y\u0010#��f\bd��Xh)��W�e��\u001fsS�\u0003����\u0004콤��\u0018���\b@Y\u0019���",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.428056+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=���\n�N\u0003�g�\"\t\tL�\u001e",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.429234+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u000b�\u0019\\���B>���#m�/",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.432511+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=m-Z�\u001d�A����F>J�dZK�?K�IH\u001e���:Ag�T�\n#����Z�#��H\u000eJ",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.435136+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=%�Ҵm\u001c�ƅ",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.439517+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.468206+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�\u0002\n��C\u0010#w�`�\u0013\u001f�~",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.533310+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=^\u0012n�p>�\u0003JZ\u0019\u0018�r\r�\u0010�\rVϤ(`�\u001c{.�_�%\u0017�ڮ ��]\u0012@w�\t�>\u000b��(�\u0003E�y��\u0010��\u000b\u001e#�c\u0010\u0006��֥j%x]���n����#���\nx>���\u0019���\u0019...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.535913+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=t\u001c<�#+�r�\u0013J�Ĥ�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.617501+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��c��\u0007#���#�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:25.618312+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:27.094201+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:27.213288+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��,����\f�M/��,\\",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.485427+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��c��\u0007#���#�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.490782+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=m���IjC��\u0003\u0004��\u000e�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.492903+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=K\u0001U��\b\u0005*�\r����]",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.493045+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=#Y\u0010#��f\bd��Xh)��W�e��\u001fsS�\u0003����\u0004콤��\u0018���\b@Y\u0019���",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.493128+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=���\n�N\u0003�g�\"\t\tL�\u001e",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.514704+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=\u000b�\u0019\\���B>���#m�/",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.514788+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=%�Ҵm\u001c�ƅ",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.514840+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=�\u0002\n��C\u0010#w�`�\u0013\u001f�~",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.514881+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=^\u0012n�p>�\u0003JZ\u0019\u0018�r\r�\u0010�\rVϤ(`�\u001c{.�_�%\u0017�ڮ ��]\u0012@w�\t�>\u000b��(�\u0003E�y��\u0010��\u000b\u001e#�c\u0010\u0006��֥j%x]���n����#���\nx>���\u0019���\u0019...",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.514961+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=m-Z�\u001d�A����F>J�dZK�?K�IH\u001e���:Ag�T�\n#����Z�#��H\u000eJ",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.515036+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.539169+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=t\u001c<�#+�r�\u0013J�Ĥ�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.550540+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Encrypted channel",
+      "mitre": "T1521",
+      "detail": "crypto op plaintext=��c��\u0007#���#�",
+      "source_hook": "Cipher.doFinal",
+      "redacted": true,
+      "occurred_at": "2026-08-26T06:42:46.550673+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "cb649ef4201d63a1a58b6202a3a8a1fc31b2b957ff3341102287cac877419fc2",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T06:41:53.269951+00:00"
+  },
+  "started_at": "2026-08-26T06:42:03.624626+00:00",
+  "finished_at": "2026-08-26T06:43:57.448771+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": [
+    "T1417",
+    "T1418",
+    "T1521"
+  ]
+}

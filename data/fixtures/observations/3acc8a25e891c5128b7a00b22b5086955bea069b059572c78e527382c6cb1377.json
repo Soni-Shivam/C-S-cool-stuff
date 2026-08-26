@@ -1,0 +1,885 @@
+{
+  "schema_version": "1.0",
+  "sha256": "3acc8a25e891c5128b7a00b22b5086955bea069b059572c78e527382c6cb1377",
+  "package": "com.dkapster.app",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Protected user data",
+      "mitre": "T1636",
+      "detail": "queried provider content://com.google.android.gms.chimera/api_force_staging/com.google.android.gms.measurement.dy...",
+      "source_hook": "ContentResolver.query",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:07.986047+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:07.994978+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.078962+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.079920+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.099006+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.101475+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.106402+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.109627+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.114848+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Protected user data",
+      "mitre": "T1636",
+      "detail": "queried provider content://com.google.android.gms.chimera/api/com.google.android.gms.measurement.dynamite?request...",
+      "source_hook": "ContentResolver.query",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.185679+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Protected user data",
+      "mitre": "T1636",
+      "detail": "queried provider content://com.google.android.gms.phenotype/com.google.android.gms.measurement",
+      "source_hook": "ContentResolver.query",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.236324+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.287946+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.291297+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.307652+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.331093+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############?fields=supports_implicit_sdk_logging%#Cgdpv#_nux...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.340143+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############/mobile_sdk_gk?fields=gatekeepers&format=json&sdk...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.345348+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.346090+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.346165+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############?fields=supports_implicit_sdk_logging%#Cgdpv#_nux...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.346249+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.352565+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.353420+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.372996+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.374345+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:08.427925+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############?fields=supports_implicit_sdk_logging%#Cgdpv#_nux...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:09.112455+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:09.623549+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############/activities",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:09.632067+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.207654+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.208668+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.214029+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.220690+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.226247+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.226389+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.226487+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.232938+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.237521+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.238422+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.238542+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.240302+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.241325+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.241426+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.246063+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.247029+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.247123+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.255028+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.256460+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.256569+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.256666+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.256727+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.257110+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.262765+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.263813+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.265096+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.265902+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.288385+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.289748+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.289862+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############/mobile_sdk_gk?fields=gatekeepers&format=json&sdk...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:18.366555+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############/mobile_sdk_gk?fields=gatekeepers&format=json&sdk...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:21.432962+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:21.479126+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:21.504901+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:21.505045+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:21.650187+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:21.842213+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:21.853280+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:21.861688+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=projekt.substratum",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:21.866272+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############/mobile_sdk_gk?fields=gatekeepers&format=json&sdk...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:26.353416+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:26.354364+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:26.357758+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:26.358438+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############?fields=supports_implicit_sdk_logging%#Cgdpv#_nux...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:26.359769+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############?fields=supports_implicit_sdk_logging%#Cgdpv#_nux...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:26.364322+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############?fields=supports_implicit_sdk_logging%#Cgdpv#_nux...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:26.365146+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:26.367074+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:26.367203+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:26.375296+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############/activities",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:26.376411+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://graph.facebook.com/v#.#/###############/mobile_sdk_gk?fields=gatekeepers&format=json&sdk...",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:31.461617+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:31.532254+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:31.532406+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:31.533556+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:31.534788+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:31.536336+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:31.537347+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:48.261236+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:48.262494+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:58.277914+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:58.278733+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:58.279776+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:58.281520+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dkapster-######/installations",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:58.283302+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.dkapster.app",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:49:58.283883+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "49e2040817aae575d96b4e87cd171329f5a6ba7851dad7a21835845d315b6c44",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T03:48:34.838674+00:00"
+  },
+  "started_at": "2026-08-26T03:48:45.183373+00:00",
+  "finished_at": "2026-08-26T03:50:10.498465+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339"
+  ],
+  "mitre_observed": [
+    "T1417",
+    "T1418",
+    "T1437",
+    "T1636"
+  ]
+}

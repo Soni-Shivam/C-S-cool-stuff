@@ -16,6 +16,7 @@
 import type {
   ChainVerification,
   CompositeScore,
+  Dossier,
   DynamicTrace,
   EvidenceNode,
   EvidenceTypeName,
@@ -26,6 +27,7 @@ import type {
   ProposedAction,
   StaticReport,
 } from './types'
+import type { Verdict } from './verdict.gen'
 
 export type Artefact<T> =
   | { state: 'ready'; value: T }
@@ -75,17 +77,24 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
  * `Artefact<T>` rather than throwing. Nothing here invents a value for a missing
  * artefact: a stage that has not run renders as pending, never as zero.
  */
-async function artefact<T>(path: string): Promise<Artefact<T>> {
+async function artefact<T>(path: string, format: 'json' | 'text' = 'json'): Promise<Artefact<T>> {
   let response: Response
   try {
     response = await fetch(path)
   } catch (exc) {
     return { state: 'error', message: exc instanceof Error ? exc.message : String(exc) }
   }
+
+  // `report.html` is text/html and the YARA rule is text/plain. Running those through
+  // `response.json()` throws, `parseJson` swallows it, and the panel renders a ready
+  // artefact holding `null` — a working export displayed as an empty box. The failure
+  // shapes are still JSON either way, so only the success path branches.
+  if (response.ok) {
+    if (format === 'text') return { state: 'ready', value: (await response.text()) as T }
+    return { state: 'ready', value: (await parseJson(response)) as T }
+  }
+
   const body = await parseJson(response)
-
-  if (response.ok) return { state: 'ready', value: body as T }
-
   const detail =
     body && typeof body === 'object' && 'detail' in body
       ? ((body as { detail: unknown }).detail as Record<string, unknown> | string)
@@ -113,6 +122,8 @@ export async function submitApk(file: File): Promise<string> {
   return body.job_id
 }
 
+export const listJobs = () => request<Job[]>('/api/jobs')
+
 export const getJob = (jobId: string) => request<Job>(`/api/jobs/${jobId}`)
 
 export const getHealth = () => request<{ status: string; version: string }>('/api/health')
@@ -125,6 +136,14 @@ export const getMl = (jobId: string) => artefact<MLPrediction>(`/api/jobs/${jobI
 export const getGenai = (jobId: string) => artefact<GenAIVerdict>(`/api/jobs/${jobId}/genai`)
 export const getDynamic = (jobId: string) => artefact<DynamicTrace>(`/api/jobs/${jobId}/dynamic`)
 export const getScore = (jobId: string) => artefact<CompositeScore>(`/api/jobs/${jobId}/score`)
+
+/**
+ * The shared `Verdict` projection (contract A15/A16).
+ *
+ * `Verdict` is generated from `drishti/contracts/verdict.py` — see
+ * `./verdict.gen.ts`. The dashboard consumes this shape; it never builds one.
+ */
+export const getVerdict = (jobId: string) => artefact<Verdict>(`/api/jobs/${jobId}/verdict`)
 
 // ─── ledger ──────────────────────────────────────────────────────────────────
 
@@ -156,9 +175,21 @@ export const ledgerExportUrl = (jobId: string) => `/api/jobs/${jobId}/ledger/exp
 
 // ─── artefacts / actions ─────────────────────────────────────────────────────
 
-export const getReportHtml = (jobId: string) => artefact<string>(`/api/jobs/${jobId}/report.html`)
-export const getYara = (jobId: string) => artefact<string>(`/api/jobs/${jobId}/artifacts/yara`)
+export const getReportHtml = (jobId: string) =>
+  artefact<string>(`/api/jobs/${jobId}/report.html`, 'text')
+export const getYara = (jobId: string) =>
+  artefact<string>(`/api/jobs/${jobId}/artifacts/yara`, 'text')
 export const getStix = (jobId: string) => artefact<unknown>(`/api/jobs/${jobId}/artifacts/stix`)
+export const getDossier = (jobId: string) =>
+  artefact<Dossier>(`/api/jobs/${jobId}/artifacts/dossier`)
+
+/** Direct URLs, for the download links. Same routes; the browser fetches them itself. */
+export const exportUrls = (jobId: string) => ({
+  report: `/api/jobs/${jobId}/report.html`,
+  yara: `/api/jobs/${jobId}/artifacts/yara`,
+  stix: `/api/jobs/${jobId}/artifacts/stix`,
+  dossier: `/api/jobs/${jobId}/artifacts/dossier`,
+})
 
 export const confirmAction = (jobId: string, action: string, confirmedBy: string) =>
   request<ProposedAction>(`/api/jobs/${jobId}/actions/${action}/confirm`, {

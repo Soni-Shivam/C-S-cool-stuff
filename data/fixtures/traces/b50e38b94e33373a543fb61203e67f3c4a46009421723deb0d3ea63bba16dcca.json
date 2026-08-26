@@ -1,0 +1,37 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "b50e38b94e33373a543fb61203e67f3c4a46009421723deb0d3ea63bba16dcca",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.sparke.pgrid on the sealed GCE detonator, containment manifest 629cf796b47e92aaf40732d2eb54d94ad389be7700f92143149c840448421fcf.",
+    "authored_at": "2026-08-26T03:02:45.875896+00:00",
+    "source_sha256": "b50e38b94e33373a543fb61203e67f3c4a46009421723deb0d3ea63bba16dcca",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_b50e38b94e33",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "1 instrumented observations across 1 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.sparke.pgrid"
+        ],
+        "count": 1
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T03:02:45.875896+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

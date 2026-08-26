@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "sha256": "501eb3e8474ddd35728b11248df2e9629afb6852b9281940059fcae7b9043522",
+  "package": "com.wood.area",
+  "simulated": false,
+  "outcome": "failed",
+  "observations": [],
+  "failures": [
+    {
+      "code": "internal_error",
+      "stage": "harness",
+      "message": "NotSupportedError: unable to find a front-door activity",
+      "occurred_at": "2026-08-26T05:45:01.467025+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "4b3069c5f370fa0b72992939aab9184ea73eab8ccb343aec058f5d00fe42af2e",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T05:44:11.462674+00:00"
+  },
+  "started_at": "2026-08-26T05:44:21.808319+00:00",
+  "finished_at": "2026-08-26T05:45:05.371126+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": []
+}

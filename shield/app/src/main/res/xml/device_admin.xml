@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The veto needs no password, wipe, or camera policy. Declaring only what is used
+     keeps the admin's surface auditable by reading one file. -->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <disable-camera />
+    </uses-policies>
+</device-admin>

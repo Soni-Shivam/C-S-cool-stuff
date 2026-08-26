@@ -1,0 +1,53 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "2c84f08b8c39b9cea8e921c4faacc03632c0325c36bced50fc3e0e29c231402b",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.horoscopes.astrologytools.clickastro.kan on the sealed GCE detonator, containment manifest 0bd00f3c55b3a126d6c6879c4ffc4420c0bd16dbcb8bf70e7071fd5b40920804.",
+    "authored_at": "2026-08-26T03:46:45.032709+00:00",
+    "source_sha256": "2c84f08b8c39b9cea8e921c4faacc03632c0325c36bced50fc3e0e29c231402b",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_2c84f08b8c39",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "6 instrumented observations across 3 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 138,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "count": 2
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.horoscopes.astrologytools.clickastro.kan"
+        ],
+        "count": 3
+      },
+      {
+        "t_ms": 0,
+        "api": "TelephonyManager.getDeviceId",
+        "args": [
+          "getDeviceId -> <null>"
+        ],
+        "count": 1
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T03:46:45.032709+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

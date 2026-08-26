@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import ClassVar
 
 import networkx as nx
 
@@ -95,3 +96,38 @@ def test_canary_static_parse_is_data_only_and_produces_a_chained_report(tmp_path
         assert not report.partial, report.errors
         assert "android.permission.INTERNET" in report.permissions
         assert ledger.verify_chain().ok
+
+
+# ── certificate distinguished names ─────────────────────────────────────────
+def test_distinguished_name_renders_readably() -> None:
+    """Measured regression: a real run put an asn1crypto object repr into the report.
+
+    `str()` on an asn1crypto Name returns `<asn1crypto.x509.Name 1390... b'071\\x16...'>`,
+    which reached the investigation report and the reporting dossier — a document
+    intended for a bank fraud desk.
+    """
+    from drishti.m2_static.engine import _distinguished_name
+
+    class _Name:
+        native: ClassVar[dict[str, str]] = {
+            "common_name": "Android Debug",
+            "organization_name": "Android",
+            "country_name": "US",
+        }
+
+    assert _distinguished_name(_Name()) == "CN=Android Debug, O=Android, C=US"
+
+
+def test_distinguished_name_never_leaks_a_repr() -> None:
+    """Cosmetics must never fail the analysis, and must never emit a repr either."""
+    from drishti.m2_static.engine import _distinguished_name
+
+    class _Broken:
+        @property
+        def native(self):
+            raise ValueError("unparseable")
+
+        def __str__(self) -> str:
+            return "<asn1crypto.x509.Name 139086784924624 b'071'>"
+
+    assert _distinguished_name(_Broken()) == "unknown"

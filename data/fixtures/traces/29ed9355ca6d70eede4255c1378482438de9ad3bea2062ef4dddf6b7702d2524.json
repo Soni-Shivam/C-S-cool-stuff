@@ -1,0 +1,69 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "29ed9355ca6d70eede4255c1378482438de9ad3bea2062ef4dddf6b7702d2524",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.niconi on the sealed GCE detonator, containment manifest 629cf796b47e92aaf40732d2eb54d94ad389be7700f92143149c840448421fcf.",
+    "authored_at": "2026-08-26T03:04:52.696639+00:00",
+    "source_sha256": "29ed9355ca6d70eede4255c1378482438de9ad3bea2062ef4dddf6b7702d2524",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_29ed9355ca6d",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "28 instrumented observations across 4 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 0,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "count": 6
+      },
+      {
+        "t_ms": 958,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.google.android.webview"
+        ],
+        "count": 13
+      },
+      {
+        "t_ms": 1724,
+        "api": "TelephonyManager.getSimSerialNumber",
+        "args": [
+          "getSimSerialNumber -> <null>"
+        ],
+        "count": 4
+      },
+      {
+        "t_ms": 3211,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=http://www.pgyer.com/apiv#/update/check"
+        ],
+        "count": 3
+      },
+      {
+        "t_ms": 1719,
+        "api": "TelephonyManager.getDeviceId",
+        "args": [
+          "getDeviceId -> <null>"
+        ],
+        "count": 2
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T03:04:52.696639+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

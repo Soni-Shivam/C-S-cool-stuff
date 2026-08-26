@@ -19,6 +19,78 @@
 
 import { Tag } from './primitives'
 import type { DynamicTrace } from '../api/types'
+import type { Verdict } from '../api/verdict.gen'
+
+/**
+ * The same badge, read off the shared `Verdict` instead of off a raw trace.
+ *
+ * `Verdict.provenance` is computed by `build_verdict()` in
+ * `drishti/contracts/verdict.py` from the trace itself — `STATIC_ONLY` when nothing
+ * detonated, `REPLAY` when the trace was a fixture or carried `synthetic`, `LIVE`
+ * only for a real run. This component takes that string and nothing else. There is
+ * deliberately no prop, setting, or query parameter that can change what it says:
+ * a route that could tell the badge "call this live" would defeat the field.
+ */
+const VERDICT_COPY: Record<
+  Verdict['provenance'],
+  { label: string; tone: 'good' | 'warn' | 'bad'; blurb: string }
+> = {
+  LIVE: {
+    label: 'LIVE DETONATION',
+    tone: 'good',
+    blurb: 'This sample was executed on a sealed detonator VM and observed there.',
+  },
+  REPLAY: {
+    label: 'REPLAY — not executed now',
+    tone: 'warn',
+    blurb:
+      'The behaviour below came from a stored trace, not from a run that happened just now.',
+  },
+  STATIC_ONLY: {
+    label: 'NO TRACE — STATIC ONLY',
+    tone: 'bad',
+    blurb:
+      'Nothing executed this sample. Every finding below was read out of the file, never observed.',
+  },
+}
+
+export function VerdictProvenanceBadge({
+  provenance,
+  withBlurb = false,
+}: {
+  provenance: Verdict['provenance']
+  withBlurb?: boolean
+}) {
+  const copy = VERDICT_COPY[provenance]
+  // STATIC_ONLY gets the heavier treatment rather than a quiet grey chip: it is the
+  // state in which the dynamic half of the system contributed nothing, and a reader
+  // skimming a score needs to see that before they act on it.
+  const emphatic = provenance === 'STATIC_ONLY'
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <span
+        title={copy.blurb}
+        className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-semibold tracking-wide ${
+          emphatic
+            ? 'border-bad bg-bad/15 text-bad'
+            : copy.tone === 'good'
+              ? 'border-good/50 bg-good/10 text-good'
+              : 'border-warn/50 bg-warn/10 text-warn'
+        }`}
+      >
+        <span
+          aria-hidden
+          className={`h-1.5 w-1.5 rounded-full ${
+            emphatic ? 'bg-bad' : copy.tone === 'good' ? 'bg-good' : 'bg-warn'
+          }`}
+        />
+        {copy.label}
+      </span>
+      {withBlurb && <span className="text-xs text-muted">{copy.blurb}</span>}
+    </span>
+  )
+}
 
 export type Provenance = 'live' | 'replay' | 'synthetic' | 'none'
 

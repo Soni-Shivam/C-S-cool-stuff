@@ -1,0 +1,45 @@
+# SHA-256 fingerprints of signing certificates belonging to trusted publishers.
+#
+# One lowercase hex fingerprint per line. Comments and blank lines are ignored.
+#
+# WHAT A LINE HERE MEANS
+#
+# "This signer is accountable for this code." It is a statement about the PUBLISHER,
+# not a certification of the binary. `lookalike.assess()` therefore returns
+# LEGITIMATE_PRIVILEGED, never BENIGN, and the rationale says so explicitly. A
+# compromised publisher key would still be trusted here, which is exactly why this
+# cannot be the only signal.
+#
+# WHY IT IS EMPTY
+#
+# Because we have not verified any of them yet, and a fingerprint that has not been
+# checked against a real APK is worse than an absent one — it would silently exempt
+# whatever it happens to match. Populating this with plausible-looking hashes would be
+# fabricating evidence.
+#
+# HOW TO POPULATE IT HONESTLY
+#
+# Pull the APK from a source you trust (Play Store via a device you control, or the
+# vendor's own site), then read the certificate off it:
+#
+#     apksigner verify --print-certs app.apk | grep -i 'signer #1 certificate SHA-256'
+#
+# or, using this project's own parser, which is the same code path M2 uses:
+#
+#     python -c "from androguard.misc import AnalyzeAPK; import hashlib; \
+#         a,_,_ = AnalyzeAPK('app.apk'); \
+#         print(hashlib.sha256(a.get_certificates()[0].dump()).hexdigest())"
+#
+# Record WHERE each APK came from next to the entry. A fingerprint whose provenance
+# nobody can reconstruct is not a trust anchor.
+#
+# Publishers worth adding first, because they hold exactly the dual-use permissions
+# that make this file necessary — SMS, call log, overlay, package query:
+#
+#   Truecaller               com.truecaller
+#   Google Messages          com.google.android.apps.messaging
+#   WhatsApp                 com.whatsapp
+#   SMS Organizer            com.microsoft.smsplatform
+#   Any bank listed in       data/kb/financial_packages.txt
+#
+# (Verified fingerprints go below this line.)

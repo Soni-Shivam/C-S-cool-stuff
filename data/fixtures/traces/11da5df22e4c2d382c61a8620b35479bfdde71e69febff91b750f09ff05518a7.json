@@ -1,0 +1,77 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "11da5df22e4c2d382c61a8620b35479bfdde71e69febff91b750f09ff05518a7",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.dz.pocketlaws.app.immobilier on the sealed GCE detonator, containment manifest 7d402e33ae8b84d9b5bede23e2f449c5abc8460c0d4274c3b4a44148fed62c9b.",
+    "authored_at": "2026-08-26T03:40:11.929338+00:00",
+    "source_sha256": "11da5df22e4c2d382c61a8620b35479bfdde71e69febff91b750f09ff05518a7",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_11da5df22e4c",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "167 instrumented observations across 6 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 1904,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "count": 2
+      },
+      {
+        "t_ms": 146,
+        "api": "ContentResolver.query",
+        "args": [
+          "queried provider content://com.google.android.gms.chimera/api_force_staging/com.google.android.gms.measurement.dy..."
+        ],
+        "count": 6
+      },
+      {
+        "t_ms": 128,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.android.vending"
+        ],
+        "count": 90
+      },
+      {
+        "t_ms": 257,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=https://firebaseinstallations.googleapis.com/v#/projects/dz-immobilier-###e#/installations"
+        ],
+        "count": 55
+      },
+      {
+        "t_ms": 3351,
+        "api": "TelephonyManager.getSimOperatorName",
+        "args": [
+          "getSimOperatorName -> T-Mobile"
+        ],
+        "count": 10
+      },
+      {
+        "t_ms": 0,
+        "api": "Cipher.doFinal",
+        "args": [
+          "crypto op plaintext=\ufffd)\u0016t\u0002\ufffd\r\ufffd\u0002RD\ufffd/\ufffd\ufffd&\u0003!mD\ufffd\ufffd\ufffd\u0723\ufffd\ufffdst\ufffd=\u0013#%\u007f#\ufffd,\ufffd;[\ufffd\ufffd}\u000bp\ufffd\ufffd\ufffdX#\ufffd`\u0003Y\ufffd\u0005\ufffdx\u0005}l?O\ufffd\u001e\ufffdq\u0232\ufffd\ufffd\ufffd\ufffd\u015b\ufffd\ufffd\ufffd^\ufffd\ufffd\ufffd_\u0011\ufffd\u001c\ufffdC\ufffdJ\"!#\ufffd\ufffd\ufffd\ufffd#..."
+        ],
+        "count": 4
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T03:40:11.929338+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}
