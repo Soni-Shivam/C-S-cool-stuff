@@ -268,6 +268,12 @@ def interpret_methods(
             continue
         line_start = slice_.line_start if slice_ else (method.line_start if method else 1)
         line_end = slice_.line_end if slice_ else (method.line_end if method else 1)
+        # Store the CATALOGUE's spelling, not the model's. Everything downstream — the
+        # dashboard's graph and per-method panes, ledger readers — joins interpretations
+        # to `decompiled_methods` and call-path node ids by exact string. Keeping the
+        # model's dialect here just moves the `0 methods interpreted` failure from the
+        # backend lookup (fixed by `resolve_signature`) into every consumer.
+        stored_signature = slice_.signature if slice_ is not None else method.signature
         # The membership test genuinely validates the value; `cast` records that for
         # the type checker, which cannot narrow a str through a set literal.
         confidence = cast(
@@ -287,7 +293,7 @@ def interpret_methods(
         lines = tuple(line for line in item.cited_lines[:40] if line_start <= line <= line_end)
         interpretations.append(
             CodeInterpretation(
-                method_signature=item.method_signature[:512],
+                method_signature=stored_signature[:512],
                 summary=item.summary.strip()[:1_000],
                 claims=claims,
                 renamed_symbols={
