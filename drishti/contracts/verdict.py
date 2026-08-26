@@ -157,23 +157,54 @@ def _consumer_summary(
     return "We found nothing harmful in this app, but we could not check everything."
 
 
+#: Every one of the sixteen keys in `m4_genai.safety.BEHAVIOUR_WEIGHTS`, each mapped to
+#: a sentence a non-technical reader understands.
+#:
+#: The keys are copied EXACTLY from that weight table, which is the whole of `B` and
+#: therefore load-bearing — they are not renameable to suit this file. An earlier draft
+#: here invented shorter names (`reads_sms`, `hides_icon`) that match nothing the model
+#: ever emits, so every real sample fell through to the generic sentence while the tests
+#: passed on fixtures using the invented names. Coverage is asserted by
+#: `test_every_behaviour_key_has_a_consumer_sentence`, so a new behaviour cannot be added
+#: to the weight table without someone writing the sentence a victim will read.
+#:
+#: Ordered worst-first: the first asserted behaviour is the one shown, and "it can empty
+#: your account" matters more to a frightened user than "it reads your device id".
+_PLAIN_HARM: tuple[tuple[str, str], ...] = (
+    ("overlays_other_apps", "It can draw fake screens on top of your banking app."),
+    ("reads_sms_content", "It can read your text messages, including one-time passwords."),
+    (
+        "sends_sms_without_user_action",
+        "It can send text messages from your phone without telling you.",
+    ),
+    ("abuses_accessibility_service", "It can tap and type on your phone by itself."),
+    ("impersonates_a_known_brand", "It is dressed up to look like an app you trust."),
+    ("intercepts_notifications", "It can read your notifications, including bank alerts."),
+    ("monitors_clipboard", "It watches anything you copy, including account numbers."),
+    ("exfiltrates_over_network", "It sends your information to someone else's server."),
+    ("encrypts_data_before_sending", "It hides what it sends so you cannot see it."),
+    ("loads_dex_at_runtime", "It downloads more code after you install it."),
+    ("requests_device_admin", "It asks for control of your phone so you cannot remove it."),
+    ("hides_or_disables_its_own_icon", "It hides itself after installation."),
+    ("harvests_contacts_or_call_log", "It copies your contacts and call history."),
+    ("harvests_device_identifiers", "It collects details that identify your phone."),
+    (
+        "gates_behaviour_on_installed_apps",
+        "It checks which banking apps you have before acting.",
+    ),
+    ("detects_analysis_environment", "It tries to hide its behaviour from security checks."),
+)
+
+
 def _plain_harm(genai: GenAIVerdict | None) -> str:
-    """Describe the worst confirmed behaviour without jargon, or say nothing."""
+    """Describe the worst confirmed behaviour without jargon.
+
+    Only behaviours the model actually ASSERTED are described. The fallback sentence is
+    deliberately vague rather than inventing a specific harm we did not observe.
+    """
     if genai is None or not genai.behaviours:
         return "It behaves like an app built to steal money."
-    #: Enumerated behaviour key -> a sentence a non-technical reader understands. Only
-    #: behaviours the model actually asserted are described.
-    plain = {
-        "reads_sms": "It can read your text messages, including one-time passwords.",
-        "exfiltrates_data": "It sends your information to someone else's server.",
-        "overlays_other_apps": "It can draw fake screens on top of your banking app.",
-        "abuses_accessibility": "It can tap and type on your phone by itself.",
-        "hides_icon": "It hides itself after installation.",
-        "loads_code_at_runtime": "It downloads more code after you install it.",
-        "monitors_clipboard": "It watches anything you copy, including account numbers.",
-        "encrypts_data_before_sending": "It hides what it sends so you cannot see it.",
-    }
-    for key, sentence in plain.items():
+    for key, sentence in _PLAIN_HARM:
         if genai.behaviours.get(key):
             return sentence
     return "It behaves like an app built to steal money."

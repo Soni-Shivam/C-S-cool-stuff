@@ -194,3 +194,41 @@ def test_bands_map_to_the_three_consumer_actions(meta) -> None:
     assert (
         build_verdict(meta=meta, score=_score(SeverityBand.LOW, 10)).recommended_action == "MONITOR"
     )
+
+
+# ── the consumer sentences must cover every behaviour the model can assert ───
+def test_every_behaviour_key_has_a_consumer_sentence() -> None:
+    """A behaviour with no sentence is silently invisible to the person at risk.
+
+    Measured regression: an earlier draft invented shorter key names (`reads_sms`,
+    `hides_icon`) that match nothing `BEHAVIOUR_WEIGHTS` ever emits. Every real sample
+    fell through to the generic fallback while the fixture-based tests passed, because
+    the fixtures used the invented names too. This asserts against the REAL table, so a
+    new behaviour cannot be added to the weight table without someone writing the
+    sentence a victim will read.
+    """
+    from drishti.contracts.verdict import _PLAIN_HARM
+    from drishti.m4_genai.safety import BEHAVIOUR_WEIGHTS
+
+    covered = {key for key, _ in _PLAIN_HARM}
+    missing = sorted(set(BEHAVIOUR_WEIGHTS) - covered)
+    assert missing == [], f"behaviours with no consumer sentence: {missing}"
+
+    unknown = sorted(covered - set(BEHAVIOUR_WEIGHTS))
+    assert unknown == [], f"consumer sentences for keys the model never emits: {unknown}"
+
+
+def test_the_worst_behaviour_is_the_one_shown() -> None:
+    """Ordering is deliberate: a fake banking screen outranks a device-id read."""
+    from drishti.contracts.verdict import build_verdict
+
+    genai = GenAIVerdict(
+        sha256="a" * 64,
+        behaviours={"harvests_device_identifiers": True, "overlays_other_apps": True},
+    )
+    v = build_verdict(
+        meta=FileMeta(sha256="a" * 64, size_bytes=1, filename="x.apk"),
+        score=_score(SeverityBand.CRITICAL, 95),
+        genai=genai,
+    )
+    assert "fake screens" in v.consumer_summary
