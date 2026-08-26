@@ -24,6 +24,7 @@ from tests.apk_fixtures import minimal_apk_bytes
 FROZEN_ROUTES: set[tuple[str, str]] = {
     ("GET", "/api/health"),
     ("POST", "/api/jobs"),
+    ("GET", "/api/jobs"),
     ("GET", "/api/jobs/{job_id}"),
     ("GET", "/api/jobs/{job_id}/events"),
     ("GET", "/api/jobs/{job_id}/ingest"),
@@ -39,6 +40,7 @@ FROZEN_ROUTES: set[tuple[str, str]] = {
     ("GET", "/api/jobs/{job_id}/report.html"),
     ("GET", "/api/jobs/{job_id}/artifacts/yara"),
     ("GET", "/api/jobs/{job_id}/artifacts/stix"),
+    ("GET", "/api/jobs/{job_id}/artifacts/dossier"),
     ("POST", "/api/jobs/{job_id}/actions/{action}/confirm"),
     ("GET", "/api/logs/stream"),
 }
@@ -132,9 +134,7 @@ def test_artefacts_pending_before_the_stage_runs(client, settings) -> None:
     assert detail["stage"] == JobStage.QUEUED.value
 
 
-@pytest.mark.parametrize(
-    "path", ["report.html", "artifacts/yara", "artifacts/stix"]
-)
+@pytest.mark.parametrize("path", ["report.html", "artifacts/yara", "artifacts/stix"])
 def test_export_routes_are_built(client, finished_job, path) -> None:
     """The three export routes are implemented (T6.3, T6.1, T6.2).
 
@@ -158,7 +158,7 @@ def test_report_is_self_contained_and_states_its_limitations(client, finished_jo
     assert response.headers["content-type"].startswith("text/html")
     assert "<h2>Limitations</h2>" in body
     # No external fetches: no remote stylesheets, scripts, or images.
-    assert "src=\"http" not in body and "href=\"http" not in body
+    assert 'src="http' not in body and 'href="http' not in body
     assert "<script" not in body.lower()
 
 

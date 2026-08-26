@@ -355,12 +355,47 @@ def _archive_signals(path: Path) -> tuple[float, tuple[str, ...], tuple[str, ...
     return mean, hints, natives, max(len(dexes), 1)
 
 
+#: Distinguished-name attributes, in the order a reader expects them, mapped from
+#: asn1crypto's `native` keys to conventional short forms.
+_DN_ATTRS = (
+    ("common_name", "CN"),
+    ("organizational_unit_name", "OU"),
+    ("organization_name", "O"),
+    ("locality_name", "L"),
+    ("state_or_province_name", "ST"),
+    ("country_name", "C"),
+)
+
+
+def _distinguished_name(name: Any) -> str:
+    """Render an X.509 name as a readable DN.
+
+    `str()` on an asn1crypto `Name` returns the object repr — literally
+    `<asn1crypto.x509.Name 139086784924624 b'071\\x16...'>` — which is what a real run
+    put into the report and the reporting dossier. Unreadable to an analyst and
+    actively embarrassing in a document that goes to a fraud desk.
+    """
+    try:
+        native = name.native
+        parts = [f"{short}={native[key]}" for key, short in _DN_ATTRS if native.get(key)]
+        if parts:
+            return ", ".join(parts)
+        # A name with only attributes we do not shorten is still better rendered as
+        # its key=value pairs than as a repr.
+        return ", ".join(f"{k}={v}" for k, v in native.items()) or "unknown"
+    except Exception:
+        # Never let cosmetics fail the analysis: a weird certificate must still
+        # produce a StaticReport.
+        text = str(name)
+        return "unknown" if text.startswith("<") else text
+
+
 def _certificate(apk: Any, label: str, package: str, errors: list[str]) -> CertificateInfo:
     try:
         cert = apk.get_certificates()[0]
         raw = cert.dump() if hasattr(cert, "dump") else bytes(cert)
-        subject = str(cert.subject)
-        issuer = str(cert.issuer)
+        subject = _distinguished_name(cert.subject)
+        issuer = _distinguished_name(cert.issuer)
         return CertificateInfo(
             sha256=hashlib.sha256(raw).hexdigest(),
             subject=subject,

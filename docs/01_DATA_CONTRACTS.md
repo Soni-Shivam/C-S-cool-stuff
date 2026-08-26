@@ -4,7 +4,7 @@
 > If you need a field that isn't here, add it here first, update the version stamp,
 > then implement. All models live in `drishti/contracts/` as pydantic v2 models.
 >
-> Contract version: `1.3.0` — bump minor for additive, major for breaking.
+> Contract version: `1.4.0` — bump minor for additive, major for breaking.
 > See the Addendum at the end of this file for versioned additions.
 
 ---
@@ -848,3 +848,39 @@ The CLI refuses to run unless `/opt/drishti/RUNTIME_IMAGE`, `/dev/kvm`, and the
 `DRISHTI_SEALED_RUNTIME=1` marker are present. This is a second boundary behind the GCP
 firewall: neither a local Android SDK nor an attached developer emulator makes the live
 harness admissible on a laptop.
+
+### A12. Contract version 1.4.0 — the reporting dossier (T6.3, additive route)
+
+`GET /api/jobs/{job_id}/artifacts/dossier` is added to the T0.6 frozen route surface.
+It is additive: no existing route moves, changes shape, or changes status code.
+
+The dossier is the reporting package a victim or a bank fraud desk needs in order to
+raise a complaint — hash, package identity, signing certificate, observed
+infrastructure, technique mapping, evidence-chain reference, and the analysis's own
+caveats. `Dossier` lives in `drishti/m7_report/dossier.py`.
+
+Three properties are load-bearing and are enforced by tests, not by convention:
+
+* **`submission_is_manual` is always `True`.** India's National Cyber Crime Reporting
+  Portal has no public submission API. Nothing in this codebase files a complaint, and
+  no caller may present a dossier as having been submitted. The response carries the
+  portal URL (`https://cybercrime.gov.in/`) and the `1930` helpline as a deep link for
+  a human, nothing more.
+* **No sample leaves the analysis project.** The dossier contains hashes and derived
+  facts. It never embeds, links, or uploads the APK. `CLAUDE.md`'s hard boundaries
+  forbid distributing a real sample outside the project's own private bucket, and a
+  convenient "submit to a sharing platform" control is exactly what that rule exists
+  to prevent.
+* **`reportable` is gated on band.** Only `CRITICAL` and `HIGH` are proposed for
+  reporting. Filing a national complaint on a low-confidence triage result consumes
+  investigator time that a real victim needs, so a below-threshold dossier is still
+  produced but states why it should not be filed.
+
+Indicators are drawn only from **observed** network flows, excluding any flow marked
+`synthesised` — those responses were served by our own Generative C2, and listing them
+to law enforcement as attacker infrastructure would be a provenance lie.
+
+`GET /api/jobs` is added in the same version. Jobs are created by the DRISHTI Shield
+app on the phone, so the dashboard has no job id to deep-link to and needs a way to
+discover the newest one. Returns every job the process has seen, newest first.
+Additive: no existing route's path, method, or response shape changes.

@@ -37,7 +37,7 @@ from drishti.contracts.job import Job
 from drishti.contracts.score import CompositeScore, ProposedAction
 from drishti.contracts.static_report import FileMeta
 from drishti.logging import get_logger
-from drishti.m7_report import html, stix, yara
+from drishti.m7_report import dossier, html, stix, yara
 from drishti.util import now
 
 log = get_logger(__name__)
@@ -127,6 +127,55 @@ def get_yara(job: JobDep, runner: RunnerDep) -> PlainTextResponse:
         strings=rule.string_count,
     )
     return PlainTextResponse(content=rule.text)
+
+
+@router.get("/{job_id}/artifacts/dossier")
+def get_dossier(job: JobDep, runner: RunnerDep, settings: SettingsDep) -> dict:
+    """The reporting package for a cyber cell or a bank fraud desk (contract A12).
+
+    **This does not file anything.** The National Cyber Crime Reporting Portal has no
+    public submission API, so `submission_is_manual` is always True and the response
+    carries a deep link for a human rather than a receipt. The sample itself never
+    leaves the analysis project — the dossier is hashes and derived facts.
+    """
+    meta, score, static, genai, dynamic = _bundle_inputs(runner, job)
+
+    store = open_ledger(settings)
+    try:
+        store.open(job.id)
+        chain = store.verify_chain(job.id)
+    finally:
+        store.close()
+
+    pack = dossier.build(
+        meta=meta,
+        score=score,
+        static=static,
+        genai=genai,
+        dynamic=dynamic,
+        chain=chain,
+    )
+    log.info(
+        "dossier_built",
+        job_id=job.id,
+        reportable=pack.reportable,
+        indicators=len(pack.indicators),
+        techniques=len(pack.techniques),
+    )
+    return {
+        "sha256": pack.sha256,
+        "reportable": pack.reportable,
+        "reason": pack.reason,
+        "summary": pack.summary,
+        "facts": pack.facts,
+        "indicators": pack.indicators,
+        "techniques": pack.techniques,
+        "caveats": pack.caveats,
+        "portal_url": pack.portal_url,
+        "helpline": pack.helpline,
+        "submission_is_manual": pack.submission_is_manual,
+        "text": pack.as_text(),
+    }
 
 
 @router.get("/{job_id}/artifacts/stix")

@@ -15,7 +15,7 @@ from drishti.contracts.genai_verdict import GenAIVerdict, GroundedClaim, Verifie
 from drishti.contracts.job import Job, JobStage
 from drishti.contracts.score import CompositeScore, SeverityBand
 from drishti.contracts.static_report import CertificateInfo, FileMeta, StaticReport
-from drishti.m7_report import html, stix, yara
+from drishti.m7_report import dossier, html, stix, yara
 
 
 @pytest.fixture
@@ -144,9 +144,7 @@ def test_stix_excludes_synthesised_flows(meta, score) -> None:
         detonated=True,
         outcome="completed",
         network_flows=(
-            NetworkFlow(
-                t_ms=10, method="POST", url="http://real-c2.test/x", host="real-c2.test"
-            ),
+            NetworkFlow(t_ms=10, method="POST", url="http://real-c2.test/x", host="real-c2.test"),
             NetworkFlow(
                 t_ms=20,
                 method="POST",
@@ -222,9 +220,7 @@ def test_yara_uses_repack_resistant_strings(meta, score, static) -> None:
 
 def test_yara_drops_ubiquitous_android_strings(meta, score, static) -> None:
     """A rule matching schemas.android.com matches every APK ever compiled."""
-    noisy = static.model_copy(
-        update={"urls": ("http://schemas.android.com/apk/res/android",)}
-    )
+    noisy = static.model_copy(update={"urls": ("http://schemas.android.com/apk/res/android",)})
     rule = yara.build_rule(meta=meta, score=score, static=noisy)
     assert "schemas.android.com" not in rule.text
 
@@ -246,3 +242,71 @@ def test_yara_drops_toolchain_boilerplate(meta, score, static) -> None:
     assert "youtrack" not in rule.text
     assert "Kotlin reflection" not in rule.text
     assert "real-c2.example-evil.net" in rule.text
+
+
+# ── the dossier must never overstate what it did ────────────────────────────
+def test_dossier_never_claims_to_have_been_submitted(meta, score) -> None:
+    """NCRP has no public submission API. Nothing here files a complaint."""
+    pack = dossier.build(meta=meta, score=score)
+    assert pack.submission_is_manual is True
+    assert "NOT been submitted" in pack.as_text()
+    assert pack.portal_url.startswith("https://cybercrime.gov.in")
+
+
+def test_dossier_gates_reporting_on_the_band(meta) -> None:
+    """A national complaint on a low-confidence result wastes an investigator's time."""
+    high = dossier.build(
+        meta=meta, score=CompositeScore(S=91, band=SeverityBand.CRITICAL, C=0.8, gamma=0.7)
+    )
+    low = dossier.build(
+        meta=meta, score=CompositeScore(S=12, band=SeverityBand.LOW, C=0.8, gamma=0.7)
+    )
+    assert high.reportable is True
+    assert low.reportable is False
+    # Still produced, and it says why it should not be filed.
+    assert "below the reporting threshold" in low.reason
+
+
+def test_dossier_lists_only_observed_infrastructure(meta, score) -> None:
+    trace = _trace(
+        detonated=True,
+        outcome="completed",
+        network_flows=(
+            NetworkFlow(t_ms=1, method="POST", url="http://real.test/a", host="real.test"),
+            NetworkFlow(
+                t_ms=2,
+                method="POST",
+                url="http://ours.test/b",
+                host="ours.test",
+                synthesised=True,
+            ),
+        ),
+    )
+    pack = dossier.build(meta=meta, score=score, dynamic=trace)
+    joined = " ".join(pack.indicators)
+    assert "real.test" in joined
+    assert "ours.test" not in joined, "our own harness is not attacker infrastructure"
+
+
+def test_dossier_carries_its_caveats_into_the_text(meta) -> None:
+    score = CompositeScore(
+        S=91,
+        band=SeverityBand.CRITICAL,
+        C=0.4,
+        gamma=0.5,
+        limitations=("ML model unavailable",),
+    )
+    pack = dossier.build(meta=meta, score=score)
+    assert "LIMITATIONS OF THIS AUTOMATED ANALYSIS" in pack.as_text()
+    assert "ML model unavailable" in pack.as_text()
+
+
+def test_dossier_does_not_embed_the_sample(meta, score, static) -> None:
+    """Hashes and derived facts only. The APK never leaves the analysis project."""
+    pack = dossier.build(meta=meta, score=score, static=static)
+    blob = pack.as_text()
+    assert meta.sha256 in blob
+    # The filename legitimately appears as a fact; what must never appear is the
+    # sample itself or a route to it.
+    for forbidden in ("base64,", "attachment", "download", "http://", "gs://"):
+        assert forbidden not in blob.lower()
