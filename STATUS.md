@@ -6,8 +6,8 @@ Protocol: `docs/00_GUIDING_MAP.md` §13.
 
 - **Started:** 2026-08-13 · **Last reconciled:** 2026-08-25
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
-- **Phase:** Presentation hardening · GUI/reverse-engineering depth landed; live lab and model evaluation remain blocked
-- **Tests:** **493 contract+unit + 15 e2e, all passing** (measured 2026-08-25 at `7fce6f0`)
+- **Phase:** Presentation hardening · GUI redesign and Code-Graph RAG navigation landed; live lab and model evaluation remain blocked
+- **Tests:** **493 contract+unit + 15 e2e (Python) + 14 vitest (UI), all passing** (measured 2026-08-26)
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
 
@@ -63,6 +63,52 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
 
 ---
 
+## GUI redesign + Code-Graph RAG navigation — 2026-08-26
+
+Full visual overhaul of `ui/` onto the supplied brand (dark indigo ground, violet
+bloom, three card tiers, the numbered arc rail), plus one new view. No Python
+source was touched; the frozen T0.6 route surface is unchanged.
+
+- **Design system:** tokens rewritten in `ui/src/index.css`. Card tiers are used by
+  a rule — violet-gradient / lilac-wash / white for summary surfaces, dark ground
+  for code, tables, the graph and the log — so the theme survives a long triage
+  session. Severity colours are kept off the violet ramp (`high` is orange) so a
+  band stays separable from the accent on a washed-out projector.
+- **Fonts vendored, not linked.** Space Grotesk / Inter / JetBrains Mono latin
+  subsets live in `ui/src/fonts/` (217 KB). A Google Fonts `<link>` would fall back
+  to system sans on a projector with no network.
+- **The logo is the only loading indicator.** `LogoSpinner` at four sizes replaces
+  every previous spinner and bare "Loading…" string, including `ArtefactGate`'s
+  pending state. `BootSequence` plays once per browser session, skips on any input,
+  and collapses to one frame under `prefers-reduced-motion`.
+- **New view `02 Code Graph`** — Code-Graph RAG Navigation. Every edge comes from
+  `StaticReport.call_paths`; nothing is inferred. Node fill encodes retrieval
+  (hollow = no body ever recovered, so ungroundable by construction), and a tool
+  call can be replayed across the graph. `nodesTouchedBy` attributes a call only
+  through its validated arguments or a shared evidence ref — never by fuzzy name.
+- **Layout is pure and deterministic** (`ui/src/graph/layout.ts`): longest-path
+  layering, fixed barycentre sweeps, stable tie-break. A force sim would settle
+  differently per mount and make a graph screenshot unreproducible. A cycle-safe
+  DFS marks feedback edges rather than inflating depths — that bug was found by the
+  tests below, not by inspection.
+- **First JS tests in the repo:** `ui/src/graph/layout.test.ts`, 14 cases, run by
+  `make ui-test` (vitest, dev dependency). Justified because the only sample
+  available on a developer machine is the canary, whose graph is two nodes on one
+  path and exercises none of the layering, ordering or cycle handling.
+- **Verification:** `npm run build` (tsc + vite) green; 14/14 vitest; **493
+  contract+unit Python tests passing, unchanged**; `ruff check` clean. Driven in a
+  real headless Chrome against a live API on the canary
+  (`job_3d7904569123`) at 1680×1050 and 390×844 — every one of the eight views
+  rendered with no page errors (the three 501s on view 08 are the intended
+  "not available in this build" path).
+- **Not verified, and why:** no `GEMINI_API_KEY`, so the GenAI provider is `mock`
+  and this run has **zero tool calls and zero interpretations**. The retrieval
+  replay animation and the `interpreted` node treatment are therefore covered by
+  unit tests and by the code path only — they have not been seen on real model
+  output. No GCP resource was started.
+- **Pre-existing, untouched:** `ruff format --check` reports drift in
+  `scripts/make_report_figures.py`. That file is not modified by this work.
+
 ## P0 — FOUNDATIONS (H00→H06)
 
 - [x] T0.1  Repo skeleton + tooling                DONE  H00  tests: 26/26 · lint+mypy clean
@@ -77,6 +123,8 @@ The 2026-08-13 version of this table asserted GCP resources that no longer exist
       built against the frozen T0.6 surface. Verified in a real browser against a live
       API on the canary: upload -> SCORE_PRELIM -> factor -> evidence chip -> ledger
       node, and "Verify chain" returning 29 nodes intact. Python tests unchanged at 408.
+      **Redesigned 2026-08-26** onto the brand theme, now eight views — see
+      *GUI redesign + Code-Graph RAG navigation* above.
 - [~] T0.9  Sandbox VM groundwork                  WIP   2026-08-25  7fce6f0 · immutable image/runtime admission code ready; live build blocked by IAM
 - [x] T0.10 Ingest module M1, for real             DONE  H07  guards+split+intel
 - [x] P0.11 Ledger concurrency hardening           DONE  2026-08-17  615a803 · tests: 314/314

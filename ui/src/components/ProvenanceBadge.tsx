@@ -76,7 +76,7 @@ export function ProvenanceBadge({ trace, detailed = false }: { trace: DynamicTra
   ]
 
   return (
-    <div className="rounded border border-line bg-panel-2 p-3">
+    <div className="rounded-[var(--radius-tile)] border border-line bg-ground-2/60 p-3">
       <div className="flex flex-wrap items-center gap-2">
         <Tag tone={copy.tone}>{copy.label}</Tag>
         <Tag tone={trace.containment_verified ? 'good' : 'bad'}>

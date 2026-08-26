@@ -13,7 +13,15 @@ import { confirmAction } from '../api/client'
 import type { Artefact } from '../api/client'
 import { EvidenceChips } from '../components/Evidence'
 import { ProvenanceBadge } from '../components/ProvenanceBadge'
-import { ArtefactGate, Empty, Panel, Tag } from '../components/primitives'
+import {
+  ArtefactGate,
+  Empty,
+  GradientCard,
+  KeyValue,
+  Panel,
+  SectionHead,
+  Tag,
+} from '../components/primitives'
 import type {
   CompositeScore,
   DynamicTrace,
@@ -44,10 +52,10 @@ function ActionRow({ jobId, action }: { jobId: string; action: ProposedAction })
   }
 
   return (
-    <li className="flex items-start gap-3 border-b border-line-soft py-2 last:border-0">
+    <li className="flex flex-wrap items-start gap-3 border-b border-line-soft py-3 last:border-0">
       <div className="flex-1">
-        <div className="font-mono text-sm text-fg">{action.action}</div>
-        <div className="text-xs text-muted">{action.rationale}</div>
+        <div className="font-mono text-sm text-v300">{action.action}</div>
+        <div className="mt-0.5 text-xs leading-relaxed text-muted">{action.rationale}</div>
         {error && <div className="mt-1 text-xs text-bad">{error}</div>}
       </div>
       {confirmed?.confirmed_by ? (
@@ -60,7 +68,7 @@ function ActionRow({ jobId, action }: { jobId: string; action: ProposedAction })
           onClick={() => void confirm()}
           disabled={busy}
           title="Records a human confirmation in the ledger. Nothing is executed."
-          className="rounded border border-accent/50 bg-accent-soft px-2 py-1 text-[11px] text-accent hover:bg-accent/20 disabled:opacity-50"
+          className="shrink-0 rounded-full border border-v500/50 bg-v500/15 px-3 py-1.5 text-[11px] text-v300 transition-colors hover:border-v400 hover:bg-v500/25 disabled:opacity-50"
         >
           {busy ? 'recording…' : 'confirm (records only)'}
         </button>
@@ -83,99 +91,114 @@ export function OverviewTab({
   dynamic: Artefact<DynamicTrace> | null
 }) {
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
-      <Panel title="Verdict" className="xl:col-span-2">
-        <ArtefactGate artefact={score}>
-          {(value) => (
-            <div className="space-y-3">
-              <p className="text-base leading-relaxed text-fg">
-                {value.explanation || <Empty>The scorer produced no explanation for this run.</Empty>}
+    <div className="space-y-5">
+      <SectionHead
+        eyebrow="Investigation"
+        title="Verdict"
+        lede="The sentence below is the scorer's own explanation, rendered verbatim. Every number behind it is traceable to a ledger node through the chips."
+      />
+
+      <ArtefactGate artefact={score}>
+        {(value) => (
+          <GradientCard>
+            <div className="px-6 py-6 sm:px-8 sm:py-7">
+              <p className="text-[clamp(1rem,1.6vw,1.28rem)] leading-relaxed font-medium text-white">
+                {value.explanation || 'The scorer produced no explanation for this run.'}
               </p>
-              <div className="flex flex-wrap items-center gap-2">
+              {/* Provenance and evidence chips sit on a dark inset rather than
+                  straight on the gradient: their colours are load-bearing (green
+                  means live, red means synthetic) and those readings only hold
+                  against the dark ground they were chosen for. */}
+              <div className="mt-5 flex flex-wrap items-center gap-2 rounded-[16px] bg-ground/70 px-4 py-3">
                 {dynamic?.state === 'ready' && <ProvenanceBadge trace={dynamic.value} />}
                 <EvidenceChips refs={value.ledger_refs} label="score nodes:" />
               </div>
             </div>
-          )}
-        </ArtefactGate>
-      </Panel>
+          </GradientCard>
+        )}
+      </ArtefactGate>
 
-      <Panel title="Sample">
-        <ArtefactGate artefact={ingest}>
-          {(meta) => (
-            <div className="space-y-3">
-              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-                {(
-                  [
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Panel title="Sample">
+          <ArtefactGate artefact={ingest}>
+            {(meta) => (
+              <div className="space-y-4">
+                <KeyValue
+                  pairs={[
                     ['sha256', meta.sha256],
                     ['package', meta.package ?? '—'],
                     ['label', meta.app_label ?? '—'],
                     ['version', `${meta.version_name ?? '—'} (${meta.version_code ?? '—'})`],
                     ['sdk', `min ${meta.min_sdk ?? '—'} / target ${meta.target_sdk ?? '—'}`],
                     ['size', `${meta.size_bytes.toLocaleString()} bytes`],
-                  ] as [string, string][]
-                ).map(([key, value]) => (
-                  <div key={key} className="contents">
-                    <dt className="text-muted">{key}</dt>
-                    <dd className="font-mono break-all text-fg">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-              <div className="flex flex-wrap gap-2">
-                {meta.is_split && <Tag tone="warn">split APK ({meta.split_names.length} parts)</Tag>}
-                {meta.dedupe_hit && <Tag>seen before</Tag>}
-                {meta.intel?.known_bad_hash && <Tag tone="bad">known-bad hash</Tag>}
-                {meta.intel && meta.intel.source !== 'none' && (
-                  <Tag title={`verdict: ${meta.intel.verdict}`}>intel: {meta.intel.source}</Tag>
-                )}
-                {meta.intel?.label_derived && (
-                  <Tag tone="warn" title="Label-derived reputation must not feed R — evaluation would be circular">
-                    label-derived
-                  </Tag>
-                )}
-              </div>
-            </div>
-          )}
-        </ArtefactGate>
-      </Panel>
-
-      <Panel title="Behaviours" subtitle="Enumerated by the model; B is computed from a weight table in Python">
-        <ArtefactGate artefact={genai}>
-          {(verdict) => {
-            const positive = Object.entries(verdict.behaviours).filter(([, on]) => on)
-            return (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-1.5">
-                  {positive.length === 0 ? (
-                    <Empty>No behaviour flags set.</Empty>
-                  ) : (
-                    positive.map(([name]) => (
-                      <Tag key={name} tone="bad">
-                        {name}
-                      </Tag>
-                    ))
+                  ]}
+                />
+                <div className="flex flex-wrap gap-2">
+                  {meta.is_split && (
+                    <Tag tone="warn">split APK ({meta.split_names.length} parts)</Tag>
+                  )}
+                  {meta.dedupe_hit && <Tag>seen before</Tag>}
+                  {meta.intel?.known_bad_hash && <Tag tone="bad">known-bad hash</Tag>}
+                  {meta.intel && meta.intel.source !== 'none' && (
+                    <Tag title={`verdict: ${meta.intel.verdict}`}>intel: {meta.intel.source}</Tag>
+                  )}
+                  {meta.intel?.label_derived && (
+                    <Tag
+                      tone="warn"
+                      title="Label-derived reputation must not feed R — evaluation would be circular"
+                    >
+                      label-derived
+                    </Tag>
                   )}
                 </div>
-                <div className="text-xs text-muted">
-                  B = <span className="font-mono text-fg">{verdict.behavioural_risk_B.toFixed(3)}</span>
-                  {verdict.B_rationale && <span className="ml-2">{verdict.B_rationale}</span>}
-                </div>
-                {verdict.disagreement_flag && (
-                  <div className="rounded border border-warn/40 bg-warn/10 px-2 py-1.5 text-xs text-warn">
-                    Detector disagreement: {verdict.disagreement_note ?? 'flagged, no note'} — this lowers
-                    C and never silently alters S.
-                  </div>
-                )}
               </div>
-            )
-          }}
-        </ArtefactGate>
-      </Panel>
+            )}
+          </ArtefactGate>
+        </Panel>
+
+        <Panel
+          title="Behaviours"
+          subtitle="Enumerated by the model; B is computed from a weight table in Python"
+        >
+          <ArtefactGate artefact={genai}>
+            {(verdict) => {
+              const positive = Object.entries(verdict.behaviours).filter(([, on]) => on)
+              return (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-1.5">
+                    {positive.length === 0 ? (
+                      <Empty>No behaviour flags set.</Empty>
+                    ) : (
+                      positive.map(([name]) => (
+                        <Tag key={name} tone="bad">
+                          {name}
+                        </Tag>
+                      ))
+                    )}
+                  </div>
+                  <div className="text-xs leading-relaxed text-muted">
+                    B ={' '}
+                    <span className="font-mono text-fg">
+                      {verdict.behavioural_risk_B.toFixed(3)}
+                    </span>
+                    {verdict.B_rationale && <span className="ml-2">{verdict.B_rationale}</span>}
+                  </div>
+                  {verdict.disagreement_flag && (
+                    <div className="rounded-[var(--radius-tile)] border border-warn/40 bg-warn/10 px-3 py-2 text-xs leading-relaxed text-warn">
+                      Detector disagreement: {verdict.disagreement_note ?? 'flagged, no note'} — this
+                      lowers C and never silently alters S.
+                    </div>
+                  )}
+                </div>
+              )
+            }}
+          </ArtefactGate>
+        </Panel>
+      </div>
 
       <Panel
         title="Proposed actions"
         subtitle="Recommendations only — confirming records an ANALYST_ACTION node, it executes nothing"
-        className="xl:col-span-2"
       >
         <ArtefactGate artefact={score}>
           {(value) =>

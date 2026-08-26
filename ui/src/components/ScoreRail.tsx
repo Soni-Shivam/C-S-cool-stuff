@@ -16,6 +16,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { EvidenceChips } from './Evidence'
+import { LogoSpinner } from './Logo'
 import { BAND_CLASS, BAND_STROKE, Bar } from './primitives'
 import type { CompositeScore, ScoreFactor } from '../api/types'
 
@@ -25,9 +26,16 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 function Ring({ score, flash }: { score: CompositeScore; flash: boolean }) {
   const offset = CIRCUMFERENCE * (1 - Math.max(0, Math.min(100, score.S)) / 100)
   return (
-    <div className={`relative mx-auto h-32 w-32 ${flash ? 'pulse' : ''}`}>
-      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
-        <circle cx="60" cy="60" r={RADIUS} fill="none" stroke="var(--color-line-soft)" strokeWidth="9" />
+    <div className={`relative mx-auto h-36 w-36 ${flash ? 'pulse' : ''}`}>
+      {/* A band-coloured bloom behind the ring, so the verdict reads as a light
+          source at three metres rather than as a thin coloured line. */}
+      <div
+        aria-hidden
+        className="absolute inset-4 rounded-full blur-2xl"
+        style={{ background: BAND_STROKE[score.band], opacity: 0.28 }}
+      />
+      <svg viewBox="0 0 120 120" className="relative h-full w-full -rotate-90">
+        <circle cx="60" cy="60" r={RADIUS} fill="none" stroke="var(--color-ground-3)" strokeWidth="9" />
         <circle
           cx="60"
           cy="60"
@@ -42,8 +50,10 @@ function Ring({ score, flash }: { score: CompositeScore; flash: boolean }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`text-4xl font-bold tabular-nums ${BAND_CLASS[score.band]}`}>{score.S}</span>
-        <span className="text-[10px] tracking-widest text-muted">/ 100</span>
+        <span className={`display text-[44px] tabular-nums ${BAND_CLASS[score.band]}`}>
+          {score.S}
+        </span>
+        <span className="mt-1 text-[10px] tracking-[0.2em] text-dim">/ 100</span>
       </div>
     </div>
   )
@@ -64,7 +74,7 @@ function Factor({ factor }: { factor: ScoreFactor }) {
           {(factor.contribution * 100).toFixed(1)}
         </span>
       </div>
-      <Bar fraction={fraction} color="var(--color-accent)" />
+      <Bar fraction={fraction} />
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-dim">
         <span className="font-mono">
           raw {factor.raw.toFixed(3)} × w {factor.weight}
@@ -89,39 +99,45 @@ export function ScoreRail({ score, isFinal }: { score: CompositeScore; isFinal: 
   }, [score.S])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Ring score={score} flash={flash} />
 
       <div className="text-center">
-        <div className={`text-lg font-bold tracking-widest ${BAND_CLASS[score.band]}`}>{score.band}</div>
-        <div className="mt-1 text-xs text-muted">
+        <div className={`display text-xl tracking-[0.18em] ${BAND_CLASS[score.band]}`}>
+          {score.band}
+        </div>
+        <div className="mt-1.5 text-xs text-muted">
           confidence <span className="font-mono text-fg">{score.C.toFixed(2)}</span>
-          <span className="mx-1 text-dim">·</span>γ{' '}
+          <span className="mx-1.5 text-line-bright">·</span>γ{' '}
           <span className="font-mono text-fg">{score.gamma.toFixed(2)}</span>
         </div>
-        <div
-          className={`mt-2 inline-block rounded border px-2 py-0.5 text-[11px] ${
-            isFinal ? 'border-good/40 bg-good/10 text-good' : 'border-accent/40 bg-accent-soft text-accent'
-          }`}
-        >
-          {isFinal ? 'final verdict' : 'preliminary — deep analysis running'}
-        </div>
       </div>
+
+      {isFinal ? (
+        <div className="rounded-full border border-good/45 bg-good/10 px-3 py-1.5 text-center text-[11px] font-medium text-good">
+          final verdict
+        </div>
+      ) : (
+        <div className="grad-violet flex items-center justify-center gap-2 rounded-full px-3 py-1.5 text-center text-[11px] font-medium text-white shadow-[0_0_26px_-6px_rgba(168,85,247,0.9)]">
+          <LogoSpinner size="xs" />
+          preliminary — deep analysis running
+        </div>
+      )}
 
       {(score.override_applied || score.requires_human_review || score.anomaly_escalated) && (
         <div className="space-y-1.5 text-[11px]">
           {score.override_applied && (
-            <div className="rounded border border-bad/40 bg-bad/10 px-2 py-1 text-bad">
+            <div className="rounded-lg border border-bad/40 bg-bad/10 px-2.5 py-1.5 text-bad">
               override: <span className="font-mono">{score.override_applied}</span>
             </div>
           )}
           {score.anomaly_escalated && (
-            <div className="rounded border border-warn/40 bg-warn/10 px-2 py-1 text-warn">
+            <div className="rounded-lg border border-warn/40 bg-warn/10 px-2.5 py-1.5 text-warn">
               anomaly escalator raised the band
             </div>
           )}
           {score.requires_human_review && (
-            <div className="rounded border border-warn/40 bg-warn/10 px-2 py-1 text-warn">
+            <div className="rounded-lg border border-warn/40 bg-warn/10 px-2.5 py-1.5 text-warn">
               human review required
             </div>
           )}
@@ -129,7 +145,7 @@ export function ScoreRail({ score, isFinal }: { score: CompositeScore; isFinal: 
       )}
 
       <div>
-        <h4 className="mb-2 text-[11px] tracking-widest text-muted">FACTORS</h4>
+        <h4 className="eyebrow mb-2.5">Factors</h4>
         <ul className="space-y-3">
           {score.factors.map((factor) => (
             <Factor key={factor.symbol} factor={factor} />
@@ -139,10 +155,10 @@ export function ScoreRail({ score, isFinal }: { score: CompositeScore; isFinal: 
 
       {score.limitations.length > 0 && (
         <div>
-          <h4 className="mb-1.5 text-[11px] tracking-widest text-muted">LIMITATIONS</h4>
-          <ul className="space-y-1 text-[11px] text-muted">
+          <h4 className="eyebrow mb-2">Limitations</h4>
+          <ul className="space-y-1.5 text-[11px] leading-relaxed text-muted">
             {score.limitations.map((limitation, i) => (
-              <li key={i} className="border-l-2 border-warn/40 pl-2">
+              <li key={i} className="rounded-r-md border-l-2 border-warn/50 bg-warn/[0.06] py-1 pl-2.5">
                 {limitation}
               </li>
             ))}

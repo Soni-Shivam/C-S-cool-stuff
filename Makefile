@@ -32,6 +32,12 @@ ui: ## Run the dashboard dev server on :5173 (needs `make up` in another shell)
 ui-build: ## Typecheck and build the dashboard to ui/dist
 	cd ui && npm run build
 
+# The code-graph layout is pure, deterministic and not checkable by eye on the
+# canary's two-node graph, so it carries its own tests.
+.PHONY: ui-test
+ui-test: ## Dashboard unit tests (vitest)
+	cd ui && npm test
+
 .PHONY: ui-preview
 ui-preview: ui-build ## Serve the production build on :4173. Use this for the demo.
 	cd ui && npm run preview

@@ -13,13 +13,13 @@
 import { useEffect, useState } from 'react'
 import type { Artefact } from '../api/client'
 import { getReportHtml, getStix, getYara, ledgerExportUrl } from '../api/client'
-import { ArtefactGate, Panel } from '../components/primitives'
+import { ArtefactGate, Panel, SectionHead } from '../components/primitives'
 
 function Unbuilt({ artefact }: { artefact: Artefact<unknown> | null }) {
   return (
     <ArtefactGate artefact={artefact}>
       {(value) => (
-        <pre className="max-h-96 overflow-auto rounded bg-ink p-3 font-mono text-xs text-muted">
+        <pre className="max-h-96 overflow-auto rounded-[var(--radius-tile)] border border-line-soft bg-ground p-3.5 font-mono text-xs text-muted">
           {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
         </pre>
       )}
@@ -39,7 +39,13 @@ export function ReportTab({ jobId, revision }: { jobId: string; revision: number
   }, [jobId, revision])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <SectionHead
+        eyebrow="Deliverables"
+        title="Report and exports"
+        lede="The ledger export is real and downloads today. The report, YARA and STIX endpoints answer 501 with the task that will build them — a placeholder that looked finished is the one thing the API refuses to serve, and the UI does not invent one on the client either."
+      />
+
       <Panel title="Investigation report" subtitle="GET /api/jobs/{job}/report.html">
         {report?.state === 'ready' ? (
           // Sandboxed: the report embeds sample-derived strings, and this is the one
@@ -70,7 +76,7 @@ export function ReportTab({ jobId, revision }: { jobId: string; revision: number
           <a
             href={ledgerExportUrl(jobId)}
             download={`${jobId}-ledger.json`}
-            className="rounded border border-accent/50 bg-accent-soft px-3 py-1.5 text-sm text-accent hover:bg-accent/20"
+            className="rounded border border-accent/50 bg-v500/15 px-3 py-1.5 text-sm text-accent hover:bg-accent/20"
           >
             Evidence ledger (JSON)
           </a>

@@ -15,7 +15,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { ledgerExportUrl, verifyLedger } from '../api/client'
-import { Empty, Panel, Raw, Tag } from '../components/primitives'
+import { count, Empty, Panel, Raw, SectionHead, Tag } from '../components/primitives'
 import type { ChainVerification, EvidenceNode } from '../api/types'
 
 export function LedgerTab({
@@ -72,7 +72,20 @@ export function LedgerTab({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <SectionHead
+        eyebrow="Evidence ledger"
+        title="The chain behind every claim"
+        lede="Each node is hash-chained to its predecessor and Ed25519 signed. Every chip elsewhere in this app resolves to a row below; a reference the chain cannot resolve is shown broken rather than hidden."
+        right={
+          <>
+            <Tag tone="accent">{count(nodes.length, 'node')}</Tag>
+            <Tag>{count(types.length, 'type')}</Tag>
+            <Tag>{count(tools.length, 'tool')}</Tag>
+          </>
+        }
+      />
+
       <Panel
         title="Chain verification"
         subtitle="Append-only in SQL via triggers; every node hash-chained and Ed25519 signed"
@@ -82,14 +95,14 @@ export function LedgerTab({
               type="button"
               onClick={() => void verify()}
               disabled={verifying}
-              className="rounded border border-accent/50 bg-accent-soft px-3 py-1 text-xs text-accent hover:bg-accent/20 disabled:opacity-50"
+              className="rounded-full border border-transparent px-3.5 py-1.5 text-xs font-medium text-white transition-opacity [background-image:var(--grad-violet)] hover:opacity-90 disabled:opacity-50"
             >
               {verifying ? 'verifying…' : 'Verify chain'}
             </button>
             <a
               href={ledgerExportUrl(jobId)}
               download={`${jobId}-ledger.json`}
-              className="rounded border border-line px-3 py-1 text-xs text-muted hover:border-accent/60 hover:text-accent"
+              className="rounded-full border border-line-bright bg-ground-2 px-3.5 py-1.5 text-xs text-muted transition-colors hover:border-v400 hover:text-v300"
             >
               Export JSON
             </a>
@@ -99,7 +112,7 @@ export function LedgerTab({
         {verifyError && <div className="mb-2 text-sm text-bad">{verifyError}</div>}
         {verification ? (
           <div
-            className={`rounded border px-3 py-2.5 text-sm ${
+            className={`rounded-[var(--radius-tile)] border px-4 py-3 text-sm ${
               verification.ok
                 ? 'border-good/50 bg-good/10 text-good'
                 : 'border-bad/50 bg-bad/10 text-bad'
@@ -136,7 +149,7 @@ export function LedgerTab({
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="rounded border border-line bg-panel-2 px-2 py-1 text-xs text-fg"
+              className="rounded-full border border-line-bright bg-ground-2 px-3 py-1.5 text-xs text-fg transition-colors hover:border-v400"
             >
               <option value="">all types</option>
               {types.map((type) => (
@@ -148,7 +161,7 @@ export function LedgerTab({
             <select
               value={toolFilter}
               onChange={(e) => setToolFilter(e.target.value)}
-              className="rounded border border-line bg-panel-2 px-2 py-1 text-xs text-fg"
+              className="rounded-full border border-line-bright bg-ground-2 px-3 py-1.5 text-xs text-fg transition-colors hover:border-v400"
             >
               <option value="">all tools</option>
               {tools.map((tool) => (
@@ -165,7 +178,7 @@ export function LedgerTab({
         ) : (
           <div className="max-h-[28rem] overflow-auto">
             <table className="w-full text-left text-xs">
-              <thead className="sticky top-0 bg-panel text-muted">
+              <thead className="sticky top-0 bg-ground-1 text-muted">
                 <tr>
                   <th className="py-1.5 pr-2 font-medium">seq</th>
                   <th className="py-1.5 pr-2 font-medium">type</th>
@@ -183,7 +196,7 @@ export function LedgerTab({
                         ref={selected ? selectedRow : undefined}
                         onClick={() => onSelect(selected ? null : node.id)}
                         className={`cursor-pointer border-t border-line-soft ${
-                          selected ? 'bg-accent-soft' : 'hover:bg-panel-2'
+                          selected ? 'bg-v500/15' : 'hover:bg-ground-2'
                         }`}
                       >
                         <td className="py-1.5 pr-2 font-mono text-dim">{node.seq}</td>
@@ -195,7 +208,7 @@ export function LedgerTab({
                         <td className="py-1.5 font-mono text-muted">{node.confidence.toFixed(2)}</td>
                       </tr>
                       {selected && (
-                        <tr className="bg-panel-2">
+                        <tr className="bg-ground-2">
                           <td colSpan={5} className="p-3">
                             <div className="mb-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[11px]">
                               {(
@@ -224,7 +237,7 @@ export function LedgerTab({
                                       e.stopPropagation()
                                       onSelect(parent)
                                     }}
-                                    className="rounded border border-accent/40 bg-accent-soft px-1.5 py-0.5 font-mono text-accent hover:bg-accent/20"
+                                    className="rounded border border-accent/40 bg-v500/15 px-1.5 py-0.5 font-mono text-accent hover:bg-accent/20"
                                   >
                                     {parent}
                                   </button>
@@ -243,7 +256,7 @@ export function LedgerTab({
           </div>
         )}
         {selectedId && !nodes.some((node) => node.id === selectedId) && (
-          <div className="mt-2 rounded border border-bad/40 bg-bad/5 px-3 py-2 text-xs text-bad">
+          <div className="mt-2 rounded-[var(--radius-tile)] border border-bad/40 bg-bad/[0.08] px-3 py-2 text-xs text-bad">
             <Tag tone="bad">unresolvable</Tag> Node <span className="font-mono">{selectedId}</span> was
             cited but is not in this job's ledger.
           </div>
