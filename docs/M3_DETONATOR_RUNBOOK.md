@@ -9,6 +9,58 @@ Read this whole file before running step 1. Two things must be fixed first
 
 ---
 
+## 0.0 What actually happened — 2026-08-26
+
+**The first live detonation has been performed.** Sections 1–7 below describe the
+Packer/Terraform path, which is still the right shape for a reproducible lab and is
+still unbuilt. What was actually used, under deadline, was a **hand-provisioned VM**:
+`m3-detonator` in `internship-505513`/`us-east1-c`, n2-standard-4, nested virt on.
+
+That is a recorded deviation, not a preferred design. Its cost is that the runtime
+marker reads `m3-detonator-manual-20260826` — deliberately, so no artifact can claim
+to have come from an immutable image it did not come from.
+
+The scripts that did it, all idempotent and all under `infra/gcp/`:
+
+| Script | Runs on | Does |
+|---|---|---|
+| `detonator_provision.sh` | VM | disk, KVM, apt, SDK 33 `google_apis` x86_64, AVD, uv-managed Python 3.11, frida, boot, clean snapshot |
+| `detonator_deploy.sh` | laptop | ships `drishti/`, the two CLIs, the hooks, and the VM-side shell tools over IAP |
+| `detonator_seal.sh` | laptop | `seal` / `unseal` / `unseal-rules` / `status` — tags, deny-egress rules, external IP |
+| `detonator_lockdown.sh` | VM | host iptables egress lockdown with a dead-man timer |
+| `detonator_stage.sh` | laptop | opens the network, pulls corpus APKs to VM scratch, reseals in a trap |
+| `detonator_run.sh` | VM | `verify` / `detonate` / `batch` — re-verifies containment per sample |
+| `detonator_collect.sh` | laptop | pulls artifacts out **over IAP with the VM still sealed**, publishes to GCS and the repo |
+
+Three findings from the first real runs, which §0.3's blockers were hiding:
+
+1. **The x86_64 emulator refuses ARM-only APKs** (`INSTALL_FAILED_NO_MATCHING_ABIS`).
+   That is a tooling limit, not sample evasion, and the harness already classifies it
+   as `install_unsupported` for exactly that reason. Filter the batch on
+   `aapt dump badging | grep native-code` before spending emulator time.
+2. **frida's spawn deadline is shorter than a cold first start** on a headless
+   swiftshader emulator. One throwaway launch before the timed spawn fixes it.
+3. **A sample crashing mid-run used to destroy its own evidence.** `script.unload()`
+   raised from the collector's `finally`, the run was recorded as `internal_error`,
+   and every observation collected before the crash was discarded. Teardown is now
+   best-effort. A sample killing itself is a normal outcome.
+
+Containment, measured rather than asserted — the same probe, before and after
+`detonator_seal.sh seal` plus `detonator_lockdown.sh lock`:
+
+| From inside the guest | Before | After |
+|---|---|---|
+| `127.0.0.1:1` (negative control) | rc 1 | rc 1 |
+| `8.8.8.8:53` | **rc 0 — reachable** | rc 1 |
+| `1.1.1.1:443` | **rc 0 — reachable** | rc 1 |
+| `169.254.169.254:80` (metadata) | **rc 0 — reachable** | rc 1 |
+| `10.0.0.1:22` | rc 1 | rc 1 |
+
+The "before" column is the point: a probe that cannot see an open network is not
+evidence of a closed one.
+
+---
+
 ## 0. Before you spend anything
 
 ### 0.1 State as of `92a6aea`
@@ -296,9 +348,18 @@ the VM up for a weekend is not.
 
 ## What is still unbuilt
 
-`emulator.py`, `frida_runner.py`, snapshot/crash self-repair, mitmproxy/TLS
-interception, and the morph scripts. `hooks.js` exists and is statically audited
-in CI, but **has never been executed**.
+The Packer image and the Terraform runtime (§2, §3) — the lab was hand-provisioned
+instead (§0.0). Also unbuilt: mitmproxy/TLS interception, the morph scripts, and
+therefore the `post_morph` half of every trace fixture, snapshot/crash self-repair,
+and benign-control coverage broad enough to state a dynamic false-positive rate.
+
+`hooks.js` **has now been executed** against real samples on a real emulator, and
+`data/fixtures/observations/` holds the artifacts. Ten of its thirteen hooks have
+fired on real malware, including `Cipher.doFinal` — the plaintext-before-encryption
+hook that is the reason TLS interception is a deferred nicety rather than a blocker.
+`SmsManager.sendTextMessage`, `SmsMessage.getMessageBody` and `DexClassLoader.$init`
+have not been seen firing, which is a statement about this sample set and not about
+the hooks.
 
 HTTPS interception is deliberately deferred: the `Cipher.doFinal` hook already
 yields plaintext *before* encryption, which is the stronger result and also
