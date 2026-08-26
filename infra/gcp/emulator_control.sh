@@ -24,8 +24,15 @@ case "${1:-}" in
     # separate concern from detonation. -no-snapshot-load forces a deterministic cold
     # boot so the harness's explicit `clean` restore is the only state that matters, and
     # -no-snapshot-save keeps the clean snapshot immutable across runs.
+    # -http-proxy is a LAUNCH flag on purpose. The guest-side equivalent
+    # (`adb shell settings put global http_proxy 10.0.2.2:8080`) is guest state, and
+    # the harness restores the `clean` snapshot before every sample — a restore reverts
+    # it, so every detonation after the first would run unproxied while looking healthy
+    # and reporting zero flows. Set at the QEMU level it survives every restore.
+    # 10.0.2.2 is the emulator's alias for the host loopback, where mitmdump listens.
     emulator -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim \
       -no-snapshot-save -no-snapshot-load -accel on \
+      -http-proxy "${DRISHTI_EMULATOR_PROXY:-10.0.2.2:8080}" \
       -gpu swiftshader_indirect >/var/log/drishti-emulator.log 2>&1 &
     emulator_pid=$!
     printf '%s\n' "$emulator_pid" >"$PID_FILE"

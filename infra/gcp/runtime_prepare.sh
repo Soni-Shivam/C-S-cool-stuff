@@ -29,8 +29,19 @@ PY
 fi
 
 /opt/drishti/runtime_lockdown.sh
-pkill -f 'mitmdump.*fake_c2.py' 2>/dev/null || true
+pkill -f 'mitmdump.*drishti_proxy.py' 2>/dev/null || true
+# PYTHONPATH is load-bearing: drishti_proxy.py imports drishti.contracts.c2_bundle,
+# drishti.m3_dynamic.generative_c2 and the capture addon, which detonator_deploy.sh
+# unpacks at /opt/drishti/lib. Without it mitmdump dies on the addon import — and it is
+# nohup'd, so the failure is silent and shows up only as an empty flow log.
+# DRISHTI_C2_BUNDLE is deliberately unset here: pass 1 has no bundle yet and every host
+# is sinkholed. The per-run wrapper sets it for pass 2.
+# Both roots are listed because the two provisioning paths lay the package down in
+# different places: detonator_deploy.sh unpacks it at /opt/drishti/lib, the Packer
+# builder copies it to /opt/drishti/harness. A missing entry costs nothing.
+DRISHTI_FLOW_LOG=/opt/drishti/results/flows.jsonl \
+PYTHONPATH=/opt/drishti/lib:/opt/drishti/harness \
 nohup /opt/drishti/venv/bin/mitmdump --listen-host 0.0.0.0 --listen-port 8080 \
   --set block_global=false --set confdir=/opt/drishti/mitmproxy \
-  -s /opt/drishti/fake_c2.py >/var/log/drishti-fake-c2.log 2>&1 &
+  -s /opt/drishti/drishti_proxy.py >/var/log/drishti-proxy.log 2>&1 &
 /opt/drishti/emulator_control.sh start

@@ -36,7 +36,7 @@ build {
   provisioner "file" { source = "${path.root}/../emulator_control.sh" destination = "/tmp/emulator_control.sh" }
   provisioner "file" { source = "${path.root}/../runtime_lockdown.sh" destination = "/tmp/runtime_lockdown.sh" }
   provisioner "file" { source = "${path.root}/../runtime_prepare.sh" destination = "/tmp/runtime_prepare.sh" }
-  provisioner "file" { source = "${path.root}/../fake_c2.py" destination = "/tmp/fake_c2.py" }
+  provisioner "file" { source = "${path.root}/../drishti_proxy.py" destination = "/tmp/drishti_proxy.py" }
   provisioner "file" { source = "${path.root}/builder_setup.sh" destination = "/tmp/builder_setup.sh" }
   provisioner "shell" { inline = ["chmod +x /tmp/builder_setup.sh", "sudo /tmp/builder_setup.sh"] }
 }

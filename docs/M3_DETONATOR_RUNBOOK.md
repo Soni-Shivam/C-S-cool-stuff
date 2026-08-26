@@ -113,8 +113,10 @@ provisioner, before it spends a minute of VM time — so this is a cheap failure
 not a dangerous one, but it *will* fail.
 
 **(b) `runtime_prepare.sh` calls `/opt/drishti/harness/verify_containment.py`
-and `/opt/drishti/fake_c2.py`.** Both come out of the image build, so they
-inherit (a).
+and `/opt/drishti/drishti_proxy.py`.** Both come out of the image build, so they
+inherit (a). On the hand-provisioned VM the proxy arrives instead via
+`detonator_deploy.sh`, and `detonator_provision.sh proxy` installs mitmproxy into the
+3.11 venv and verifies the addon chain imports.
 
 **What this means:** the image build is blocked on writing the two missing
 harness scripts. Steps 1–6 below are correct and complete for the moment they

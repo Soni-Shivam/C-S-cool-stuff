@@ -92,7 +92,7 @@ install -m 0755 /tmp/verify_containment.py /opt/drishti/harness/verify_containme
 install -m 0755 /tmp/emulator_control.sh /opt/drishti/emulator_control.sh
 install -m 0755 /tmp/runtime_lockdown.sh /opt/drishti/runtime_lockdown.sh
 install -m 0755 /tmp/runtime_prepare.sh /opt/drishti/runtime_prepare.sh
-install -m 0644 /tmp/fake_c2.py /opt/drishti/fake_c2.py
+install -m 0644 /tmp/drishti_proxy.py /opt/drishti/drishti_proxy.py
 PYTHONPATH=/opt/drishti/harness /opt/drishti/venv/bin/python \
   -c 'import dynamic_analyze; print("harness import OK", dynamic_analyze.HARNESS_VERSION)'
 
@@ -125,7 +125,11 @@ timeout 25 /opt/drishti/venv/bin/mitmdump --listen-host 127.0.0.1 --listen-port 
 test -f /root/.mitmproxy/mitmproxy-ca-cert.pem
 
 boot_up
-adb shell settings put global http_proxy 10.0.2.2:8080
+# The proxy is NOT set here any more. `settings put global http_proxy` is guest state,
+# and the harness restores the `clean` snapshot before every sample: a restore reverts
+# it, so every run after the first would be unproxied and silently capture no flows —
+# the same trap as the system CA (FIX 6 below). emulator_control.sh now passes
+# -http-proxy at launch instead, which is a QEMU-level flag no restore can undo.
 
 # Exercise the inert fixture once so the clean image is a booted, warmed state, then
 # remove it. The validation fixture must not persist into the image.

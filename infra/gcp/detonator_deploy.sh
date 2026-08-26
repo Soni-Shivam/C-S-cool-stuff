@@ -31,7 +31,8 @@ trap 'rm -f "${TAR}"' EXIT
 tar czf "${TAR}" -C "${REPO}" \
   --exclude='__pycache__' --exclude='*.pyc' \
   drishti scripts/dynamic_analyze.py scripts/verify_containment.py \
-  infra/gcp/detonator_run.sh infra/gcp/detonator_lockdown.sh
+  infra/gcp/detonator_run.sh infra/gcp/detonator_lockdown.sh \
+  infra/gcp/drishti_proxy.py infra/gcp/emulator_control.sh
 
 retry gcloud compute scp "${TAR}" "${VM}:/tmp/drishti-harness.tar.gz" --zone="${ZONE}" --project="${PROJECT}" --tunnel-through-iap
 retry gcloud compute ssh "${VM}" --zone="${ZONE}" --project="${PROJECT}" --tunnel-through-iap --command='
@@ -43,6 +44,11 @@ tar xzf /tmp/drishti-harness.tar.gz -C /opt/drishti/lib
 cp /opt/drishti/lib/drishti/m3_dynamic/scripts/hooks.js /opt/drishti/harness/frida_hooks.js
 install -m 755 /opt/drishti/lib/infra/gcp/detonator_run.sh /opt/drishti/bin/detonator_run.sh
 install -m 755 /opt/drishti/lib/infra/gcp/detonator_lockdown.sh /opt/drishti/bin/detonator_lockdown.sh
+# The mitmproxy addon lands at the fixed path runtime_prepare.sh and the per-run wrapper
+# name (mitmdump is given a script path, not a module), and emulator_control.sh next to
+# it because that is where the Packer image path puts it too.
+install -m 644 /opt/drishti/lib/infra/gcp/drishti_proxy.py /opt/drishti/drishti_proxy.py
+install -m 755 /opt/drishti/lib/infra/gcp/emulator_control.sh /opt/drishti/emulator_control.sh
 /opt/drishti/venv/bin/python -c "
 import sys; sys.path.insert(0, \"/opt/drishti/lib\")
 import drishti.m3_dynamic.harness as h, drishti.m3_dynamic.admission as a
