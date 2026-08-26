@@ -82,6 +82,10 @@ demo-tamper: ## Live: an edited ledger is detected at an exact seq
 demo-integrity: ## Both integrity demos, back to back
 	uv run python scripts/demo_integrity.py both
 
+.PHONY: demo-containment
+demo-containment: ## The containment gate: accepts a sealed net, rejects the v1 nc -z probe
+	uv run python scripts/demo_containment_gate.py
+
 # ─── GCP lab ─────────────────────────────────────────────────────────────────
 # The ONLY place a real sample is ever executed. Targets are deliberately
 # explicit: a nested-virt VM left running is the easiest way to burn the budget.
