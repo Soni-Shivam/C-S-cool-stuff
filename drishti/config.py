@@ -78,13 +78,18 @@ class Settings(BaseSettings):
     malwarebazaar_api_key: SecretStr | None = None
 
     # ── feature flags ────────────────────────────────────────────────────────
-    vlm_enabled: bool = True
-    #: Vision-language model for icon impersonation (T3.9). A free multimodal model on
-    #: the same OpenRouter key as the text provider; the perceptual-hash layer runs
-    #: regardless, so an unavailable VLM degrades to deterministic matching.
-    #: minimax-m3 was the one free VLM that answered reliably on 2026-08-26 — gemma-4
-    #: and nemotron-omni both returned 429/502 from the shared free pool.
-    vlm_model: str = "minimax/minimax-m3:free"
+    #: Icon impersonation (T3.9). DEFAULT OFF: the Groq account exposes 14 models and
+    #: NONE of them accept image input, so there is no vision provider to call. The
+    #: deterministic perceptual-hash layer still runs and needs no model — but it also
+    #: needs reference brand icons, and `data/kb/brand_icons/` ships empty on purpose
+    #: (an unverified reference would silently exempt whatever it matched).
+    #: So impersonation detection is currently INERT, and says so rather than
+    #: returning a confident "no match". Set both when a vision endpoint exists.
+    vlm_enabled: bool = False
+    #: OpenAI-compatible chat-completions endpoint accepting image_url content parts.
+    vlm_base_url: str | None = None
+    vlm_api_key: SecretStr | None = None
+    vlm_model: str | None = None
     rag_enabled: bool = False
 
     # ── limits ───────────────────────────────────────────────────────────────

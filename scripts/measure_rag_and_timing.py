@@ -199,7 +199,7 @@ def measure_budgets(apk_path: Path, label: str) -> dict[str, Any]:
         db_path=tmp / f"budget_{label}.db",
         ledger_key_path=tmp / f"budget_{label}.pem",
         log_path=tmp / f"budget_{label}.jsonl",
-        llm_provider="mock",
+        groq_api_key="gsk-test",
     )
     store = LedgerStore(settings.db_path, settings.ledger_key_path)
     store.open(f"job_budget_{label}")
@@ -266,7 +266,7 @@ def measure_pipeline(apk_path: Path, label: str, repeats: int) -> dict[str, Any]
             db_path=tmp / f"pipe_{label}_{index}.db",
             ledger_key_path=tmp / f"pipe_{label}_{index}.pem",
             log_path=tmp / f"pipe_{label}_{index}.jsonl",
-            llm_provider="mock",
+            groq_api_key="gsk-test",
         )
         store = LedgerStore(settings.db_path, settings.ledger_key_path)
         events: list[Any] = []

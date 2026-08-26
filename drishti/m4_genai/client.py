@@ -368,6 +368,183 @@ class LLMClient:
             log.error("llm_output_invalid_after_repair", model=self._model)
         return repaired
 
+    def complete_with_tools_as(
+        self,
+        *,
+        system: str,
+        user: str,
+        tools: list[dict[str, Any]],
+        execute: Callable[[str, str | dict[str, Any]], dict[str, Any]],
+        schema: type[ModelT],
+        max_rounds: int = 3,
+        max_output_tokens: int = 3000,
+        purpose: str = "tool_loop",
+    ) -> ModelT | None:
+        """Run a bounded tool loop against Groq and validate its final JSON response.
+
+        This is how the Code Interpreter reaches the six allowlisted read-only analysis
+        tools — it is the reverse-engineering workspace. The Groq migration removed this
+        method while leaving `code_interpreter` calling it, so every interpretation
+        raised `AttributeError`, was swallowed by the degrade-gracefully wrapper, and
+        came back as `None`. Restored rather than deleting the caller.
+
+        Groq speaks the OpenAI tool-calling shape, so the loop is unchanged from the
+        previous provider; only the endpoint and the key differ.
+
+        Bounded three ways, because an agent loop is a bill and a hung demo: `max_rounds`
+        caps the round trips, each round is charged to the call budget, and a round that
+        still wants to call a tool at the limit returns `None` rather than continuing.
+        """
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ]
+        for round_index in range(max_rounds + 1):
+            prompt = json.dumps(messages, ensure_ascii=True)
+            self._check_budgets(prompt)
+            started = time.monotonic()
+            self._last_usage = None
+            try:
+                message, attempts = self._exchange_with_retry(
+                    messages=messages,
+                    tools=tools,
+                    max_output_tokens=max_output_tokens,
+                )
+            except Exception as exc:
+                log.error("llm_tool_round_failed", round=round_index, error=str(exc))
+                self._record(
+                    f"{purpose}:round{round_index}",
+                    prompt,
+                    started,
+                    MAX_TRANSPORT_ATTEMPTS,
+                    outcome="failed",
+                )
+                return None
+            self.calls_made += 1
+            self._record(f"{purpose}:round{round_index}", prompt, started, attempts)
+
+            tool_calls = message.get("tool_calls") or []
+            if not tool_calls:
+                return parse_and_validate(str(message.get("content") or ""), schema)
+            if round_index >= max_rounds:
+                log.error("llm_tool_round_budget_exhausted", rounds=max_rounds)
+                return None
+
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": message.get("content") or "",
+                    "tool_calls": tool_calls,
+                }
+            )
+            for call in tool_calls:
+                function = call.get("function") or {}
+                name = str(function.get("name") or "")
+                arguments = function.get("arguments") or "{}"
+                # `execute` is the allowlisted dispatcher. It validates the name and the
+                # arguments; nothing here trusts what the model asked for.
+                result = execute(name, arguments)
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": str(call.get("id") or "missing"),
+                        "name": name,
+                        "content": json.dumps(result, ensure_ascii=True),
+                    }
+                )
+        return None
+
+    def _exchange_with_retry(
+        self,
+        *,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        max_output_tokens: int,
+    ) -> tuple[dict[str, Any], int]:
+        """One tool round, retried only on the overloaded-upstream shapes."""
+        last: Exception | None = None
+        for attempt in range(1, MAX_TRANSPORT_ATTEMPTS + 1):
+            try:
+                message = self._groq_exchange(
+                    messages=messages, tools=tools, max_output_tokens=max_output_tokens
+                )
+                return message, attempt
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code not in RETRYABLE_STATUS:
+                    raise
+                last = exc
+            except (httpx.TimeoutException, httpx.TransportError) as exc:
+                last = exc
+            if attempt < MAX_TRANSPORT_ATTEMPTS:
+                delay = BACKOFF_BASE_S * (2 ** (attempt - 1)) + random.uniform(0, 0.25)
+                log.warning("llm_tool_retrying", attempt=attempt, delay_s=round(delay, 2))
+                time.sleep(delay)
+        raise LLMError(f"tool round failed after {MAX_TRANSPORT_ATTEMPTS} attempts: {last}")
+
+    def _groq_exchange(
+        self,
+        *,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        max_output_tokens: int,
+    ) -> dict[str, Any]:
+        """One Groq message exchange for the bounded tool loop."""
+        key = self._settings.groq_api_key
+        if key is None:
+            raise LLMError("groq selected but GROQ_API_KEY is unset")
+        response = httpx.post(
+            GROQ_CHAT_COMPLETIONS_URL,
+            headers={
+                "Authorization": f"Bearer {key.get_secret_value()}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": self._model,
+                "messages": messages,
+                "tools": tools,
+                "tool_choice": "auto",
+                "max_tokens": max_output_tokens,
+            },
+            timeout=120.0,
+        )
+        response.raise_for_status()
+        payload: dict[str, Any] = response.json()
+        if "error" in payload:
+            raise LLMError(str(payload["error"])[:200])
+        self._capture_usage(payload)
+        choices = payload.get("choices") or []
+        if not choices:
+            raise LLMError("provider returned no choices")
+        message = choices[0].get("message") or {}
+        if not isinstance(message, dict):
+            raise LLMError("provider returned an invalid message")
+        return message
+
+    def _capture_usage(self, payload: dict[str, Any]) -> None:
+        """Record the provider's own token counts for the call just completed.
+
+        `_last_usage` was declared and read by the call-stat path, but nothing populated
+        it — `_dispatch` called this method and it did not exist. Because every LLM call
+        degrades gracefully, the resulting `AttributeError` was caught, logged once, and
+        turned into `None`: the client returned no completion for ANY request while the
+        pipeline carried on and the GenAI stage produced nothing. A total outage hidden
+        by the very mechanism meant to stop one sub-analyser failure killing a job.
+
+        Provider counts are preferred over the `len(text) // CHARS_PER_TOKEN` estimate
+        because the budget is an assert, and asserting against an estimate is asserting
+        against a guess. `measured` on the emitted stat records which was used.
+        """
+        usage = payload.get("usage")
+        if not isinstance(usage, dict):
+            self._last_usage = None
+            return
+        captured = {
+            field_name: int(usage[field_name])
+            for field_name in ("prompt_tokens", "completion_tokens", "total_tokens")
+            if isinstance(usage.get(field_name), (int, float))
+        }
+        self._last_usage = captured or None
+
     # ── Groq transport ───────────────────────────────────────────────────────
     def _dispatch(
         self, system: str, user: str, max_output_tokens: int, json_mode: bool = False

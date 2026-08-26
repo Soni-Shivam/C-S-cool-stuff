@@ -173,7 +173,7 @@ def test_complete_as_validates_into_the_contract(settings: Settings) -> None:
     assert isinstance(result.behaviours, dict)
 
 
-def test_openrouter_tool_loop_executes_and_returns_validated_output(
+def test_groq_tool_loop_executes_and_returns_validated_output(
     settings: Settings,
 ) -> None:
     configured = settings.model_copy(
@@ -202,7 +202,7 @@ def test_openrouter_tool_loop_executes_and_returns_validated_output(
     def exchange(self, **kwargs):
         return next(replies)
 
-    client._openrouter_exchange = MethodType(exchange, client)  # type: ignore[method-assign]
+    client._groq_exchange = MethodType(exchange, client)  # type: ignore[method-assign]
     calls: list[tuple[str, str | dict]] = []
 
     result = client.complete_with_tools_as(

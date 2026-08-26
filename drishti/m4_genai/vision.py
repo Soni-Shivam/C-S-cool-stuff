@@ -22,6 +22,23 @@ Two layers, deliberately in this order:
 `method` on the returned `VisionMatch` records which layer produced the verdict, and
 both the raw similarity and the threshold are kept, so the report can say "closest match
 was SBI at 0.62, below threshold" rather than silently claiming nothing.
+
+**CURRENT STATE, 2026-08-26: THIS IS INERT, AND THAT IS NOT A BUG TO PAPER OVER.**
+Both layers are unavailable in the shipped configuration, for two independent reasons:
+
+* The VLM layer has no provider. OpenRouter access was lost and the project moved to
+  Groq, whose account here exposes 14 models — **none of which accept image input**.
+  `vlm_enabled` therefore defaults to False.
+* The perceptual-hash layer needs reference brand icons, and
+  `data/kb/brand_icons/` ships empty on purpose: an unverified fingerprint would
+  silently exempt whatever it happened to match.
+
+So `assess_icon` currently reports "no match, below threshold" with `icon_path` set —
+meaning *we looked and found nothing to compare against*, which `icon_path=None`
+(no raster icon at all) is deliberately distinguishable from. **Do not present
+impersonation detection as a working feature until a vision endpoint is configured
+or the reference set is populated.** The code and its tests are correct; the inputs
+are absent.
 """
 
 from __future__ import annotations
@@ -167,9 +184,12 @@ def _vlm_brand(icon: Image.Image, settings: Settings) -> tuple[str | None, float
     unverifiable brand claim is exactly the hallucination the rest of the system
     refuses.
     """
-    key = settings.openrouter_api_key
-    if key is None:
-        return None, 0.0, ["no VLM key configured"]
+    key = settings.vlm_api_key
+    if key is None or not settings.vlm_base_url or not settings.vlm_model:
+        # No vision provider is configured, which is the DEFAULT state: the Groq
+        # account this project runs on exposes no model that accepts image input.
+        # Say so, rather than returning a confident "no match".
+        return None, 0.0, ["no vision provider configured"]
 
     buffer = BytesIO()
     icon.convert("RGB").resize((128, 128)).save(buffer, format="PNG")
@@ -187,7 +207,7 @@ def _vlm_brand(icon: Image.Image, settings: Settings) -> tuple[str | None, float
 
     try:
         response = httpx.post(
-            "https://openrouter.ai/api/v1/chat/completions",
+            settings.vlm_base_url,
             headers={"Authorization": f"Bearer {key.get_secret_value()}"},
             json={
                 "model": settings.vlm_model,
@@ -248,7 +268,7 @@ def _cached_vlm_brand(
     import json
 
     cache_dir = Path(settings.llm_cache_dir) / "vision"
-    key = f"{settings.vlm_model}:{_dhash(icon):016x}"
+    key = f"{settings.vlm_model or 'none'}:{_dhash(icon):016x}"
     digest = hashlib.sha256(key.encode()).hexdigest()[:32]
     path = cache_dir / f"{digest}.json"
 
@@ -318,7 +338,7 @@ def assess_icon(apk_path: Path, settings: Settings | None = None) -> VisionMatch
         )
 
     # ── layer 2: VLM, only if configured and enabled ─────────────────────────
-    if settings.vlm_enabled and settings.openrouter_api_key is not None:
+    if settings.vlm_enabled and settings.vlm_api_key is not None:
         vlm_brand, confidence, _notes = _cached_vlm_brand(icon, settings)
         if vlm_brand is not None and confidence >= _SIMILARITY_THRESHOLD:
             return VisionMatch(

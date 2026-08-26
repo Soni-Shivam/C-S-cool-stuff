@@ -54,7 +54,7 @@ def test_noisy_or_fusion() -> None:
     genai = GenAIVerdict(
         sha256="a" * 64,
         behavioural_risk_B=0.7,
-        provider="openrouter",
+        provider="groq",
         ledger_refs=("ev_ai",),
     )
     result = score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None)
@@ -74,7 +74,7 @@ def test_scorer_is_deterministic() -> None:
     genai = GenAIVerdict(
         sha256="a" * 64,
         behavioural_risk_B=0.7,
-        provider="openrouter",
+        provider="groq",
         ledger_refs=("ev_ai",),
     )
     baseline = score(static=_static(), ml=_ml(), genai=genai, dynamic=None, intel=None)
@@ -131,7 +131,12 @@ def test_anomaly_escalates_band_without_changing_score() -> None:
         intel=None,
     )
     assert anomaly.S == normal.S
-    assert anomaly.band is SeverityBand.HIGH
+    # MEDIUM, not HIGH. HIGH is in the consumer surface's BLOCK bands, so escalating
+    # there turned 'look at this' into 'do not install'. Measured on the shipped
+    # model: 93 promotions with S unmoved, 84 of them BENIGN, while the detector's
+    # own lift was negative (0.3560 malware vs 0.3983 benign).
+    assert anomaly.band is SeverityBand.MEDIUM
+    # This is the field that carries the escalator's actual intent.
     assert anomaly.requires_human_review
 
 
@@ -214,7 +219,7 @@ def test_partial_model_outputs_do_not_reach_fused_score() -> None:
     partial_genai = GenAIVerdict(
         sha256="a" * 64,
         behavioural_risk_B=0.8,
-        provider="openrouter",
+        provider="groq",
         partial=True,
     )
 
@@ -287,7 +292,7 @@ def test_a_damning_manifest_can_now_reach_high_on_static_alone() -> None:
     report = _static(drift=True).model_copy(
         update={"permission_combos": (_combo("ACCESSIBILITY_ABUSE", Severity.CRITICAL),)}
     )
-    genai = GenAIVerdict(sha256="a" * 64, provider="openrouter", behavioural_risk_B=1.0)
+    genai = GenAIVerdict(sha256="a" * 64, provider="groq", behavioural_risk_B=1.0)
 
     without_g = score(static=report, ml=None, genai=genai, dynamic=None, intel=None)
     with_g = score(
@@ -313,7 +318,7 @@ def test_critical_still_requires_more_than_a_manifest() -> None:
     report = _static(drift=True).model_copy(
         update={"permission_combos": (_combo("X", Severity.CRITICAL),)}
     )
-    genai = GenAIVerdict(sha256="a" * 64, provider="openrouter", behavioural_risk_B=1.0)
+    genai = GenAIVerdict(sha256="a" * 64, provider="groq", behavioural_risk_B=1.0)
     result = score(
         static=report,
         ml=None,
@@ -342,3 +347,42 @@ def test_the_scorer_stays_pure_with_g_wired() -> None:
         for _ in range(50)
     ]
     assert len(set(calls)) == 1
+
+
+def test_the_escalator_never_reaches_a_blocking_band() -> None:
+    """An anomaly score justifies a second look, never an accusation.
+
+    `drishti.contracts.verdict` maps CRITICAL and HIGH to `BLOCK`, which the consumer
+    screen renders as DO NOT INSTALL. The escalator must not be able to produce that on
+    its own — its job is that a zero-day does not land quietly in LOW.
+    """
+    from drishti.contracts.verdict import _BLOCK_BANDS
+
+    result = score(
+        static=_static(),
+        ml=_ml(probability=0.01, anomaly=True),
+        genai=None,
+        dynamic=None,
+        intel=None,
+    )
+    assert result.band not in _BLOCK_BANDS
+    assert result.requires_human_review
+
+
+def test_the_escalator_cannot_demote() -> None:
+    """It moves a verdict UP the ladder or leaves it alone. Never down.
+
+    A sample already scoring HIGH on real evidence must not be pulled to MEDIUM just
+    because the novelty detector also fired.
+    """
+    high = score(
+        static=_static(drift=True).model_copy(
+            update={"permission_combos": (_combo("X", Severity.CRITICAL),)}
+        ),
+        ml=_ml(probability=0.95, anomaly=True),
+        genai=GenAIVerdict(sha256="a" * 64, provider="groq", behavioural_risk_B=1.0),
+        dynamic=None,
+        intel=None,
+        yara_severity=1.0,
+    )
+    assert high.band in (SeverityBand.HIGH, SeverityBand.CRITICAL)

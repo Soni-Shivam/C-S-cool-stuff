@@ -55,8 +55,23 @@ venv/
 *.tflite
 # `models/*` not `models/` — a directory pattern excludes the directory itself and
 # no `!` rule can re-include anything inside it, so `!models/.gitkeep` would be dead.
+#
+# The shipped bundle IS tracked, by explicit decision. It is 3.8 MB total (largest
+# file 2.2 MB), so it costs the clone little, and it means the model the paper cites
+# travels with the commit that cites it instead of living only in a GCS bucket a
+# reader cannot reach. `gs://cybershield-505518-models/` stays the runtime source.
+#
+# What is still excluded is everything a RUN produces — scratch bundles, sweeps,
+# checkpoints — so `git status` does not fill with artefacts after every retrain.
 models/*
 !models/.gitkeep
+!models/classifier_v1.pkl
+!models/calibrator_v1.pkl
+!models/anomaly_v1.pkl
+!models/background_v1.npy
+!models/vocab_v1.json
+!models/model_card.json
+!models/metrics.json
 data/corpus/
 androzoo_cache/
 

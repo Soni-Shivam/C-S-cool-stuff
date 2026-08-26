@@ -1,0 +1,40 @@
+{
+  "model_name": "xgboost",
+  "feature_schema_version": "1.2.0",
+  "n_features": 428,
+  "trained_at": "2026-08-26T09:56:19.090419+00:00",
+  "corpus_sources": [
+    "data/corpus/features.jsonl"
+  ],
+  "n_train": 849,
+  "n_train_malware": 468,
+  "n_calib": 207,
+  "n_calib_malware": 122,
+  "n_test": 481,
+  "n_test_malware": 250,
+  "calibration_method": "isotonic",
+  "operating_threshold": 0.046556,
+  "threshold_source": "max-F1 on the calibration split (n=207)",
+  "time_split_pr_auc": 0.9169,
+  "time_split_pr_auc_ci": [
+    0.8828,
+    0.9462
+  ],
+  "random_split_pr_auc": 0.9889,
+  "random_split_pr_auc_ci": [
+    0.979,
+    0.9964
+  ],
+  "generalisation_gap": 0.072,
+  "attribution_method": "shap.TreeExplainer",
+  "library_versions": {
+    "scikit-learn": "1.9.0",
+    "xgboost": "2.1.4",
+    "numpy": "2.4.6"
+  },
+  "notes": [
+    "single-epoch corpus: all 859 stale 1.1.0 rows re-extracted from the retained APKs; the four certificate columns are re-admitted and measured in section 6c rather than assumed useful",
+    "calib/test boundary was re-cut inside the held-out bands (sha256 bucket < 3 of 10 -> calib, else test; applied to the held-out bands only, label-independent, train untouched) because the shipped calibration split held 5 malware rows, under the 10 needed to fit a calibrator. Train untouched, so this is still a time split."
+  ],
+  "model_version": "xgboost-428f-1.2.0"
+}
