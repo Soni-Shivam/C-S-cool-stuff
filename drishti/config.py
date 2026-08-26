@@ -13,10 +13,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import AliasChoices, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-LLMProvider = Literal["openrouter", "gemini", "anthropic", "mock"]
+LLMProvider = Literal["groq"]
 SandboxMode = Literal["live", "replay", "auto"]
 
 
@@ -30,12 +30,13 @@ class Settings(BaseSettings):
     )
 
     # ── LLM ──────────────────────────────────────────────────────────────────
-    # `mock` is deterministic and needs no key, so tests and offline demos never
-    # depend on a provider being reachable.
-    llm_provider: LLMProvider = "mock"
-    openrouter_api_key: SecretStr | None = None
-    gemini_api_key: SecretStr | None = None
-    anthropic_api_key: SecretStr | None = None
+    # Groq is the sole runtime provider. Tests intercept HTTP at their boundary;
+    # production never fabricates an LLM completion when this key is unavailable.
+    llm_provider: LLMProvider = "groq"
+    groq_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GROQ_API_KEY", "DRISHTI_GROQ_API_KEY"),
+    )
     llm_model: str | None = None
 
     # Budgets are asserts, not hopes (00_GUIDING_MAP.md §12).
@@ -95,17 +96,8 @@ class Settings(BaseSettings):
         half-spent, and the failure looks like a model problem rather than a config
         one.
         """
-        required = {
-            "openrouter": self.openrouter_api_key,
-            "gemini": self.gemini_api_key,
-            "anthropic": self.anthropic_api_key,
-        }
-        if self.llm_provider in required and required[self.llm_provider] is None:
-            raise ValueError(
-                f"llm_provider={self.llm_provider!r} requires "
-                f"DRISHTI_{self.llm_provider.upper()}_API_KEY. "
-                "Use DRISHTI_LLM_PROVIDER=mock for offline work."
-            )
+        if self.groq_api_key is None:
+            raise ValueError("llm_provider='groq' requires GROQ_API_KEY (or DRISHTI_GROQ_API_KEY).")
         return self
 
     @property
@@ -113,19 +105,7 @@ class Settings(BaseSettings):
         """Explicit model, else the provider's default."""
         if self.llm_model:
             return self.llm_model
-        return {
-            # Verified callable 2026-08-17: HTTP 200, cost 0, reasoning_details present.
-            # Reasoning models spend most of their completion budget thinking — that probe
-            # burned 172 reasoning tokens to answer in 10 characters — so the
-            # llm_max_prompt_tokens budget is about INPUT and the output cap must leave
-            # room for reasoning as well as the answer.
-            "openrouter": "nvidia/nemotron-3.5-lightning:free",
-            # In the catalogue but UNVERIFIED: the project's credits are depleted, and a
-            # 429 masks whatever a 404 would have said. Probe before trusting it (STATUS.md).
-            "gemini": "gemini-3.1-pro-preview",
-            "anthropic": "claude-sonnet-4-5",
-            "mock": "mock",
-        }[self.llm_provider]
+        return "qwen/qwen3.8-27b"
 
 
 @lru_cache

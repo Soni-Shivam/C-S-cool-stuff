@@ -113,7 +113,7 @@ class GenAIVerdict(AnalyserResult):
     disagreement_flag: bool = False
     disagreement_note: str | None = None
     llm_calls: int = 0
-    provider: str = "mock"
+    provider: str = "groq"
     ledger_refs: tuple[str, ...] = ()
 
     @property

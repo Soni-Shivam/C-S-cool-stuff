@@ -8,57 +8,38 @@ from pydantic import ValidationError
 from drishti.config import Settings
 
 
-def test_defaults_are_offline_safe() -> None:
-    """A fresh checkout must be runnable with no keys at all.
-
-    `mock` as the default provider is what makes `make test` work on a machine that
-    has never seen a credential.
-    """
-    settings = Settings(_env_file=None)
-    assert settings.llm_provider == "mock"
-    assert settings.resolved_llm_model == "mock"
+def test_groq_is_the_only_runtime_provider_and_has_the_selected_default_model() -> None:
+    """Every runtime LLM request must use Groq, never a synthetic fallback."""
+    settings = Settings(_env_file=None, groq_api_key="gsk-test")
+    assert settings.llm_provider == "groq"
+    assert settings.resolved_llm_model == "qwen/qwen3.8-27b"
     assert settings.sandbox_mode == "auto"
 
 
-def test_gemini_without_a_key_fails_at_construction() -> None:
-    """Discovering a missing key at GENAI_STATIC means the run is already half-spent.
-
-    Worse, the failure looks like a model problem rather than a config one.
-    """
-    with pytest.raises(ValidationError, match="GEMINI_API_KEY"):
-        Settings(_env_file=None, llm_provider="gemini", gemini_api_key=None)
-
-
-def test_anthropic_without_a_key_fails_at_construction() -> None:
-    with pytest.raises(ValidationError, match="ANTHROPIC_API_KEY"):
-        Settings(_env_file=None, llm_provider="anthropic", anthropic_api_key=None)
-
-
-def test_provider_with_a_key_is_accepted() -> None:
-    settings = Settings(_env_file=None, llm_provider="gemini", gemini_api_key="k")
-    assert settings.llm_provider == "gemini"
-    assert settings.resolved_llm_model == "gemini-3.1-pro-preview"
+def test_missing_groq_key_fails_at_construction() -> None:
+    """A real analysis never falls back to a synthetic LLM completion."""
+    with pytest.raises(ValidationError, match="GROQ_API_KEY"):
+        Settings(_env_file=None, groq_api_key=None)
 
 
 def test_explicit_model_overrides_the_provider_default() -> None:
-    settings = Settings(
-        _env_file=None, llm_provider="gemini", gemini_api_key="k", llm_model="gemini-flash"
-    )
-    assert settings.resolved_llm_model == "gemini-flash"
+    settings = Settings(_env_file=None, groq_api_key="gsk-test", llm_model="qwen/custom")
+    assert settings.resolved_llm_model == "qwen/custom"
 
 
 def test_api_keys_are_secrets_and_do_not_leak_in_repr() -> None:
     """A settings object ends up in logs and tracebacks. Keys must not."""
-    settings = Settings(_env_file=None, llm_provider="gemini", gemini_api_key="super-secret")
+    settings = Settings(_env_file=None, groq_api_key="super-secret")
     assert "super-secret" not in repr(settings)
     assert "super-secret" not in str(settings)
-    assert settings.gemini_api_key is not None
-    assert settings.gemini_api_key.get_secret_value() == "super-secret"
+    assert settings.groq_api_key is not None
+    assert settings.groq_api_key.get_secret_value() == "super-secret"
 
 
 def test_env_prefix_is_honoured(monkeypatch) -> None:
     monkeypatch.setenv("DRISHTI_SANDBOX_MODE", "replay")
     monkeypatch.setenv("DRISHTI_LLM_MAX_CALLS_PER_JOB", "7")
+    monkeypatch.setenv("GROQ_API_KEY", "gsk-test")
     settings = Settings(_env_file=None)
     assert settings.sandbox_mode == "replay"
     assert settings.llm_max_calls_per_job == 7
@@ -67,37 +48,20 @@ def test_env_prefix_is_honoured(monkeypatch) -> None:
 def test_unprefixed_env_is_ignored(monkeypatch) -> None:
     """Guards against picking up an unrelated variable from the host environment."""
     monkeypatch.setenv("SANDBOX_MODE", "live")
-    assert Settings(_env_file=None).sandbox_mode == "auto"
+    assert Settings(_env_file=None, groq_api_key="gsk-test").sandbox_mode == "auto"
 
 
 def test_budgets_have_the_documented_defaults() -> None:
     """00_GUIDING_MAP.md §12. These are asserts, not aspirations."""
-    settings = Settings(_env_file=None)
+    settings = Settings(_env_file=None, groq_api_key="gsk-test")
     assert settings.llm_max_calls_per_job == 25
     assert settings.llm_max_prompt_tokens == 12_000
     assert settings.static_timeout_s == 90
 
 
-# ── openrouter provider ──────────────────────────────────────────────────────
-def test_openrouter_is_a_selectable_provider() -> None:
-    settings = Settings(llm_provider="openrouter", openrouter_api_key="sk-or-v1-test")
-    assert settings.llm_provider == "openrouter"
-    assert settings.resolved_llm_model == "nvidia/nemotron-3.5-lightning:free"
-
-
-def test_openrouter_without_a_key_fails_at_startup() -> None:
-    """A missing key must fail before a run starts, not at stage GENAI_STATIC.
-
-    Discovering it mid-run means the job is already half-spent and the failure reads
-    like a model problem rather than a config one.
-    """
-    with pytest.raises(ValidationError, match="DRISHTI_OPENROUTER_API_KEY"):
-        Settings(llm_provider="openrouter", openrouter_api_key=None)
-
-
 def test_the_api_key_is_not_printed_by_repr() -> None:
     """Keys have already been leaked once on this project (CARRIED_FINDINGS H8)."""
-    settings = Settings(llm_provider="openrouter", openrouter_api_key="sk-or-v1-secret")
-    assert "sk-or-v1-secret" not in repr(settings)
-    assert settings.openrouter_api_key is not None
-    assert settings.openrouter_api_key.get_secret_value() == "sk-or-v1-secret"
+    settings = Settings(_env_file=None, groq_api_key="gsk-super-secret")
+    assert "gsk-super-secret" not in repr(settings)
+    assert settings.groq_api_key is not None
+    assert settings.groq_api_key.get_secret_value() == "gsk-super-secret"

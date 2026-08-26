@@ -36,7 +36,7 @@ log = get_logger(__name__)
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 #: Roughly 4 characters per token. Deliberately crude: the point is to refuse an
 #: obviously oversized prompt before paying for it, not to bill anyone accurately.
@@ -82,7 +82,7 @@ def parse_and_validate(text: str, model: type[ModelT]) -> ModelT | None:
 
 
 class LLMClient:
-    """Provider-agnostic completion with caching, budgets and validation."""
+    """Groq completion with caching, budgets and validation."""
 
     def __init__(self, settings: Settings, *, use_cache: bool | None = None) -> None:
         self._settings = settings
@@ -194,26 +194,18 @@ class LLMClient:
             log.error("llm_output_invalid_after_repair", model=self._model)
         return repaired
 
-    # ── providers ────────────────────────────────────────────────────────────
+    # ── Groq transport ───────────────────────────────────────────────────────
     def _dispatch(
         self, system: str, user: str, max_output_tokens: int, json_mode: bool = False
     ) -> str | None:
-        if self._provider == "mock":
-            return self._mock(system, user)
-        if self._provider == "openrouter":
-            return self._openrouter(system, user, max_output_tokens, json_mode)
-        raise LLMError(
-            f"provider {self._provider!r} is configured but not implemented. "
-            "openrouter and mock are verified working; gemini and anthropic are not "
-            "wired because neither could be tested (see STATUS.md)."
-        )
+        return self._groq(system, user, max_output_tokens, json_mode)
 
-    def _openrouter(
+    def _groq(
         self, system: str, user: str, max_output_tokens: int, json_mode: bool = False
     ) -> str | None:
-        key = self._settings.openrouter_api_key
+        key = self._settings.groq_api_key
         if key is None:
-            raise LLMError("openrouter selected but DRISHTI_OPENROUTER_API_KEY is unset")
+            raise LLMError("groq selected but GROQ_API_KEY is unset")
         body: dict[str, Any] = {
             "model": self._model,
             "messages": [
@@ -223,20 +215,9 @@ class LLMClient:
             "max_tokens": max_output_tokens,
         }
         if json_mode:
-            # Reasoning models emit their chain of thought as `content`. Measured on this
-            # model: the real analysis prompt came back as 7,669 characters of prose with
-            # the JSON buried inside, and response_format alone did NOT stop it — that
-            # only held on a trivial probe. Disabling reasoning is what actually produces
-            # clean JSON (1,360 chars, parses first time), and it stops the completion
-            # budget being spent on thinking tokens as well.
-            #
-            # Scraping the object out of the prose was the alternative, and it is the
-            # thing 00_GUIDING_MAP 9.4 warns against. Fixing the request beats parsing
-            # around the answer.
-            body["reasoning"] = {"enabled": False}
             body["response_format"] = {"type": "json_object"}
         response = httpx.post(
-            OPENROUTER_URL,
+            GROQ_CHAT_COMPLETIONS_URL,
             headers={
                 "Authorization": f"Bearer {key.get_secret_value()}",
                 "Content-Type": "application/json",
@@ -252,23 +233,3 @@ class LLMClient:
         if not choices:
             return None
         return str(choices[0]["message"].get("content") or "")
-
-    def _mock(self, system: str, user: str) -> str:
-        """Deterministic offline stand-in.
-
-        Derives its answer from a hash of the prompt, so it is stable across runs and
-        the same input always yields the same verdict — which is what makes it usable in
-        tests and in an offline demo without pretending to be a model.
-        """
-        seed = int(hashlib.sha256((system + user).encode()).hexdigest()[:8], 16)
-        from drishti.m4_genai.safety import BEHAVIOUR_WEIGHTS
-
-        names = sorted(BEHAVIOUR_WEIGHTS)
-        behaviours = {name: bool((seed >> index) & 1) for index, name in enumerate(names)}
-        return json.dumps(
-            {
-                "behaviours": behaviours,
-                "summary": "Deterministic mock verdict; no model was called.",
-                "claims": [],
-            }
-        )

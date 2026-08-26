@@ -102,14 +102,14 @@ def test_a_missing_kb_yields_no_techniques(ledger, tmp_path: Path) -> None:
 def test_no_call_paths_means_no_explanations(ledger, tmp_path: Path) -> None:
     """It must not invent narrative for code it was never shown."""
     store, report = ledger
-    settings = Settings(llm_provider="mock", llm_cache_dir=tmp_path / "c")
+    settings = Settings(groq_api_key="gsk-test", llm_cache_dir=tmp_path / "c")
     empty = report.model_copy(update={"call_paths": ()})
     assert explain_paths(empty, store, "job_agents", LLMClient(settings, use_cache=False)) == ()
 
 
 def test_explanations_cite_the_path_they_describe(ledger, tmp_path: Path) -> None:
     store, report = ledger
-    settings = Settings(llm_provider="mock", llm_cache_dir=tmp_path / "c")
+    settings = Settings(groq_api_key="gsk-test", llm_cache_dir=tmp_path / "c")
     for claim in explain_paths(report, store, "job_agents", LLMClient(settings, use_cache=False)):
         assert claim.agent == "code_interpreter"
         for ref in claim.evidence_refs:
