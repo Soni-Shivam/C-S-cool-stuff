@@ -115,6 +115,20 @@ PR-AUC was flattered by a thin test set.
   for the label. Same class of circularity as `vt_detection`, through a different door.
   `dataset.epoch_divergent_features` found exactly those four and nothing else; all
   reported metrics exclude them.
+- **The two-epoch leak is now fixed at the ROOT, not just guarded (2026-08-26,
+  `3716d07`).** Dropping the four certificate features made the metrics honest but threw
+  the certificate signal away. `scripts/reextract_schema.py` re-extracts the 1.1.0 rows
+  from the **retained** corpus APKs (GCS, never AndroZoo — no rate limit touched; same
+  parse-as-data / MAX_APK_MB / delete-immediately discipline as the extractor) and
+  re-runs the CURRENT extractor over them. Result: it identified exactly the **859**
+  affected rows and refreshed **631** of them, self-verifying a single epoch over its
+  output — *0 rows still carrying `cert:age_days`, 0 missing `cert:validity_days`*. The
+  228 not converted in that pass were **all** the >20MB size cap: **zero missing from
+  the bucket, zero analysis failures**; a second resumable pass at a 70MB cap is
+  finishing them. Output: `features/reextracted_cert.jsonl` on the extractor VM, keyed by
+  sha256 so the merge dedups. **Once merged, the four certificate features can re-enter
+  the vocabulary** — the ML owner should re-run `epoch_divergent_features` to confirm the
+  divergence is gone before re-admitting them, rather than assuming it.
 - **Two new guards, tests first.** `assert_no_retired_features` refuses a vocabulary
   listing a name the current extractor cannot emit (the defect that forced this retrain,
   and silent by construction — `project` zero-fills a missing feature, so a stale vocab
