@@ -99,6 +99,25 @@ canary/local.properties
 canary/app/build/
 v1-reference/**/build/
 
+# The three Android apps this repo compiles: DRISHTI Shield (the guard app), the
+# inert challan decoy, and the inert benign control sample. Sources are tracked;
+# build output and the SDK path are not. Their APKs are already blocked by the
+# repo-wide `*.apk` rule above and are deliberately NOT allowlisted —
+# `canary/dist/` remains the only committed artifact, and scripts/demo_up.sh
+# rebuilds all three in well under a minute.
+shield/local.properties
+shield/build/
+shield/app/build/
+canary/decoy-challan/local.properties
+canary/decoy-challan/build/
+canary/decoy-challan/app/build/
+canary/benign-sanchay/local.properties
+canary/benign-sanchay/build/
+canary/benign-sanchay/app/build/
+
+# Runtime state written by scripts/demo_up.sh (pids, logs). Never committed.
+.demo/
+
 # Local agent worktrees. Never commit their contents.
 .worktrees/
 

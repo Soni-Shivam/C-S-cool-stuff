@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ============================================================================
+  DRISHTI CONTROL SAMPLE — "Sanchay Expenses". THIS APPLICATION IS INERT.
+  ============================================================================
+
+  Read canary/benign-sanchay/README.md before changing anything here.
+
+  This is the demo's NEGATIVE control, and it only earns its place by being
+  genuinely awkward: it is a privileged app. It reads SMS, it reads contacts, it
+  enumerates installed packages and it can draw over the screen — the same
+  capabilities the RTO Challan decoy holds, and the same ones Truecaller holds.
+
+  If DRISHTI blocked on capability, it would block this. It does not, and the
+  demo shows why: the two apps differ in SHAPE, not in permissions.
+
+    - it ships no roster of banking or UPI package names
+    - it declares no accessibility service
+    - it has no service component, so overlay + service never combines
+    - it never asks to install another package
+    - it keeps its launcher icon
+
+  Every implementation here is a no-op or a Log.i call, exactly like the decoy.
+  A benign control that actually read your SMS would be a worse thing to have on
+  the demo laptop than the decoy is. canary/benign-sanchay/verify_inert.sh proves
+  it by grep and gates the build.
+  ============================================================================
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- The dual-use pair. An SMS-driven expense tracker genuinely needs these to
+         read bank transaction alerts, and they are exactly what an OTP interceptor
+         needs. Together they trip OTP_THEFT_SURFACE (high, T1582) — ONE high-severity
+         combination, which is deliberately below the block policy's threshold of one
+         critical or two highs. The app is not blocked; the rule still fires and the
+         report still says so. -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+
+    <!-- Truecaller's surface, and the decoy's. Held here with no service component,
+         so OVERLAY_CREDENTIAL_THEFT (which requires SYSTEM_ALERT_WINDOW + INTERNET +
+         a service) does not combine. Capability without the shape. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- To label a payee. No READ_CALL_LOG, so SPYWARE_HARVEST does not combine. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <!-- The permission every "is your bank app installed" prompt uses, benign or not. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_sanchay"
+        android:label="@string/app_name"
+        android:theme="@android:style/Theme.Material.Light">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- A receiver, not a service. The whole point: the same SMS trigger, without
+             the long-running component that the overlay and screen-capture rules key
+             on. The body is a single Log.i — see SmsAlertReceiver.kt. -->
+        <receiver
+            android:name=".SmsAlertReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
