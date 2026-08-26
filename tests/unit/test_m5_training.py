@@ -334,3 +334,51 @@ def test_vocabulary_file_round_trips_through_the_schema_check(tmp_path: Path) ->
     payload = json.loads(path.read_text())
     assert payload["schema_version"] == FEATURE_SCHEMA_VERSION
     assert payload["features"] == ["perm:INTERNET", "sink:sms.send"]
+
+
+# ── attribution ──────────────────────────────────────────────────────────────
+def test_permutation_importance_finds_only_the_columns_that_carry_signal() -> None:
+    """The batched loop restores each permuted column before moving to the next.
+
+    Without the restore, every column after the first would be measured against an
+    already-degraded matrix and its importance silently understated — a bug that leaves
+    a plausible-looking ranking rather than an error.
+    """
+    from drishti.m5_ml import explain
+
+    rng = np.random.default_rng(0)
+    features = (rng.random((300, 80)) < 0.2).astype(float)
+    labels = ((features[:, 0] + features[:, 1]) > 0.5).astype(int)
+    model = models.fit("random_forest", features, labels)
+
+    rows = explain.permutation_importance(
+        model, features, labels, [f"f{i}" for i in range(80)], repeats=3, top_k=5, max_columns=20
+    )
+    assert {rows[0].feature, rows[1].feature} == {"f0", "f1"}
+    assert rows[0].weight > 0.01
+    assert all(row.weight == 0.0 for row in rows[2:])
+
+
+def test_permutation_importance_discloses_that_it_shortlisted() -> None:
+    """A figure must not claim to have ranked features it never shuffled."""
+    from drishti.m5_ml import explain
+
+    rng = np.random.default_rng(1)
+    features = (rng.random((120, 50)) < 0.3).astype(float)
+    labels = (features[:, 0] > 0).astype(int)
+    model = models.fit("random_forest", features, labels)
+
+    rows = explain.permutation_importance(
+        model, features, labels, [f"f{i}" for i in range(50)], repeats=2, top_k=3, max_columns=10
+    )
+    assert "shortlisted to the 10 highest-ranked of 50 columns" in rows[0].method
+
+
+def test_feature_labels_are_readable_and_never_invented() -> None:
+    from drishti.m5_ml import explain
+
+    assert explain.label_for("perm:RECEIVE_SMS") == "permission: RECEIVE_SMS"
+    assert explain.label_for("reach:sms.send") == "sink reachable from lifecycle: sms.send"
+    # An unmapped family is returned untouched rather than given a made-up description.
+    assert explain.label_for("mystery:thing") == "mystery:thing"
+    assert explain.label_for("bare") == "bare"

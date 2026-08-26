@@ -226,12 +226,13 @@ def permutation_importance(
     rng = np.random.default_rng(SEED)
     rows = features.shape[0]
     means = np.zeros(features.shape[1], dtype=float)
+    # All `repeats` shuffles of a column go through the model in ONE call: a per-repeat
+    # call pays joblib's parallel start-up every time, which costs more than the
+    # prediction and made this loop the slowest thing in the training job. The stacked
+    # buffer is allocated once and the permuted column restored after each pass —
+    # reallocating it per column would be tens of gigabytes over a full run.
+    stacked = np.tile(features, (repeats, 1))
     for column in columns:
-        # All `repeats` shuffles of this column go through the model in ONE call. A
-        # per-repeat call pays joblib's parallel start-up every time, which on a small
-        # test split costs more than the prediction itself and turned this loop into the
-        # slowest thing in the training job.
-        stacked = np.tile(features, (repeats, 1))
         for repeat in range(repeats):
             block = slice(repeat * rows, (repeat + 1) * rows)
             stacked[block, column] = rng.permutation(features[:, column])
@@ -242,6 +243,10 @@ def permutation_importance(
             for repeat in range(repeats)
         ]
         means[column] = float(np.mean(drops))
+        # Restore, or the next column would be measured against an already-degraded
+        # matrix and every importance after the first would be understated.
+        for repeat in range(repeats):
+            stacked[repeat * rows : (repeat + 1) * rows, column] = features[:, column]
 
     order = np.argsort(-means)[:top_k]
     return [
