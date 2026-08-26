@@ -492,6 +492,10 @@ def main() -> int:
             "per_method_on_test": per_method,
             "n_test": len(y_test),
             "n_test_malware": int((y_test == 1).sum()),
+            # PHASE_2 T2.4's acceptance check, measured rather than asserted: of the
+            # samples the model calls ~80% malicious, roughly 80% should be malicious.
+            "bin_agreement_before": calibrate.bin_agreement(y_test, raw_test),
+            "bin_agreement_after": calibrate.bin_agreement(y_test, calibrated_test),
         }
         figures.reliability_diagram(
             calibrate.reliability(y_test, raw_test),
@@ -900,6 +904,24 @@ def _write_results(
             lines.append("|---|---:|---:|")
             for method, values in calibration["per_method_on_test"].items():
                 lines.append(f"| {method} | {values['brier_test']} | {values['ece_test']} |")
+        for label, key in (("before", "bin_agreement_before"), ("after", "bin_agreement_after")):
+            check = calibration.get(key) or {}
+            if check.get("observed_rate") is None:
+                lines.append(f"- Bucket check ({label}): {check.get('note', 'not run')}")
+                continue
+            verdict = "within" if check["within_tolerance"] else "**outside**"
+            lines.append(
+                f"- Bucket check ({label}): of the {check['n']} test samples scored "
+                f"{check['bin'][0]}-{check['bin'][1]}, **{check['observed_rate']:.1%}** were "
+                f"malware against an expected {check['expected_rate']:.0%} — {verdict} the "
+                f"±{check['tolerance']:.0%} tolerance. {check['note'].capitalize()}."
+            )
+        lines.append(
+            "\nThat bucket check is `PHASE_2` T2.4's acceptance criterion and the one a "
+            "reader can verify by hand. A model can pass every ranking metric and still "
+            "fail it, and when it does an entire band of verdicts lands in the wrong "
+            "bucket.\n"
+        )
         lines.append("\n![Reliability](figures/ml_reliability.png)\n")
         lines.append(
             "The method is chosen by cross-validated Brier **within** the calibration "

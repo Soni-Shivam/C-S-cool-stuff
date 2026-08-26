@@ -241,3 +241,52 @@ def brier(labels: np.ndarray, probabilities: np.ndarray) -> float:
     from sklearn.metrics import brier_score_loss
 
     return round(float(brier_score_loss(np.asarray(labels, dtype=int), probabilities)), 6)
+
+
+def bin_agreement(
+    labels: np.ndarray,
+    probabilities: np.ndarray,
+    *,
+    low: float = 0.75,
+    high: float = 0.85,
+    tolerance: float = 0.10,
+) -> dict[str, Any]:
+    """Does the [low, high] bucket actually contain the malware rate it claims?
+
+    PHASE_2 T2.4 states this as the acceptance check for calibration, and it is the one a
+    reader can verify by hand: of the samples the model called ~80% malicious, roughly
+    80% should be malicious. A model that passes every ranking metric can still fail this
+    badly, and when it does, a whole band of verdicts lands in the wrong bucket.
+
+    Returns the measurement rather than an assertion, including `n` — with four samples
+    in the bucket the check is not informative and says so instead of passing quietly.
+    """
+    labels = np.asarray(labels, dtype=int)
+    probabilities = np.asarray(probabilities, dtype=float)
+    mask = (probabilities >= low) & (probabilities <= high)
+    count = int(mask.sum())
+    expected = (low + high) / 2
+    if count == 0:
+        return {
+            "bin": [low, high],
+            "n": 0,
+            "observed_rate": None,
+            "expected_rate": expected,
+            "tolerance": tolerance,
+            "within_tolerance": None,
+            "note": "no test samples landed in this probability bucket — nothing to check",
+        }
+    observed = float(labels[mask].mean())
+    return {
+        "bin": [low, high],
+        "n": count,
+        "observed_rate": round(observed, 6),
+        "expected_rate": expected,
+        "tolerance": tolerance,
+        "within_tolerance": bool(abs(observed - expected) <= tolerance),
+        "note": (
+            "informative"
+            if count >= 10
+            else f"only {count} samples in the bucket — the result is not informative"
+        ),
+    }

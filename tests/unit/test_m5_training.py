@@ -382,3 +382,29 @@ def test_feature_labels_are_readable_and_never_invented() -> None:
     # An unmapped family is returned untouched rather than given a made-up description.
     assert explain.label_for("mystery:thing") == "mystery:thing"
     assert explain.label_for("bare") == "bare"
+
+
+def test_bin_agreement_measures_the_bucket_the_roadmap_names() -> None:
+    """PHASE_2 T2.4: of the samples scored ~0.8, roughly 0.8 should be malware."""
+    probabilities = np.array([0.80] * 10 + [0.1] * 10)
+    labels = np.array([1] * 8 + [0] * 2 + [0] * 10)
+    result = calibrate.bin_agreement(labels, probabilities)
+    assert result["n"] == 10
+    assert result["observed_rate"] == pytest.approx(0.8)
+    assert result["within_tolerance"] is True
+
+
+def test_bin_agreement_flags_a_bucket_that_lies() -> None:
+    probabilities = np.array([0.80] * 10)
+    labels = np.array([1] * 3 + [0] * 7)
+    result = calibrate.bin_agreement(labels, probabilities)
+    assert result["observed_rate"] == pytest.approx(0.3)
+    assert result["within_tolerance"] is False
+
+
+def test_bin_agreement_says_when_it_cannot_tell() -> None:
+    """An empty or tiny bucket must not report a quiet pass."""
+    empty = calibrate.bin_agreement(np.array([1, 0]), np.array([0.1, 0.2]))
+    assert empty["n"] == 0 and empty["within_tolerance"] is None
+    tiny = calibrate.bin_agreement(np.array([1, 0]), np.array([0.8, 0.8]))
+    assert tiny["n"] == 2 and "not informative" in tiny["note"]
