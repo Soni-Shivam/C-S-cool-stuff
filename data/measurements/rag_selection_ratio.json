@@ -1,0 +1,147 @@
+{
+  "measured_at": "2026-08-26",
+  "measured_on": "extractor VM instance-20260817-080247, retrieval-only harness (rag_retrieval_only.py)",
+  "note": "Real corpus banking trojans pulled to VM scratch, analysed as data (androguard), deleted. Ratio = methods select() picks over the app's internal method count. workspace_tokens = render_workspace() length / CHARS_PER_TOKEN. Prompt budget is 12000.",
+  "samples": [
+    {
+      "sha16": "841e432a41b96250",
+      "family": "Coper",
+      "pkg": "com.beginhigh19",
+      "methods_selected": 5,
+      "total_internal_methods": 454,
+      "selection_ratio_pct": 1.101,
+      "call_paths": 22,
+      "workspace_tokens": 2300,
+      "partial": false
+    },
+    {
+      "sha16": "dc2a780f6abb9f0e",
+      "family": "Coper",
+      "pkg": "com.pagethan10",
+      "methods_selected": 9,
+      "total_internal_methods": 6565,
+      "selection_ratio_pct": 0.137,
+      "call_paths": 5,
+      "workspace_tokens": 4832,
+      "partial": false
+    },
+    {
+      "sha16": "33ece8395604682f",
+      "family": "Coper",
+      "pkg": "com.wreck.chef",
+      "methods_selected": 8,
+      "total_internal_methods": 16044,
+      "selection_ratio_pct": 0.05,
+      "call_paths": 5,
+      "workspace_tokens": 4786,
+      "partial": false
+    },
+    {
+      "sha16": "3c0edd3c80f917d0",
+      "family": "SpyNote",
+      "pkg": "cataloger.triager.synchronizer",
+      "methods_selected": 0,
+      "total_internal_methods": -1,
+      "selection_ratio_pct": null,
+      "call_paths": 0,
+      "workspace_tokens": 15,
+      "partial": true
+    },
+    {
+      "sha16": "d472e114361dd2c6",
+      "family": "SpyNote",
+      "pkg": "com.knsku.qmyota",
+      "methods_selected": 7,
+      "total_internal_methods": 117,
+      "selection_ratio_pct": 5.983,
+      "call_paths": 5,
+      "workspace_tokens": 3440,
+      "partial": false
+    },
+    {
+      "sha16": "d300e348a236c6fc",
+      "family": "Hydra",
+      "pkg": "com.ombththz.ufqsuqx",
+      "methods_selected": 8,
+      "total_internal_methods": 48449,
+      "selection_ratio_pct": 0.017,
+      "call_paths": 29,
+      "workspace_tokens": 4758,
+      "partial": false
+    },
+    {
+      "sha16": "d0279f6afa15e292",
+      "family": "Ermac",
+      "pkg": "com.jakedegivuwuwe.yewo",
+      "methods_selected": 6,
+      "total_internal_methods": 1261,
+      "selection_ratio_pct": 0.476,
+      "call_paths": 5,
+      "workspace_tokens": 689,
+      "partial": false
+    },
+    {
+      "sha16": "14b005352c07490b",
+      "family": "Ermac",
+      "pkg": "com.tencent.mm",
+      "methods_selected": 4,
+      "total_internal_methods": 35654,
+      "selection_ratio_pct": 0.011,
+      "call_paths": 18,
+      "workspace_tokens": 4216,
+      "partial": false
+    },
+    {
+      "sha16": "ca3da13d69ce07ed",
+      "family": "Octo",
+      "pkg": "com.atlotzowj",
+      "methods_selected": 0,
+      "total_internal_methods": 11,
+      "selection_ratio_pct": 0.0,
+      "call_paths": 0,
+      "workspace_tokens": 15,
+      "partial": false
+    },
+    {
+      "sha16": "0a2f1bdec6df99d0",
+      "family": "Octo",
+      "pkg": "com.portnight",
+      "methods_selected": 6,
+      "total_internal_methods": 453,
+      "selection_ratio_pct": 1.325,
+      "call_paths": 22,
+      "workspace_tokens": 2353,
+      "partial": false
+    },
+    {
+      "sha16": "554e71b4e5d2a172",
+      "family": "TeaBot",
+      "pkg": "com.lbugkgtau.iuzdlpqzr",
+      "methods_selected": 8,
+      "total_internal_methods": 43388,
+      "selection_ratio_pct": 0.018,
+      "call_paths": 30,
+      "workspace_tokens": 4105,
+      "partial": false
+    }
+  ],
+  "summary": {
+    "n_total": 11,
+    "n_with_call_paths": 9,
+    "methods_selected_range": [
+      4,
+      9
+    ],
+    "total_methods_range": [
+      117,
+      48449
+    ],
+    "workspace_tokens_range": [
+      689,
+      4832
+    ],
+    "max_workspace_tokens_vs_budget": "4832 of 12000 (40%)",
+    "smallest_ratio_pct": 0.011,
+    "example_headline": "Hydra d300e348: 8 of 48449 methods (0.017%) -> 4758 tokens; TeaBot 554e71b4: 8 of 43388 (0.018%) -> 4105 tokens"
+  }
+}

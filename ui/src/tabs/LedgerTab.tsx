@@ -15,6 +15,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { ledgerExportUrl, verifyLedger } from '../api/client'
+import { EvidenceResolution } from '../components/Evidence'
 import { count, Empty, Panel, Raw, SectionHead, Tag } from '../components/primitives'
 import type { ChainVerification, EvidenceNode } from '../api/types'
 
@@ -85,6 +86,24 @@ export function LedgerTab({
           </>
         }
       />
+
+      {selectedId && (
+        <Panel
+          title="Selected evidence"
+          subtitle="Resolved through GET /api/evidence/{node_id} — the same drilldown an auditor would call"
+          right={
+            <button
+              type="button"
+              onClick={() => onSelect(null)}
+              className="rounded-full border border-line-bright bg-ground-2 px-3 py-1.5 text-xs text-muted transition-colors hover:border-v400 hover:text-v300"
+            >
+              clear
+            </button>
+          }
+        >
+          <EvidenceResolution nodeId={selectedId} />
+        </Panel>
+      )}
 
       <Panel
         title="Chain verification"

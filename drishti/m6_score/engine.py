@@ -19,6 +19,47 @@ from drishti.contracts.score import (
 )
 from drishti.contracts.static_report import StaticReport, ThreatIntel
 
+#: Severity of a matched deterministic rule, on the 0-1 scale `G` expects.
+#: The worst match wins rather than the sum: five MEDIUM combos are not more damning
+#: than one CRITICAL one, and summing would let volume outvote severity.
+_RULE_SEVERITY: dict[str, float] = {
+    "critical": 1.0,
+    "high": 0.70,
+    "medium": 0.40,
+    "low": 0.15,
+}
+
+
+def rule_severity(static: StaticReport | None) -> float:
+    """The severity of the worst deterministic rule that fired, for the `G` term.
+
+    `G` is documented as "signature severity" and was specified around YARA family
+    rules — which do not exist yet, so **no caller ever supplied it and G was
+    permanently 0.0**, contributing nothing of its 0.15 weight. The consequence was
+    structural rather than cosmetic: with R absent (no intel), G dead and D small, a
+    static-only triage could not exceed **S=54** no matter how damning the manifest,
+    so HIGH (65) and CRITICAL (85) were unreachable without ML or a detonation. An APK
+    declaring an OTP-theft surface, an overlay-credential-theft surface, accessibility
+    abuse at CRITICAL and dropper capability capped at MEDIUM.
+
+    Permission combinations are the same category of evidence as a YARA hit: a
+    deterministic, human-written rule matched, with a severity attached and no model in
+    the path. `PHASE_1` and the paper's §4.2.1 both describe these combinations as
+    primary features. So they feed `G`.
+
+    Pure: no I/O, no clock, no randomness — the scorer's guarantee is unaffected, and
+    this is a plain function of the report it is handed.
+    """
+    if static is None or not static.permission_combos:
+        return 0.0
+    return max(
+        _RULE_SEVERITY.get(
+            combo.severity.value if hasattr(combo.severity, "value") else str(combo.severity),
+            0.0,
+        )
+        for combo in static.permission_combos
+    )
+
 
 def score(
     *,
@@ -63,11 +104,11 @@ def score(
         ),
         _factor(
             "G",
-            "Signature severity",
+            "Deterministic rule severity",
             _clamp(yara_severity),
             0.15,
-            {"yara_severity": yara_severity},
-            (),
+            {"rule_severity": yara_severity},
+            _refs(static),
         ),
         _factor(
             "D",

@@ -1,0 +1,291 @@
+{
+  "schema_version": "1.0",
+  "sha256": "29ed9355ca6d70eede4255c1378482438de9ad3bea2062ef4dddf6b7702d2524",
+  "package": "com.niconi",
+  "simulated": false,
+  "outcome": "completed",
+  "observations": [
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:15.058514+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.016820+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.niconi",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.119319+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.155555+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.niconi",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.157737+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.158761+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=projekt.substratum",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.159646+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.webview",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.166341+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.424568+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.426965+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.android.vending",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.579103+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.google.android.gms",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.598825+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.niconi",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.763072+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getDeviceId -> <null>",
+      "source_hook": "TelephonyManager.getDeviceId",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.778246+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getSimSerialNumber -> <null>",
+      "source_hook": "TelephonyManager.getSimSerialNumber",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.782532+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getSimSerialNumber -> <null>",
+      "source_hook": "TelephonyManager.getSimSerialNumber",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.782664+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:16.799041+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Software discovery",
+      "mitre": "T1418",
+      "detail": "queried package=com.niconi",
+      "source_hook": "PackageManager.getPackageInfo",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:17.987472+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getDeviceId -> <null>",
+      "source_hook": "TelephonyManager.getDeviceId",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:18.106370+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getSimSerialNumber -> <null>",
+      "source_hook": "TelephonyManager.getSimSerialNumber",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:18.234579+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "System information discovery",
+      "mitre": "T1426",
+      "detail": "getSimSerialNumber -> <null>",
+      "source_hook": "TelephonyManager.getSimSerialNumber",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:18.235418+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=http://www.pgyer.com/apiv#/update/check",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:18.269646+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=http://www.pgyer.com/apiv#/sdkstat/launch",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:18.401074+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Application layer protocol",
+      "mitre": "T1437",
+      "detail": "opened connection to=http://www.pgyer.com/apiv#/sdkstat/install",
+      "source_hook": "URL.openConnection",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:18.405764+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:25.093801+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:26.118001+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:28.399532+00:00"
+    },
+    {
+      "type": "observation",
+      "technique": "Input capture via overlay",
+      "mitre": "T1417",
+      "detail": "added a window over other apps",
+      "source_hook": "WindowManager.addView",
+      "redacted": true,
+      "occurred_at": "2026-08-26T03:05:33.715620+00:00"
+    }
+  ],
+  "failures": [],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "629cf796b47e92aaf40732d2eb54d94ad389be7700f92143149c840448421fcf",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T03:02:35.574089+00:00"
+  },
+  "started_at": "2026-08-26T03:04:52.696639+00:00",
+  "finished_at": "2026-08-26T03:06:46.607611+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339"
+  ],
+  "mitre_observed": [
+    "T1417",
+    "T1418",
+    "T1426",
+    "T1437"
+  ]
+}

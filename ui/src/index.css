@@ -42,8 +42,14 @@
   --color-v800: #5b21b6;
   --color-magenta: #e23fd8;
 
+  /* Two tokens for one accent, a distinction carried over from the detection
+     branch and worth keeping: the brand violet fails contrast as small type on
+     this ground, so `accent` is the legible tint used for words and
+     `accent-strong` is the brand violet used for anything that is a shape. */
   --color-accent: #c084fc;
   --color-accent-2: #a855f7;
+  --color-accent-strong: #8b3dee;
+  --color-accent-soft: #241a42;
 
   /* ─── text ───────────────────────────────────────────────────────────── */
   --color-fg: #f4f1ff;

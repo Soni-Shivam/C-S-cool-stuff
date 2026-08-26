@@ -9,10 +9,15 @@
  *  * A call path with `reachable_from_lifecycle === false` is dimmed and marked
  *    "not reachable". Dead library code reaches dangerous sinks constantly, and a
  *    tree that treats it identically to a live path overstates the finding.
+ *  * The lookalike assessment (A13) is rendered ABOVE the permission table rather
+ *    than after it. Half these rules fire on apps nobody would call malicious, so a
+ *    reader who meets the table first has already drawn a conclusion by the time the
+ *    caveat arrives.
  */
 
 import { useState } from 'react'
 import type { Artefact } from '../api/client'
+import { LookalikePanel } from '../components/Lookalike'
 import {
   ArtefactGate,
   count,
@@ -123,6 +128,12 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                 }
               />
             </div>
+
+            {/* Above the permission table, because it is the frame the table should
+                be read in: several of these rules fire on apps nobody would call
+                malicious, and a reader who meets the table first has already drawn
+                the wrong conclusion by the time they get here. */}
+            {value.lookalike && <LookalikePanel lookalike={value.lookalike} />}
 
             <div className="grid gap-4 xl:grid-cols-2">
               <Panel

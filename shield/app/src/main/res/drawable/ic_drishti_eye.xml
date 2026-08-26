@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The DRISHTI mark: an eye inside a shield.
+
+  Drawn here as a vector rather than shipped as a bitmap so it stays sharp at the
+  size the interstitial uses it (roughly a third of the screen) and so the app
+  carries no binary asset that has to be kept in sync with anything.
+
+  "Drishti" is sight. The shape is a shield outline, a lens (two arcs meeting at
+  the corners of the eye), an iris ring and a pupil — concentric, so the breathing
+  animation in `BreathingLogoView` reads as a pulse from the centre outward.
+
+  One colour, #7C3AED, at three opacities. Tinting is done in code where the screen
+  needs it; nothing else about the mark changes between screens.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Shield outline. Flat shoulders, tapered point — reads at a distance. -->
+    <path
+        android:pathData="M60,7 L104,25 L104,57 C104,86 84,106 60,113 C36,106 16,86 16,57 L16,25 Z"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="4.5"
+        android:strokeLineJoin="round"
+        android:fillColor="#141033" />
+
+    <!-- Inner shield rule, faint: gives the outline weight without thickening it. -->
+    <path
+        android:pathData="M60,15 L97,30 L97,57 C97,82 80,99 60,105 C40,99 23,82 23,57 L23,30 Z"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="1.2"
+        android:strokeAlpha="0.35" />
+
+    <!-- The lens: upper and lower arc of the eye. -->
+    <path
+        android:pathData="M30,58 C41,41 79,41 90,58 C79,75 41,75 30,58 Z"
+        android:strokeColor="#A78BFA"
+        android:strokeWidth="4"
+        android:strokeLineJoin="round" />
+
+    <!-- Iris ring, concentric with the pupil. -->
+    <path
+        android:pathData="M60,44 m-14,14 a14,14 0 1,0 28,0 a14,14 0 1,0 -28,0"
+        android:strokeColor="#7C3AED"
+        android:strokeWidth="3.2" />
+
+    <!-- Pupil. -->
+    <path
+        android:pathData="M60,51 m-7,7 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0"
+        android:fillColor="#C4B5FD" />
+</vector>

@@ -1,0 +1,85 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "d1004db1fe5ddb354ed1c091aa8f7389b7219e871e855bc1c17066d217a2aaf8",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of com.archie.xielunyan on the sealed GCE detonator, containment manifest 77a218687429cfac66bb86192e9f3cb0eb0d22afe682414db4b4c8e43b536742.",
+    "authored_at": "2026-08-26T03:36:11.107743+00:00",
+    "source_sha256": "d1004db1fe5ddb354ed1c091aa8f7389b7219e871e855bc1c17066d217a2aaf8",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "run_id": "run_d1004db1fe5d",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "44 instrumented observations across 5 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 1287,
+        "api": "WindowManager.addView",
+        "args": [
+          "added a window over other apps"
+        ],
+        "count": 2
+      },
+      {
+        "t_ms": 9,
+        "api": "Cipher.doFinal",
+        "args": [
+          "crypto op plaintext=currentdata"
+        ],
+        "count": 26
+      },
+      {
+        "t_ms": 1616,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=com.archie.xielunyan"
+        ],
+        "count": 6
+      },
+      {
+        "t_ms": 44,
+        "api": "TelephonyManager.getDeviceId",
+        "args": [
+          "getDeviceId -> <null>"
+        ],
+        "count": 6
+      },
+      {
+        "t_ms": 0,
+        "api": "TelephonyManager.getSubscriberId",
+        "args": [
+          "getSubscriberId -> <null>"
+        ],
+        "count": 2
+      },
+      {
+        "t_ms": 208,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=http://api.doumob.com/clientinfo"
+        ],
+        "count": 1
+      },
+      {
+        "t_ms": 186,
+        "api": "PackageManager.getInstalledPackages",
+        "args": [
+          "enumerated installed packages"
+        ],
+        "count": 1
+      }
+    ],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T03:36:11.107743+00:00",
+    "synthetic": false,
+    "errors": [],
+    "partial": false
+  },
+  "post_morph": {}
+}

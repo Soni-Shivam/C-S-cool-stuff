@@ -1,0 +1,29 @@
+{
+  "sha256": "ba5100f52fce16e84758ee78f58a647c23f0112323594f8de5b70839bbb2f7b9",
+  "package_name": "com.rto.echallan.verify",
+  "threat_score": 92,
+  "severity_band": "CRITICAL",
+  "confidence": 0.83,
+  "provenance": "STATIC_ONLY",
+  "impersonated_target": "the Transport Department (Parivahan)",
+  "victim_profile": {
+    "language": "hi",
+    "tactic": "fear_of_penalty",
+    "segment": "vehicle_owners"
+  },
+  "behaviors_detected": [
+    "reads_sms",
+    "overlays_other_apps",
+    "abuses_accessibility",
+    "exfiltrates_data"
+  ],
+  "attack_techniques": ["T1417.001", "T1582", "T1636.004"],
+  "evidence_refs": ["ev_000000000001", "ev_000000000002"],
+  "consumer_summary": "This app is not a government traffic-fine notice. It can read the one-time passwords your bank sends you, and draw a fake screen on top of your banking app so that what you type goes to someone else. Do not install it.",
+  "recommended_action": "BLOCK",
+  "dynamic_trace": null,
+  "adversarial_elicitation_deployed": [],
+  "limitations": [
+    "No detonation was performed; behaviour is inferred from static analysis only."
+  ]
+}

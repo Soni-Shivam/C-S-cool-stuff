@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "sha256": "a481226218de3efd5cf98443a36c353ea17d6dbc83df0252bf5dec028b00e0d8",
+  "package": "com.brightoilonline.c2b_phone",
+  "simulated": false,
+  "outcome": "failed",
+  "observations": [],
+  "failures": [
+    {
+      "code": "install_unsupported",
+      "stage": "install",
+      "message": "Performing Streamed Install\n\nadb: failed to install /opt/drishti/scratch/a481226218de3efd5cf98443a36c353ea17d6dbc83df0252bf5dec028b00e0d8.apk: Failure [INSTALL_FAILED_NO_MATCHING_ABIS: INSTALL_FAILED_NO_MATCHING_ABIS: Failed to extract native libraries, res=-113]\n\n",
+      "occurred_at": "2026-08-26T07:08:59.935100+00:00"
+    }
+  ],
+  "snapshot": {
+    "name": "clean",
+    "before_restore": "passed",
+    "after_restore": "passed",
+    "package_absent_after": true
+  },
+  "metadata": {
+    "harness_version": "m3-harness-2.0.0",
+    "hook_version": "m3-hooks-2.0.0",
+    "emulator_image": "m3-detonator-manual-20260826",
+    "emulator_serial": "emulator-5554",
+    "avd_name": "drishti",
+    "sample_kind": "vetted_malware",
+    "containment_manifest_sha256": "8bed313b0c6712678b1c01d3177e3a585945e932186e1d792a45e747343fb1e0",
+    "containment_verified": true,
+    "containment_verified_at": "2026-08-26T07:08:40.518984+00:00"
+  },
+  "started_at": "2026-08-26T07:08:51.024988+00:00",
+  "finished_at": "2026-08-26T07:09:02.964497+00:00",
+  "duration_s": null,
+  "diagnostics": [
+    "containment:7382052279419138339",
+    "pass=1; morphs=none"
+  ],
+  "mitre_observed": []
+}

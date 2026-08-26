@@ -78,6 +78,18 @@ async def create_job(
     return {"job_id": job.id}
 
 
+@app.get("/api/jobs", tags=["jobs"])
+def list_jobs(runner: RunnerDep) -> list[Job]:
+    """Every job this process has seen, newest first.
+
+    Added for the live demo (docs/DEMO_SCRIPT.md): jobs are created by the DRISHTI
+    Shield app on the phone, so the dashboard has no job id to deep-link to and needs
+    a way to discover the newest one. Additive to the T0.6 surface — no existing
+    route's path, method, or response shape changes.
+    """
+    return sorted(runner.list_jobs(), key=lambda job: job.created_at, reverse=True)
+
+
 @app.get("/api/jobs/{job_id}", tags=["jobs"])
 def get_job(job: JobDep) -> Job:
     return job

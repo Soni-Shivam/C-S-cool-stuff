@@ -97,7 +97,11 @@ export interface AnalyserResult {
 
 // ─── §5 / §6 ML and score ────────────────────────────────────────────────────
 
-export type SeverityBand = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+// Re-exported from the generated binding rather than restated here. `SeverityBand` is
+// the one enum this file shares with `Verdict`, and two hand-kept copies of it would be
+// the drift contract A15 forbids.
+import type { SeverityBand } from './verdict.gen'
+export type { SeverityBand }
 
 export interface FeatureAttribution {
   feature: string
@@ -328,6 +332,37 @@ export interface FileMeta extends AnalyserResult {
   ledger_refs: string[]
 }
 
+export type BenignLookalikeVerdict = 'trojan_shape' | 'legitimate_privileged' | 'indeterminate'
+
+/** One discriminator from `m2_static/lookalike.py`, and whether it fired. */
+export interface LookalikeSignal {
+  id: string
+  present: boolean
+  weight: number
+  detail: string
+  evidence_refs: string[]
+}
+
+/**
+ * Contract A13. Why this app is, or is not, the trojan its permissions would allow.
+ *
+ * `shared_permissions` is the half that matters to a reader: the capabilities this
+ * sample holds in common with Truecaller, SMS-backup tools and anti-spam apps. The
+ * panel leads with it, because a report that presents a dual-use permission as though
+ * it were itself the finding is a report that flags Truecaller.
+ *
+ * There is no `benign` verdict. `indeterminate` is the best available.
+ */
+export interface LookalikeAssessment {
+  verdict: BenignLookalikeVerdict
+  trojan_score: number
+  signals: LookalikeSignal[]
+  shared_permissions: string[]
+  targeted_financial_packages: string[]
+  publisher_trusted: boolean
+  rationale: string
+}
+
 export interface StaticReport extends AnalyserResult {
   sha256: string
   package: string
@@ -356,6 +391,7 @@ export interface StaticReport extends AnalyserResult {
   decompiled_methods: DecompiledMethod[]
   sink_hits: string[]
   hypotheses: Hypothesis[]
+  lookalike: LookalikeAssessment | null
   ledger_refs: string[]
 }
 
@@ -451,6 +487,32 @@ export interface DynamicTrace extends AnalyserResult {
   containment_verified: boolean
   captured_at: string | null
   synthetic: boolean
+}
+
+// ─── A12 reporting dossier ───────────────────────────────────────────────────
+
+/**
+ * The complaint package for a cyber cell or a bank fraud desk. Mirrors the response of
+ * `GET /api/jobs/{job}/artifacts/dossier` (`drishti/m7_report/dossier.py`).
+ *
+ * `submission_is_manual` is always `true` and there is no code path that can set it
+ * false: India's National Cyber Crime Reporting Portal has no public submission API.
+ * Nothing in this product files a complaint. The UI generates a package a human files,
+ * and must never offer a control that reads as "report to cyber cell".
+ */
+export interface Dossier {
+  sha256: string
+  reportable: boolean
+  reason: string
+  summary: string
+  facts: Record<string, string | number | boolean | null>
+  indicators: string[]
+  techniques: string[]
+  caveats: string[]
+  portal_url: string
+  helpline: string
+  submission_is_manual: boolean
+  text: string
 }
 
 // ─── §4 GenAI verdict ────────────────────────────────────────────────────────

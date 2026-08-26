@@ -1,21 +1,38 @@
 /**
- * Report: the HTML report and the exportable artefacts.
+ * Report: the HTML report, the machine-readable exports, and the complaint package.
  *
- * All three of report.html, YARA and STIX return **501 with the owning task id**
- * today (T6.3, T6.1, T6.2). This tab therefore mostly renders those 501s — which is
- * the correct thing to render. A placeholder report that looked like a real one is
- * exactly what `drishti/api/routes/artifacts.py` refuses to serve, and the UI has
- * no business inventing one on the client instead.
+ * All four routes are implemented — report.html (T6.3), YARA (T6.1), STIX (T6.2) and
+ * the dossier (contract A12). This tab previously stated they were unbuilt and offered
+ * dead buttons labelled with their task ids, which was true when it was written and had
+ * quietly become false. Understating what exists is the same defect as overstating it:
+ * both leave the screen saying something the system does not.
  *
- * The ledger export is real and downloads today, so it is not lumped in with them.
+ * What the tab still refuses to invent is unchanged. Every panel renders through
+ * `ArtefactGate`, so a job that has not reached `ingest`/`score` shows 404-pending and a
+ * genuinely unbuilt feature would show its 501 and its owning task — never a plausible
+ * placeholder.
+ *
+ * **The complaint package is generated, never filed.** India's National Cyber Crime
+ * Reporting Portal has no public submission API; `submission_is_manual` is always true
+ * and there is no control here that submits anything. The button says "download", the
+ * portal is a link a human follows, and nothing in this product tells a user their
+ * complaint has been lodged.
  */
 
 import { useEffect, useState } from 'react'
 import type { Artefact } from '../api/client'
-import { getReportHtml, getStix, getYara, ledgerExportUrl } from '../api/client'
-import { ArtefactGate, Panel, SectionHead } from '../components/primitives'
+import {
+  exportUrls,
+  getDossier,
+  getReportHtml,
+  getStix,
+  getYara,
+  ledgerExportUrl,
+} from '../api/client'
+import { ArtefactGate, Panel, SectionHead, Tag } from '../components/primitives'
+import type { Dossier } from '../api/types'
 
-function Unbuilt({ artefact }: { artefact: Artefact<unknown> | null }) {
+function Payload({ artefact }: { artefact: Artefact<unknown> | null }) {
   return (
     <ArtefactGate artefact={artefact}>
       {(value) => (
@@ -27,15 +44,89 @@ function Unbuilt({ artefact }: { artefact: Artefact<unknown> | null }) {
   )
 }
 
+function Download({ href, name, children }: { href: string; name: string; children: string }) {
+  return (
+    <a
+      href={href}
+      download={name}
+      className="rounded border border-accent/50 bg-accent-soft px-3 py-1.5 text-sm text-accent hover:bg-accent/20"
+    >
+      {children}
+    </a>
+  )
+}
+
+function ComplaintPackage({ dossier }: { dossier: Dossier }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Tag tone={dossier.reportable ? 'bad' : 'neutral'}>
+          {dossier.reportable ? 'meets the reporting threshold' : 'below the reporting threshold'}
+        </Tag>
+        <span className="text-xs text-muted">{dossier.reason}</span>
+      </div>
+
+      <p className="rounded border border-warn/30 bg-warn/5 px-3 py-2 text-sm text-warn">
+        Nothing is filed by this system. The portal has no submission API, so this package
+        is written for a person to attach to a complaint they raise themselves at{' '}
+        <span className="font-mono">{dossier.portal_url}</span> or on{' '}
+        <span className="font-mono">{dossier.helpline}</span>. The sample itself never
+        leaves the analysis project — this is hashes and derived facts.
+      </p>
+
+      <p className="text-sm text-fg">{dossier.summary}</p>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div>
+          <div className="text-[10px] tracking-widest text-dim uppercase">
+            Indicators ({dossier.indicators.length})
+          </div>
+          {dossier.indicators.length === 0 ? (
+            <p className="mt-1 text-sm text-muted italic">
+              none — only observed infrastructure is listed, never a flow our own
+              Generative C2 synthesised
+            </p>
+          ) : (
+            <ul className="mt-1 space-y-0.5 font-mono text-[11px] break-all text-muted">
+              {dossier.indicators.map((indicator) => (
+                <li key={indicator}>{indicator}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div>
+          <div className="text-[10px] tracking-widest text-dim uppercase">
+            Caveats ({dossier.caveats.length})
+          </div>
+          <ul className="mt-1 space-y-1 text-xs text-muted">
+            {dossier.caveats.map((caveat, i) => (
+              <li key={i} className="border-l-2 border-warn/40 pl-2">
+                {caveat}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <pre className="max-h-72 overflow-auto rounded bg-ground p-3 font-mono text-xs leading-relaxed text-muted">
+        {dossier.text}
+      </pre>
+    </div>
+  )
+}
+
 export function ReportTab({ jobId, revision }: { jobId: string; revision: number }) {
   const [report, setReport] = useState<Artefact<string> | null>(null)
   const [yara, setYara] = useState<Artefact<string> | null>(null)
   const [stix, setStix] = useState<Artefact<unknown> | null>(null)
+  const [dossier, setDossier] = useState<Artefact<Dossier> | null>(null)
+  const urls = exportUrls(jobId)
 
   useEffect(() => {
     void getReportHtml(jobId).then(setReport)
     void getYara(jobId).then(setYara)
     void getStix(jobId).then(setStix)
+    void getDossier(jobId).then(setDossier)
   }, [jobId, revision])
 
   return (
@@ -43,10 +134,13 @@ export function ReportTab({ jobId, revision }: { jobId: string; revision: number
       <SectionHead
         eyebrow="Deliverables"
         title="Report and exports"
-        lede="The ledger export is real and downloads today. The report, YARA and STIX endpoints answer 501 with the task that will build them — a placeholder that looked finished is the one thing the API refuses to serve, and the UI does not invent one on the client either."
+        lede="Report, YARA, STIX and the complaint dossier are all implemented and download today. The complaint package is generated, never filed — India's cyber-crime portal has no submission API, so nothing on this screen tells a user their complaint has been lodged."
       />
 
-      <Panel title="Investigation report" subtitle="GET /api/jobs/{job}/report.html">
+      <Panel
+        title="Investigation report"
+        subtitle="GET /api/jobs/{job}/report.html — self-contained, no external assets"
+      >
         {report?.state === 'ready' ? (
           // Sandboxed: the report embeds sample-derived strings, and this is the one
           // place they are rendered as markup rather than as text.
@@ -57,41 +151,44 @@ export function ReportTab({ jobId, revision }: { jobId: string; revision: number
             className="h-[32rem] w-full rounded border border-line bg-white"
           />
         ) : (
-          <Unbuilt artefact={report} />
+          <Payload artefact={report} />
         )}
       </Panel>
 
+      <Panel
+        title="Complaint package"
+        subtitle="GET /api/jobs/{job}/artifacts/dossier — generated for a human to file. This system files nothing."
+      >
+        <ArtefactGate artefact={dossier}>{(value) => <ComplaintPackage dossier={value} />}</ArtefactGate>
+      </Panel>
+
       <div className="grid gap-4 xl:grid-cols-2">
-        <Panel title="YARA rules" subtitle="GET /api/jobs/{job}/artifacts/yara">
-          <Unbuilt artefact={yara} />
+        <Panel title="YARA rule" subtitle="GET /api/jobs/{job}/artifacts/yara — keyed on repack-resistant artefacts, never the hash">
+          <Payload artefact={yara} />
         </Panel>
 
-        <Panel title="STIX 2.1 bundle" subtitle="GET /api/jobs/{job}/artifacts/stix">
-          <Unbuilt artefact={stix} />
+        <Panel title="STIX 2.1 bundle" subtitle="GET /api/jobs/{job}/artifacts/stix — deterministic; two exports of one job are byte-identical">
+          <Payload artefact={stix} />
         </Panel>
       </div>
 
-      <Panel title="Downloads" subtitle="Only what exists is offered — an unbuilt export is not a button">
+      <Panel title="Downloads" subtitle="Only what this build actually serves is offered — an unbuilt export is not a button">
         <div className="flex flex-wrap gap-2">
-          <a
-            href={ledgerExportUrl(jobId)}
-            download={`${jobId}-ledger.json`}
-            className="rounded border border-accent/50 bg-v500/15 px-3 py-1.5 text-sm text-accent hover:bg-accent/20"
-          >
+          <Download href={ledgerExportUrl(jobId)} name={`${jobId}-ledger.json`}>
             Evidence ledger (JSON)
-          </a>
-          <span
-            className="cursor-not-allowed rounded border border-line px-3 py-1.5 text-sm text-dim"
-            title="T6.3"
-          >
-            HTML report — T6.3
-          </span>
-          <span className="cursor-not-allowed rounded border border-line px-3 py-1.5 text-sm text-dim" title="T6.1">
-            YARA — T6.1
-          </span>
-          <span className="cursor-not-allowed rounded border border-line px-3 py-1.5 text-sm text-dim" title="T6.2">
-            STIX — T6.2
-          </span>
+          </Download>
+          <Download href={urls.report} name={`${jobId}-report.html`}>
+            Investigation report (HTML)
+          </Download>
+          <Download href={urls.dossier} name={`${jobId}-complaint-package.json`}>
+            Complaint package (JSON)
+          </Download>
+          <Download href={urls.yara} name={`${jobId}.yar`}>
+            YARA rule
+          </Download>
+          <Download href={urls.stix} name={`${jobId}-stix.json`}>
+            STIX 2.1 bundle
+          </Download>
         </div>
       </Panel>
     </div>

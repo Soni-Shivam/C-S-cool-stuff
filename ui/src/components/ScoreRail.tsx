@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from 'react'
 import { EvidenceChips } from './Evidence'
 import { LogoSpinner } from './Logo'
 import { BAND_CLASS, BAND_STROKE, Bar } from './primitives'
+import { isUngrounded } from '../lib/grounding'
 import type { CompositeScore, ScoreFactor } from '../api/types'
 
 const RADIUS = 52
@@ -63,6 +64,10 @@ function Factor({ factor }: { factor: ScoreFactor }) {
   // Max possible contribution for this term is its own weight, so the bar shows
   // "how much of this factor's budget was spent" rather than a share of 100.
   const fraction = factor.weight > 0 ? factor.contribution / factor.weight : 0
+  // Paper §20.1: a term that contributed nothing because nothing fed it is labelled,
+  // not left as a bare zero. The number itself is untouched — only its caption.
+  const ungrounded = isUngrounded(factor)
+
   return (
     <li className="space-y-1">
       <div className="flex items-baseline justify-between gap-2">
@@ -70,7 +75,9 @@ function Factor({ factor }: { factor: ScoreFactor }) {
         <span className="flex-1 truncate text-[11px] text-muted" title={factor.label}>
           {factor.label}
         </span>
-        <span className="font-mono text-xs tabular-nums text-fg">
+        <span
+          className={`font-mono text-xs tabular-nums ${ungrounded ? 'text-dim' : 'text-fg'}`}
+        >
           {(factor.contribution * 100).toFixed(1)}
         </span>
       </div>
@@ -79,7 +86,16 @@ function Factor({ factor }: { factor: ScoreFactor }) {
         <span className="font-mono">
           raw {factor.raw.toFixed(3)} × w {factor.weight}
         </span>
-        <EvidenceChips refs={factor.evidence_refs} max={4} />
+        {ungrounded ? (
+          <span
+            className="rounded border border-warn/40 bg-warn/10 px-1 py-px text-[10px] font-medium text-warn"
+            title="Nothing fed this term. This zero means we never looked, not that we looked and found nothing."
+          >
+            ungrounded — not measured
+          </span>
+        ) : (
+          <EvidenceChips refs={factor.evidence_refs} max={4} />
+        )}
       </div>
     </li>
   )

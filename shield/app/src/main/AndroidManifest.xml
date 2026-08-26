@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DRISHTI Shield — the on-device guard app.
+
+  This app DEFENDS a device. It reads APK bytes that have landed in the Download
+  directory, hashes them, asks the DRISHTI backend for a verdict, and (as device
+  owner) refuses the install when the verdict is bad. Every permission below exists
+  for one of those four jobs and is justified inline.
+
+  It contains no code that reads SMS, draws a capture overlay, harvests credentials,
+  or loads code at runtime.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- LAYER 1: read the Download directory to notice an arriving APK. On API 30+
+         a FileObserver on shared storage only receives events for a directory the
+         app can actually read, so All-Files access is the working grant. It is
+         given by the operator (or by scripts/demo_up.sh via appops) — never
+         self-granted. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+
+    <!-- LAYER 1: the watcher is a foreground service so the OS does not kill it
+         between the file landing and the verdict returning. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- LAYER 1: the verdict screen must appear without the user tapping the
+         notification, because appearing *before* the tap is the entire thesis.
+         Both routes are declared; whichever the OS allows is used. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- Talk to the DRISHTI backend on the host loopback alias 10.0.2.2. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- LAYER 4: offer the user an uninstall prompt if something slipped past. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
+    <!-- LAYER 4: resolve a newly installed package back to its APK path so its
+         hash can be compared against the bad-verdict set. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <application
+        android:name=".ShieldApp"
+        android:allowBackup="false"
+        android:icon="@drawable/ic_shield"
+        android:label="DRISHTI Shield"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:supportsRtl="true"
+        android:theme="@style/ShieldTheme">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:label="DRISHTI Shield">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- The verdict / block screen. singleTask so a second verdict updates the
+             screen already on stage instead of stacking a new one behind it. -->
+        <activity
+            android:name=".ui.VerdictActivity"
+            android:excludeFromRecents="false"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
+
+        <!-- The consumer-facing screen: the breathing interstitial, then the
+             warning. Driven entirely by the contract-A15 Verdict. singleTask for
+             the same reason as VerdictActivity — a second verdict replaces the one
+             on screen instead of stacking behind it. -->
+        <activity
+            android:name=".ui.ConsumerVerdictActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
+
+        <activity
+            android:name=".ui.ReportActivity"
+            android:exported="false"
+            android:label="Incident dossier" />
+
+        <!-- LAYER 2 — tap-time interception. Tapping the APK in a file manager or
+             a chat app resolves here instead of to the package installer. -->
+        <activity
+            android:name=".ui.TapInterceptActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="Scan with DRISHTI Shield">
+            <intent-filter android:priority="999">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="application/vnd.android.package-archive" />
+            </intent-filter>
+            <intent-filter android:priority="999">
+                <action android:name="android.intent.action.INSTALL_PACKAGE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/vnd.android.package-archive" />
+            </intent-filter>
+        </activity>
+
+        <!-- LAYER 1 — the watcher. -->
+        <service
+            android:name=".WatchService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- LAYER 3 — the veto. Device owner is provisioned out of band by
+             `adb shell dpm set-device-owner`; this app never self-elevates. -->
+        <receiver
+            android:name=".DrishtiAdminReceiver"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.PROFILE_PROVISIONING_COMPLETE" />
+            </intent-filter>
+        </receiver>
+
+        <!-- LAYER 4 — the failsafe. PACKAGE_ADDED is on the implicit-broadcast
+             exemption list, so a manifest receiver still fires on API 34. -->
+        <receiver
+            android:name=".PackageAddedReceiver"
+            android:exported="true">
+            <intent-filter android:priority="999">
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

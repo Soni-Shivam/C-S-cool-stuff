@@ -79,10 +79,22 @@ def test_budgets_have_the_documented_defaults() -> None:
 
 
 # ── openrouter provider ──────────────────────────────────────────────────────
-def test_openrouter_is_a_selectable_provider() -> None:
-    settings = Settings(llm_provider="openrouter", openrouter_api_key="sk-or-v1-test")
+def test_openrouter_is_a_selectable_provider(monkeypatch) -> None:
+    """The provider default, asserted without the developer's own `.env` leaking in.
+
+    This test previously read whatever `DRISHTI_LLM_MODEL` happened to be set in the
+    local `.env`, so pinning a model for a demo broke the suite for a reason that had
+    nothing to do with the code. `_env_file=None` plus deleting the variable makes the
+    assertion about the DEFAULT, which is what it was always meant to be about.
+    """
+    monkeypatch.delenv("DRISHTI_LLM_MODEL", raising=False)
+    settings = Settings(
+        llm_provider="openrouter",
+        openrouter_api_key="sk-or-v1-test",
+        _env_file=None,
+    )
     assert settings.llm_provider == "openrouter"
-    assert settings.resolved_llm_model == "nvidia/nemotron-3.5-lightning:free"
+    assert settings.resolved_llm_model == "nvidia/nemotron-3-ultra-550b-a55b:free"
 
 
 def test_openrouter_without_a_key_fails_at_startup() -> None:

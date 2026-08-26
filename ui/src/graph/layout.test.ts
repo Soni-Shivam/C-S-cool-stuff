@@ -86,6 +86,10 @@ function report(paths: CallPath[], decompiled: DecompiledMethod[] = []): StaticR
     decompiled_methods: decompiled,
     sink_hits: [],
     hypotheses: [],
+    // A13 is not part of the graph, but StaticReport requires it. Null rather than
+    // a stub assessment: this fixture has not been assessed, and a fabricated
+    // verdict here would be the kind of thing the panel exists to prevent.
+    lookalike: null,
     ledger_refs: [],
   }
 }

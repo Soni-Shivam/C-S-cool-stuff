@@ -1,0 +1,838 @@
+{
+  "generated_at": "2026-08-26T09:56:19.090419+00:00",
+  "schema_version": "1.2.0",
+  "seed": 20260826,
+  "corpus": {
+    "schema_version": "1.2.0",
+    "sources": [
+      "data/corpus/features.jsonl"
+    ],
+    "extracted": 1537,
+    "skipped_failed_extraction": 27,
+    "skipped_no_features": 0,
+    "composition": {
+      "train": {
+        "benign": 381,
+        "malware": 468,
+        "n": 849
+      },
+      "calib": {
+        "benign": 85,
+        "malware": 122,
+        "n": 207
+      },
+      "test": {
+        "benign": 231,
+        "malware": 250,
+        "n": 481
+      }
+    },
+    "time_bands": {
+      "2018-2020": {
+        "benign": 125,
+        "malware": 177
+      },
+      "2021-2023": {
+        "benign": 84,
+        "malware": 142
+      },
+      "2024-2026": {
+        "benign": 316,
+        "malware": 372
+      },
+      "<=2017": {
+        "benign": 172,
+        "malware": 149
+      }
+    },
+    "time_split_disjoint": true,
+    "time_split_detail": "train bands ['2018-2020', '2021-2023', '<=2017'] are disjoint from ['2024-2026']",
+    "repartition": {
+      "applied": true,
+      "rule": "sha256 bucket < 3 of 10 -> calib, else test; applied to the held-out bands only, label-independent, train untouched",
+      "calib_fraction_requested": 0.3,
+      "moved_to_calib": 180,
+      "moved_to_test": 69,
+      "before": {
+        "calib": {
+          "benign": 91,
+          "malware": 5,
+          "n": 96
+        },
+        "test": {
+          "benign": 225,
+          "malware": 367,
+          "n": 592
+        }
+      },
+      "after": {
+        "calib": {
+          "benign": 85,
+          "malware": 122,
+          "n": 207
+        },
+        "test": {
+          "benign": 231,
+          "malware": 250,
+          "n": 481
+        }
+      },
+      "trigger": "the shipped calibration split held 5 malware rows, under the 10 needed to fit a calibrator"
+    },
+    "schema_epochs": {
+      "epochs": {
+        "1.2.0": {
+          "n": 1537,
+          "malware": 840,
+          "malware_rate": 0.5465
+        }
+      },
+      "mixed": false,
+      "presence_gap": 0.5,
+      "divergent": [],
+      "detail": []
+    }
+  },
+  "vocabulary": {
+    "time_scheme": 428,
+    "random_scheme": 494,
+    "min_training_occurrences": 2
+  },
+  "winner": "xgboost",
+  "winner_selection": "highest 5-fold CV PR-AUC inside the training split (0.9829 \u00b1 0.0061); the test split played no part",
+  "cv_pr_auc_in_train": {
+    "logreg_l2": [
+      0.9662,
+      0.0239
+    ],
+    "linear_svm": [
+      0.9547,
+      0.0379
+    ],
+    "random_forest": [
+      0.9828,
+      0.0074
+    ],
+    "xgboost": [
+      0.9829,
+      0.0061
+    ],
+    "mlp": [
+      0.9744,
+      0.0125
+    ]
+  },
+  "models": {
+    "logreg_l2": "Logistic regression, L2, C=1.0, balanced class weight, standardised inputs",
+    "linear_svm": "LinearSVC (squared hinge, C=0.5, balanced) + 5-fold Platt inside train",
+    "random_forest": "RandomForest, 400 trees, balanced_subsample, min_samples_leaf=2",
+    "xgboost": "XGBoost hist, 400 rounds, depth 6, lr 0.06, scale_pos_weight=neg/pos",
+    "mlp": "MLP (128, 64), ReLU, adam, early stopping on a 10% internal validation slice"
+  },
+  "results": [
+    {
+      "split": "time",
+      "model": "logreg_l2",
+      "n": 481,
+      "n_pos": 250,
+      "n_neg": 231,
+      "prevalence": 0.519751,
+      "pr_auc": 0.9071,
+      "pr_auc_ci": [
+        0.8741,
+        0.9367
+      ],
+      "roc_auc": 0.8925,
+      "roc_auc_ci": [
+        0.8633,
+        0.9198
+      ],
+      "threshold": 1.3e-05,
+      "threshold_source": "max-F1 on the calibration split (n=207)",
+      "precision": 0.663,
+      "recall": 0.968,
+      "f1": 0.787,
+      "tp": 242,
+      "fp": 123,
+      "tn": 108,
+      "fn": 8,
+      "fp_rate_at_target_recall": 0.471861,
+      "precision_at_target_recall": 0.673653,
+      "threshold_at_target_recall": 4.1e-05,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "random",
+      "model": "logreg_l2",
+      "n": 307,
+      "n_pos": 168,
+      "n_neg": 139,
+      "prevalence": 0.547231,
+      "pr_auc": 0.9823,
+      "pr_auc_ci": [
+        0.9687,
+        0.9923
+      ],
+      "roc_auc": 0.9716,
+      "roc_auc_ci": [
+        0.9505,
+        0.9893
+      ],
+      "threshold": 0.520885,
+      "threshold_source": "max-F1 on the calibration split (n=308)",
+      "precision": 0.9576,
+      "recall": 0.9405,
+      "f1": 0.9489,
+      "tp": 158,
+      "fp": 7,
+      "tn": 132,
+      "fn": 10,
+      "fp_rate_at_target_recall": 0.021583,
+      "precision_at_target_recall": 0.980645,
+      "threshold_at_target_recall": 0.907671,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "time",
+      "model": "linear_svm",
+      "n": 481,
+      "n_pos": 250,
+      "n_neg": 231,
+      "prevalence": 0.519751,
+      "pr_auc": 0.8834,
+      "pr_auc_ci": [
+        0.8483,
+        0.9146
+      ],
+      "roc_auc": 0.8633,
+      "roc_auc_ci": [
+        0.8302,
+        0.8948
+      ],
+      "threshold": 0.046235,
+      "threshold_source": "max-F1 on the calibration split (n=207)",
+      "precision": 0.701,
+      "recall": 0.872,
+      "f1": 0.7772,
+      "tp": 218,
+      "fp": 93,
+      "tn": 138,
+      "fn": 32,
+      "fp_rate_at_target_recall": 0.454545,
+      "precision_at_target_recall": 0.681818,
+      "threshold_at_target_recall": 0.034331,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "random",
+      "model": "linear_svm",
+      "n": 307,
+      "n_pos": 168,
+      "n_neg": 139,
+      "prevalence": 0.547231,
+      "pr_auc": 0.9797,
+      "pr_auc_ci": [
+        0.9638,
+        0.9911
+      ],
+      "roc_auc": 0.9697,
+      "roc_auc_ci": [
+        0.947,
+        0.988
+      ],
+      "threshold": 0.614198,
+      "threshold_source": "max-F1 on the calibration split (n=308)",
+      "precision": 0.9684,
+      "recall": 0.9107,
+      "f1": 0.9387,
+      "tp": 153,
+      "fp": 5,
+      "tn": 134,
+      "fn": 15,
+      "fp_rate_at_target_recall": 0.035971,
+      "precision_at_target_recall": 0.968153,
+      "threshold_at_target_recall": 0.618051,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "time",
+      "model": "random_forest",
+      "n": 481,
+      "n_pos": 250,
+      "n_neg": 231,
+      "prevalence": 0.519751,
+      "pr_auc": 0.8962,
+      "pr_auc_ci": [
+        0.8569,
+        0.9291
+      ],
+      "roc_auc": 0.8863,
+      "roc_auc_ci": [
+        0.8525,
+        0.9174
+      ],
+      "threshold": 0.279624,
+      "threshold_source": "max-F1 on the calibration split (n=207)",
+      "precision": 0.8959,
+      "recall": 0.792,
+      "f1": 0.8408,
+      "tp": 198,
+      "fp": 23,
+      "tn": 208,
+      "fn": 52,
+      "fp_rate_at_target_recall": 0.246753,
+      "precision_at_target_recall": 0.798587,
+      "threshold_at_target_recall": 0.162332,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "random",
+      "model": "random_forest",
+      "n": 307,
+      "n_pos": 168,
+      "n_neg": 139,
+      "prevalence": 0.547231,
+      "pr_auc": 0.9858,
+      "pr_auc_ci": [
+        0.9714,
+        0.9958
+      ],
+      "roc_auc": 0.9821,
+      "roc_auc_ci": [
+        0.9669,
+        0.9941
+      ],
+      "threshold": 0.454131,
+      "threshold_source": "max-F1 on the calibration split (n=308)",
+      "precision": 0.9573,
+      "recall": 0.9345,
+      "f1": 0.9458,
+      "tp": 157,
+      "fp": 7,
+      "tn": 132,
+      "fn": 11,
+      "fp_rate_at_target_recall": 0.021583,
+      "precision_at_target_recall": 0.980645,
+      "threshold_at_target_recall": 0.591963,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "time",
+      "model": "xgboost",
+      "n": 481,
+      "n_pos": 250,
+      "n_neg": 231,
+      "prevalence": 0.519751,
+      "pr_auc": 0.9169,
+      "pr_auc_ci": [
+        0.8828,
+        0.9462
+      ],
+      "roc_auc": 0.9131,
+      "roc_auc_ci": [
+        0.885,
+        0.9381
+      ],
+      "threshold": 0.046556,
+      "threshold_source": "max-F1 on the calibration split (n=207)",
+      "precision": 0.8841,
+      "recall": 0.824,
+      "f1": 0.853,
+      "tp": 206,
+      "fp": 27,
+      "tn": 204,
+      "fn": 44,
+      "fp_rate_at_target_recall": 0.367965,
+      "precision_at_target_recall": 0.725806,
+      "threshold_at_target_recall": 0.007693,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "random",
+      "model": "xgboost",
+      "n": 307,
+      "n_pos": 168,
+      "n_neg": 139,
+      "prevalence": 0.547231,
+      "pr_auc": 0.9889,
+      "pr_auc_ci": [
+        0.979,
+        0.9964
+      ],
+      "roc_auc": 0.9836,
+      "roc_auc_ci": [
+        0.9692,
+        0.9954
+      ],
+      "threshold": 0.473627,
+      "threshold_source": "max-F1 on the calibration split (n=308)",
+      "precision": 0.9527,
+      "recall": 0.9583,
+      "f1": 0.9555,
+      "tp": 161,
+      "fp": 8,
+      "tn": 131,
+      "fn": 7,
+      "fp_rate_at_target_recall": 0.014388,
+      "precision_at_target_recall": 0.987013,
+      "threshold_at_target_recall": 0.856928,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "time",
+      "model": "mlp",
+      "n": 481,
+      "n_pos": 250,
+      "n_neg": 231,
+      "prevalence": 0.519751,
+      "pr_auc": 0.8268,
+      "pr_auc_ci": [
+        0.7844,
+        0.8673
+      ],
+      "roc_auc": 0.8108,
+      "roc_auc_ci": [
+        0.7715,
+        0.8489
+      ],
+      "threshold": 0.010061,
+      "threshold_source": "max-F1 on the calibration split (n=207)",
+      "precision": 0.7285,
+      "recall": 0.88,
+      "f1": 0.7971,
+      "tp": 220,
+      "fp": 82,
+      "tn": 149,
+      "fn": 30,
+      "fp_rate_at_target_recall": 0.372294,
+      "precision_at_target_recall": 0.723473,
+      "threshold_at_target_recall": 0.008942,
+      "target_recall": 0.9,
+      "notes": []
+    },
+    {
+      "split": "random",
+      "model": "mlp",
+      "n": 307,
+      "n_pos": 168,
+      "n_neg": 139,
+      "prevalence": 0.547231,
+      "pr_auc": 0.982,
+      "pr_auc_ci": [
+        0.9685,
+        0.9924
+      ],
+      "roc_auc": 0.9716,
+      "roc_auc_ci": [
+        0.9498,
+        0.9892
+      ],
+      "threshold": 0.712342,
+      "threshold_source": "max-F1 on the calibration split (n=308)",
+      "precision": 0.9688,
+      "recall": 0.9226,
+      "f1": 0.9451,
+      "tp": 155,
+      "fp": 5,
+      "tn": 134,
+      "fn": 13,
+      "fp_rate_at_target_recall": 0.021583,
+      "precision_at_target_recall": 0.980645,
+      "threshold_at_target_recall": 0.905699,
+      "target_recall": 0.9,
+      "notes": []
+    }
+  ],
+  "calibration": {
+    "performed": true,
+    "method": "isotonic",
+    "n_calib": 207,
+    "n_calib_pos": 122,
+    "n_calib_neg": 85,
+    "brier_on_calib_cv": 0.121917,
+    "methods_considered": [
+      "isotonic",
+      "sigmoid"
+    ],
+    "methods_rejected": {
+      "sigmoid": "higher cross-validated Brier on calib (0.136500)"
+    },
+    "brier_test_before": 0.186285,
+    "brier_test_after": 0.113865,
+    "ece_test_before": 0.223894,
+    "ece_test_after": 0.036796,
+    "per_method_on_test": {
+      "isotonic": {
+        "brier_test": 0.113865,
+        "ece_test": 0.036796
+      },
+      "sigmoid": {
+        "brier_test": 0.129924,
+        "ece_test": 0.103692
+      }
+    },
+    "n_test": 481,
+    "n_test_malware": 250,
+    "bin_agreement_before": {
+      "bin": [
+        0.75,
+        0.85
+      ],
+      "n": 9,
+      "observed_rate": 1.0,
+      "expected_rate": 0.8,
+      "tolerance": 0.1,
+      "within_tolerance": false,
+      "note": "only 9 samples in the bucket \u2014 the result is not informative"
+    },
+    "bin_agreement_after": {
+      "bin": [
+        0.75,
+        0.85
+      ],
+      "n": 49,
+      "observed_rate": 0.795918,
+      "expected_rate": 0.8,
+      "tolerance": 0.1,
+      "within_tolerance": true,
+      "note": "informative"
+    }
+  },
+  "anomaly": {
+    "performed": true,
+    "escalate_at": 0.85,
+    "n_fit_benign": 381,
+    "n_scored": 481,
+    "escalated_total": 181,
+    "escalated_benign": 92,
+    "escalated_malware": 89,
+    "benign_escalation_rate": 0.398268,
+    "malware_escalation_rate": 0.356,
+    "mean_score_benign": 0.755371,
+    "mean_score_malware": 0.768861
+  },
+  "ablations": [
+    {
+      "group": "cert:",
+      "members": [
+        "cert:brand_mismatch",
+        "cert:debug",
+        "cert:known_bad_reuse",
+        "cert:validity_days",
+        "cert:validity_over_20y"
+      ],
+      "constant_in_train": [
+        "cert:brand_mismatch",
+        "cert:known_bad_reuse"
+      ],
+      "varying_in_train": [
+        "cert:debug",
+        "cert:validity_days",
+        "cert:validity_over_20y"
+      ],
+      "n_test": 481,
+      "n_test_pos": 250,
+      "pr_auc_with": 0.9169,
+      "pr_auc_without": 0.9085,
+      "delta": 0.0085,
+      "delta_ci": [
+        0.0033,
+        0.0139
+      ],
+      "roc_auc_with": 0.9131,
+      "roc_auc_without": 0.8976,
+      "carries_signal": true,
+      "per_feature_importance": [
+        {
+          "feature": "cert:validity_days",
+          "mean_drop_pr_auc": 0.010343,
+          "nonzero_in_test": 393
+        },
+        {
+          "feature": "cert:brand_mismatch",
+          "mean_drop_pr_auc": 0.0,
+          "nonzero_in_test": 0
+        },
+        {
+          "feature": "cert:debug",
+          "mean_drop_pr_auc": 0.0,
+          "nonzero_in_test": 12
+        },
+        {
+          "feature": "cert:known_bad_reuse",
+          "mean_drop_pr_auc": 0.0,
+          "nonzero_in_test": 0
+        },
+        {
+          "feature": "cert:validity_over_20y",
+          "mean_drop_pr_auc": 0.0,
+          "nonzero_in_test": 382
+        }
+      ],
+      "rationale": "the certificate columns, dropped from the previous run because a two-epoch corpus made their presence a proxy for the label. The corpus is now single-epoch, so they are evaluable for the first time"
+    }
+  ],
+  "composite": {
+    "performed": true,
+    "configuration": "static + ML only (no threat intel, no GenAI verdict, no detonation)",
+    "n": 481,
+    "n_malware": 250,
+    "reachable_ceiling": 69,
+    "max_S_observed": 65,
+    "band_distribution": {
+      "MEDIUM": {
+        "n": 203,
+        "malware": 185
+      },
+      "LOW": {
+        "n": 271,
+        "malware": 58
+      },
+      "HIGH": {
+        "n": 7,
+        "malware": 7
+      }
+    },
+    "band_distribution_after_escalation": {
+      "MEDIUM": {
+        "n": 203,
+        "malware": 185
+      },
+      "LOW": {
+        "n": 178,
+        "malware": 49
+      },
+      "HIGH": {
+        "n": 100,
+        "malware": 16
+      }
+    },
+    "escalation": {
+      "flagged": 181,
+      "promoted_to_high": 93,
+      "promoted_malware": 9,
+      "promoted_benign": 84
+    },
+    "bands": [
+      {
+        "band": "MEDIUM",
+        "floor": 40,
+        "n": 481,
+        "n_malware": 250,
+        "flagged": 210,
+        "true_positives": 192,
+        "false_positives": 18,
+        "precision": 0.9143,
+        "recall": 0.768
+      },
+      {
+        "band": "HIGH",
+        "floor": 65,
+        "n": 481,
+        "n_malware": 250,
+        "flagged": 7,
+        "true_positives": 7,
+        "false_positives": 0,
+        "precision": 1.0,
+        "recall": 0.028
+      },
+      {
+        "band": "CRITICAL",
+        "floor": 85,
+        "n": 481,
+        "n_malware": 250,
+        "flagged": 0,
+        "true_positives": 0,
+        "false_positives": 0,
+        "precision": null,
+        "recall": 0.0
+      }
+    ],
+    "rule_severity_fired": 333
+  },
+  "attribution_method": "shap.TreeExplainer",
+  "global_importance_method": "permutation importance on PR-AUC (5 repeats, shortlisted to the 60 highest-ranked of 428 columns before measuring)",
+  "global_importance_top20": [
+    {
+      "feature": "api:reflection_count",
+      "weight": 0.054721
+    },
+    {
+      "feature": "url:count",
+      "weight": 0.01543
+    },
+    {
+      "feature": "perm:READ_SMS",
+      "weight": 0.013098
+    },
+    {
+      "feature": "manifest:target_sdk",
+      "weight": 0.006733
+    },
+    {
+      "feature": "combo:DROPPER_CAPABILITY",
+      "weight": 0.00491
+    },
+    {
+      "feature": "sink:network_socket",
+      "weight": 0.004239
+    },
+    {
+      "feature": "perm:RECEIVE",
+      "weight": 0.002025
+    },
+    {
+      "feature": "api:getDeviceId",
+      "weight": 0.00191
+    },
+    {
+      "feature": "perm:INSTALL_SHORTCUT",
+      "weight": 0.00157
+    },
+    {
+      "feature": "perm:MOUNT_UNMOUNT_FILESYSTEMS",
+      "weight": 0.001554
+    },
+    {
+      "feature": "perm:READ_GSERVICES",
+      "weight": 0.001551
+    },
+    {
+      "feature": "sink:pkg_resolve",
+      "weight": 0.001508
+    },
+    {
+      "feature": "perm:CHANGE_WIFI_STATE",
+      "weight": 0.001177
+    },
+    {
+      "feature": "perm:C2D_MESSAGE",
+      "weight": 0.00114
+    },
+    {
+      "feature": "perm:CHANGE_NETWORK_STATE",
+      "weight": 0.001071
+    },
+    {
+      "feature": "perm:FOREGROUND_SERVICE",
+      "weight": 0.001056
+    },
+    {
+      "feature": "combo:SILENT_SMS_FRAUD",
+      "weight": 0.000915
+    },
+    {
+      "feature": "api:dcl_indicator_count",
+      "weight": 0.000833
+    },
+    {
+      "feature": "perm:REQUEST_INSTALL_PACKAGES",
+      "weight": 0.000802
+    },
+    {
+      "feature": "combo:NOTIFICATION_LISTENER",
+      "weight": 0.000796
+    }
+  ],
+  "example_attribution": [
+    {
+      "feature": "api:reflection_count",
+      "value": 3.0,
+      "weight": 1.097368
+    },
+    {
+      "feature": "perm:GET_TASKS",
+      "value": 1.0,
+      "weight": 0.971109
+    },
+    {
+      "feature": "archive:entropy_mean",
+      "value": 6.778864629385369,
+      "weight": 0.839327
+    },
+    {
+      "feature": "url:count",
+      "value": 0.0,
+      "weight": 0.780259
+    },
+    {
+      "feature": "combo:count",
+      "value": 4.0,
+      "weight": 0.642589
+    },
+    {
+      "feature": "archive:native_lib_count",
+      "value": 20.0,
+      "weight": -0.613016
+    },
+    {
+      "feature": "reach:native_load",
+      "value": 1.0,
+      "weight": 0.587756
+    },
+    {
+      "feature": "perm:READ_PHONE_STATE",
+      "value": 1.0,
+      "weight": 0.496525
+    },
+    {
+      "feature": "sink:network_socket",
+      "value": 0.0,
+      "weight": 0.449647
+    },
+    {
+      "feature": "perm:CHANGE_WIFI_STATE",
+      "value": 1.0,
+      "weight": 0.427713
+    }
+  ],
+  "learning_curve": [
+    {
+      "fraction": 0.125,
+      "n_train": 106,
+      "n_train_malware": 58,
+      "pr_auc_time_split": 0.8285
+    },
+    {
+      "fraction": 0.25,
+      "n_train": 212,
+      "n_train_malware": 117,
+      "pr_auc_time_split": 0.8433
+    },
+    {
+      "fraction": 0.5,
+      "n_train": 424,
+      "n_train_malware": 234,
+      "pr_auc_time_split": 0.9005
+    },
+    {
+      "fraction": 0.75,
+      "n_train": 637,
+      "n_train_malware": 351,
+      "pr_auc_time_split": 0.9089
+    },
+    {
+      "fraction": 1.0,
+      "n_train": 849,
+      "n_train_malware": 468,
+      "pr_auc_time_split": 0.9093
+    }
+  ],
+  "pilot": false,
+  "runtime_seconds": 67.0,
+  "seconds_per_model": {
+    "logreg_l2": 7.6,
+    "linear_svm": 22.9,
+    "random_forest": 11.7,
+    "xgboost": 8.9,
+    "mlp": 8.0
+  }
+}

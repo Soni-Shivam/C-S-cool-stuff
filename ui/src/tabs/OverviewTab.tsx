@@ -1,5 +1,12 @@
 /**
- * Overview: the verdict sentence, behaviour chips, top findings, proposed actions.
+ * Overview: the shared `Verdict`, then the sample, behaviours and proposed actions.
+ *
+ * The card at the top is `GET /api/jobs/{id}/verdict` — the one object the consumer
+ * phone screen, this portal and the demo scripts all read (contract A15). Rendering it
+ * here rather than assembling an equivalent view out of `score` + `genai` + `dynamic`
+ * is the point: if the analyst and the victim are ever shown different verdicts for the
+ * same APK, it will be because someone built a second projection, so this tab does not
+ * have one.
  *
  * The confirm buttons are the human-in-the-loop gate. `POST .../confirm` writes an
  * ANALYST_ACTION ledger node and returns the action marked confirmed — it does NOT
@@ -12,23 +19,24 @@ import { useState } from 'react'
 import { confirmAction } from '../api/client'
 import type { Artefact } from '../api/client'
 import { EvidenceChips } from '../components/Evidence'
-import { ProvenanceBadge } from '../components/ProvenanceBadge'
+import { VerdictHeadline } from '../components/VerdictHeadline'
 import {
   ArtefactGate,
   Empty,
-  GradientCard,
   KeyValue,
   Panel,
   SectionHead,
   Tag,
+  WashCard,
 } from '../components/primitives'
 import type {
   CompositeScore,
-  DynamicTrace,
   FileMeta,
   GenAIVerdict,
   ProposedAction,
+  StaticReport,
 } from '../api/types'
+import type { Verdict } from '../api/verdict.gen'
 
 function ActionRow({ jobId, action }: { jobId: string; action: ProposedAction }) {
   const [confirmed, setConfirmed] = useState<ProposedAction | null>(
@@ -79,44 +87,99 @@ function ActionRow({ jobId, action }: { jobId: string; action: ProposedAction })
 
 export function OverviewTab({
   jobId,
+  verdict,
   score,
   genai,
   ingest,
-  dynamic,
+  staticReport,
 }: {
   jobId: string
+  verdict: Artefact<Verdict> | null
   score: Artefact<CompositeScore> | null
   genai: Artefact<GenAIVerdict> | null
   ingest: Artefact<FileMeta> | null
-  dynamic: Artefact<DynamicTrace> | null
+  staticReport: Artefact<StaticReport> | null
 }) {
+  // One line, on the tab everyone actually looks at. The full A13 breakdown lives on
+  // the Static tab; this is the sentence that stops a reader concluding "it flagged
+  // an app for reading SMS" before they get there.
+  const lookalike =
+    staticReport?.state === 'ready' ? staticReport.value.lookalike : null
+
   return (
     <div className="space-y-5">
       <SectionHead
         eyebrow="Investigation"
         title="Verdict"
-        lede="The sentence below is the scorer's own explanation, rendered verbatim. Every number behind it is traceable to a ledger node through the chips."
+        lede="This is GET /api/jobs/{id}/verdict — the one projection the consumer phone screen, this portal and the demo scripts all read. Rendering it here rather than assembling an equivalent out of score + genai + dynamic is the point: two surfaces can only disagree about a sample if someone builds a second projection."
       />
 
-      <ArtefactGate artefact={score}>
-        {(value) => (
-          <GradientCard>
-            <div className="px-6 py-6 sm:px-8 sm:py-7">
-              <p className="text-[clamp(1rem,1.6vw,1.28rem)] leading-relaxed font-medium text-white">
-                {value.explanation || 'The scorer produced no explanation for this run.'}
+      <ArtefactGate artefact={verdict}>{(value) => <VerdictHeadline verdict={value} />}</ArtefactGate>
+
+      {/* Directly under the verdict, before any table. Several of the rules behind
+          a permission finding fire on apps nobody would call malicious, and a
+          reader who meets the detail first has already drawn a conclusion. */}
+      {lookalike && lookalike.shared_permissions.length > 0 && (
+        <WashCard>
+          <div className="px-6 py-5">
+            <h3 className="font-display text-lg font-semibold tracking-tight">
+              Shared with apps you trust
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+              This sample holds{' '}
+              <span className="font-semibold text-ink">{lookalike.shared_permissions.length}</span>{' '}
+              dual-use permission{lookalike.shared_permissions.length === 1 ? '' : 's'} that
+              caller-ID, SMS-backup and anti-spam apps hold too — Truecaller reads your SMS as
+              well. The permission set is not the finding.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              {lookalike.shared_permissions.map((permission) => (
+                <span
+                  key={permission}
+                  title={permission}
+                  className="rounded-md bg-ground/10 px-2 py-0.5 font-mono text-[10px] text-ink-muted"
+                >
+                  {permission.split('.').pop()}
+                </span>
+              ))}
+              <span
+                className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
+                  lookalike.verdict === 'trojan_shape'
+                    ? 'border-bad/50 bg-bad/10 text-bad'
+                    : 'border-ink/20 bg-ground/5 text-ink-muted'
+                }`}
+              >
+                {lookalike.verdict.replace(/_/g, ' ')} · trojan-shape{' '}
+                {lookalike.trojan_score.toFixed(2)}
+              </span>
+            </div>
+            <p className="mt-3 text-xs text-ink-muted">
+              Open <span className="font-medium text-ink">04 Static</span> for the signal-by-signal
+              breakdown of what does, and does not, separate it from them.
+            </p>
+          </div>
+        </WashCard>
+      )}
+
+      <Panel
+        title="How the scorer explained it"
+        subtitle="CompositeScore.explanation — the analyst-facing wording behind the verdict above"
+      >
+        <ArtefactGate artefact={score}>
+          {(value) => (
+            <div className="space-y-3">
+              <p className="text-base leading-relaxed text-fg">
+                {value.explanation || (
+                  <Empty>The scorer produced no explanation for this run.</Empty>
+                )}
               </p>
-              {/* Provenance and evidence chips sit on a dark inset rather than
-                  straight on the gradient: their colours are load-bearing (green
-                  means live, red means synthetic) and those readings only hold
-                  against the dark ground they were chosen for. */}
-              <div className="mt-5 flex flex-wrap items-center gap-2 rounded-[16px] bg-ground/70 px-4 py-3">
-                {dynamic?.state === 'ready' && <ProvenanceBadge trace={dynamic.value} />}
+              <div className="flex flex-wrap items-center gap-2">
                 <EvidenceChips refs={value.ledger_refs} label="score nodes:" />
               </div>
             </div>
-          </GradientCard>
-        )}
-      </ArtefactGate>
+          )}
+        </ArtefactGate>
+      </Panel>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Panel title="Sample">
@@ -160,9 +223,12 @@ export function OverviewTab({
           title="Behaviours"
           subtitle="Enumerated by the model; B is computed from a weight table in Python"
         >
+          {/* `ai` rather than `verdict`: the outer prop of that name is the shared
+              A15 projection, and shadowing it here reads as if the two were the
+              same object. They are not. */}
           <ArtefactGate artefact={genai}>
-            {(verdict) => {
-              const positive = Object.entries(verdict.behaviours).filter(([, on]) => on)
+            {(ai) => {
+              const positive = Object.entries(ai.behaviours).filter(([, on]) => on)
               return (
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-1.5">
@@ -177,15 +243,12 @@ export function OverviewTab({
                     )}
                   </div>
                   <div className="text-xs leading-relaxed text-muted">
-                    B ={' '}
-                    <span className="font-mono text-fg">
-                      {verdict.behavioural_risk_B.toFixed(3)}
-                    </span>
-                    {verdict.B_rationale && <span className="ml-2">{verdict.B_rationale}</span>}
+                    B = <span className="font-mono text-fg">{ai.behavioural_risk_B.toFixed(3)}</span>
+                    {ai.B_rationale && <span className="ml-2">{ai.B_rationale}</span>}
                   </div>
-                  {verdict.disagreement_flag && (
+                  {ai.disagreement_flag && (
                     <div className="rounded-[var(--radius-tile)] border border-warn/40 bg-warn/10 px-3 py-2 text-xs leading-relaxed text-warn">
-                      Detector disagreement: {verdict.disagreement_note ?? 'flagged, no note'} — this
+                      Detector disagreement: {ai.disagreement_note ?? 'flagged, no note'} — this
                       lowers C and never silently alters S.
                     </div>
                   )}
