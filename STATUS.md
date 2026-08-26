@@ -4,12 +4,13 @@
 Update it after **every** task: task → DONE, hour, commit sha, test count.
 Protocol: `docs/00_GUIDING_MAP.md` §13.
 
-- **Started:** 2026-08-13 · **Last reconciled:** 2026-08-24
+- **Started:** 2026-08-13 · **Last reconciled:** 2026-08-26
 - **Integration branch:** `main` @ `2d30c6c` · 63 commits · **v1 record:** branch `v1` + tag `v1-final`
 - **Phase:** P0/P1/P2 substantially done · P3 **built except the code-reading half** ·
   P4 **analysis half built, execution half unbuilt** · P5 stubs only · P6 UI only
-- **Tests:** **474 passing** (measured 2026-08-24 at `2d30c6c`: 257 contract + 200 unit
-  + 15 e2e + 2 lab, `uv run pytest` in 97.7 s)
+- **Tests:** **468 passing** (measured 2026-08-26: 453 contract+unit + 15 e2e).
+  `make test` is presently blocked by unrelated, untracked `tests/unit/test_decompile.py`,
+  which imports a missing `drishti.m2_static.decompile`; it was excluded from this count.
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Evidence pack:** `docs/PROTOTYPE_REPORT_EVIDENCE.md` — every number in the paper, with its source
 - **Next-work roadmap:** `docs/ROADMAP_GENAI_RE.md` · **Detonation:** `docs/M3_DETONATOR_RUNBOOK.md`
@@ -40,8 +41,8 @@ Re-established by inspection on **2026-08-24**. Every row was checked with a com
 | **Extractor VM** | `instance-20260817-080247`, project `internship-505513`, `us-east1-c`, `n2-standard-8`, public IP, nested virt OFF. **STILL RUNNING as of 2026-08-24** — 7 days idle since the extraction batch. **~$0.39/hr. Stop it.** Usable for static extraction; **disqualified as a detonator** |
 | Second VM | `instance-20260814-133700`, `internship-505513`, `us-central1-a`, `e2-micro`, RUNNING. Small, but unaccounted for — confirm it is wanted |
 | Detonator VM | **Does not exist.** Neither does the `drishti-runtime` VPC nor the `drishti-m3-tools-*` image |
-| LLM provider | **OpenRouter live and healthy** — `tests/lab/test_openrouter_live.py` green on 2026-08-24. Two transient failures observed on one run, green on retry: these tests are network-dependent and are excluded from `make test` for that reason |
-| Secrets | `.env` (gitignored). `ANDROZOO_API_KEY` + OpenRouter key set — **both exposed in a chat transcript, rotate post-demo** |
+| LLM provider | **Groq only** — `GROQ_API_KEY` is read from `.env`; `qwen/qwen3.8-27b` is the configured default. The HTTP contract is tested locally; no billable live request was made in this migration. `tests/lab/test_groq_live.py` remains an explicit, network-dependent manual check |
+| Secrets | `.env` (gitignored). `ANDROZOO_API_KEY` + `GROQ_API_KEY` set — rotate any values previously exposed outside the private project |
 | Region drift | `.env` says `DRISHTI_GCP_ZONE=asia-south1-a`; the buckets are **us-east1**. Building the lab as configured means cross-continent egress on every corpus read. Fix `.env` before `packer build` — see runbook §0.2 |
 | CI | **GitHub Actions has never run** — 0 workflows registered, 0 runs ever, despite valid YAML on the default branch and `enabled: true`. `total_count: 0` from the API, so not a token-scope problem. PRs are merged on local verification |
 | Trained model | `models/classifier_v1.pkl`, `calibrator_v1.pkl`, `vocab_v1.json` (340 features), `metrics.json` — all present, produced 2026-08-17 |
@@ -108,7 +109,7 @@ Re-established by inspection on **2026-08-24**. Every row was checked with a com
 
 ## P3 — GENAI CORE (H16→H36)
 
-- [x] T3.1 LLM client                              DONE  `m4_genai/client.py`, 274 lines. Provider-agnostic, OpenRouter (NVIDIA Nemotron) live, budgets asserted, response cache, schema validation
+- [x] T3.1 LLM client                              DONE  2026-08-26 `6115be4`. `m4_genai/client.py` routes every runtime request to Groq (`qwen/qwen3.8-27b`) using `GROQ_API_KEY`; deterministic mock completions and legacy-provider dispatch were removed. Budgets, cache and schema validation retained; 453 contract+unit + 15 e2e passing
 - [x] T3.2 Prompt-injection defence                DONE  `safety.wrap_untrusted()` — `<untrusted_artifact>`, XML-escaped, user turn only. `tests/unit/test_prompt_injection.py`
 - [x] T3.3 Controller                              DONE  `m4_genai/controller.py`, 307 lines. Evidence catalogue → user turn → checklist → verifier
 - [~] T3.4 Code Interpreter agent                  WIP   **Built, but it has never seen a line of the sample's code.**
@@ -273,14 +274,12 @@ not caught by any test or gate, only by reading `git log`. Single agent from her
   sentence-transformers pulls ~2GB of torch for a feature that is cut-listed
   (`00_GUIDING_MAP.md` §10 item 7). `make install` stays core+dev; `make install-lab` is
   for the detonator.
-- **T0.1 LLM provider.** `PHASE_0` T0.2 specifies `anthropic_api_key` and
-  `claude-sonnet-4-5`. The client is provider-agnostic and selected at runtime
-  (`DRISHTI_LLM_PROVIDER`); **the live default is OpenRouter (NVIDIA Nemotron)**, which
-  is the credited key. Gemini and Anthropic paths raise `NotImplementedError` (roadmap
-  A8). `mock` remains available for tests. This matters commercially as much as
-  technically: an institution that cannot send sample-derived strings to a third party
-  can point the same code at a self-hosted open-weight model without touching the
-  pipeline.
+- **T0.1 LLM provider (2026-08-26, `6115be4`).** Per product direction, the runtime
+  client is **Groq only**, reading `GROQ_API_KEY` and defaulting to
+  `qwen/qwen3.8-27b`. OpenRouter, Gemini, Anthropic and the deterministic mock dispatch
+  were removed, so a missing key fails configuration instead of producing fabricated
+  analysis. Hermetic tests intercept the external HTTP boundary only; this is not a
+  runtime fallback or pipeline capability.
 - **T0.1 added `GET /api/health`** ahead of T0.6's frozen route list, because the
   container healthcheck must be real rather than decorative. Not an analysis endpoint.
 - **Contract version bumped 1.0.0 -> 1.1.0** (additive). `01_DATA_CONTRACTS.md` referenced
