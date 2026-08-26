@@ -149,6 +149,15 @@ def main() -> int:
         help="share of the held-out bands assigned to calib when repartitioning",
     )
     parser.add_argument(
+        "--min-feature-count",
+        type=int,
+        default=0,
+        help=(
+            "drop feature names seen in fewer than N training samples; 0 picks the rule "
+            "(2 once the training split reaches 500 rows, otherwise 1)"
+        ),
+    )
+    parser.add_argument(
         "--upload",
         default="",
         help=(
@@ -207,8 +216,16 @@ def main() -> int:
     train_samples = corpus.of_split("train")
     calib_samples = corpus.of_split("calib")
     test_samples = corpus.of_split("test")
-    vocabulary = dataset.freeze_vocabulary(train_samples)
-    print(f"\nfroze {len(vocabulary)} feature names from {len(train_samples)} training rows")
+    # A feature name that appears in exactly one training APK is a memorised sample id,
+    # not a signal — and a corpus of thousands produces thousands of them (one-off
+    # vendor permissions, per-app schemes). Dropping singletons once the corpus is large
+    # enough for the rule to be safe keeps the matrix honest and the fit tractable.
+    min_feature_count = args.min_feature_count or (2 if len(train_samples) >= 500 else 1)
+    vocabulary = dataset.freeze_vocabulary(train_samples, min_count=min_feature_count)
+    print(
+        f"\nfroze {len(vocabulary)} feature names from {len(train_samples)} training rows "
+        f"(names seen in fewer than {min_feature_count} training samples dropped)"
+    )
 
     x_train, y_train = dataset.matrix(train_samples, vocabulary)
     x_calib, y_calib = dataset.matrix(calib_samples, vocabulary)
@@ -219,7 +236,7 @@ def main() -> int:
     y_all = np.asarray([s.label for s in all_samples], dtype=int)
     r_train_idx, r_calib_idx, r_test_idx = _three_way_random(y_all, dataset.SEED)
     r_train_samples = [all_samples[i] for i in r_train_idx]
-    r_vocabulary = dataset.freeze_vocabulary(r_train_samples)
+    r_vocabulary = dataset.freeze_vocabulary(r_train_samples, min_count=min_feature_count)
     xr_train, yr_train = dataset.matrix(r_train_samples, r_vocabulary)
     xr_calib, yr_calib = dataset.matrix([all_samples[i] for i in r_calib_idx], r_vocabulary)
     xr_test, yr_test = dataset.matrix([all_samples[i] for i in r_test_idx], r_vocabulary)
@@ -234,10 +251,16 @@ def main() -> int:
     fitted_time: dict[str, Any] = {}
     probabilities: dict[tuple[str, str], np.ndarray] = {}
 
+    timings: dict[str, float] = {}
     for name in zoo:
-        print(f"\n── {name} ──")
+        print(f"\n── {name} ──", flush=True)
+        model_started = time.monotonic()
         cv_scores[name] = _cv_pr_auc(name, x_train, y_train, args.cv_folds)
-        print(f"  CV PR-AUC inside train: {cv_scores[name][0]} ± {cv_scores[name][1]}")
+        print(
+            f"  CV PR-AUC inside train: {cv_scores[name][0]} ± {cv_scores[name][1]} "
+            f"({time.monotonic() - model_started:.1f}s)",
+            flush=True,
+        )
 
         # Time scheme.
         model = models.fit(name, x_train, y_train)
@@ -289,6 +312,8 @@ def main() -> int:
             f"  random PR-AUC {random_row.pr_auc:.4f} {random_row.pr_auc_ci}  "
             f"n={random_row.n} ({random_row.n_pos} malware)"
         )
+        timings[name] = round(time.monotonic() - model_started, 1)
+        print(f"  {name} total {timings[name]}s", flush=True)
 
     # ── winner: cross-validated inside train, never on test ──────────────────
     ranked = sorted(
@@ -485,7 +510,11 @@ def main() -> int:
         "schema_version": FEATURE_SCHEMA_VERSION,
         "seed": dataset.SEED,
         "corpus": summary,
-        "vocabulary": {"time_scheme": len(vocabulary), "random_scheme": len(r_vocabulary)},
+        "vocabulary": {
+            "time_scheme": len(vocabulary),
+            "random_scheme": len(r_vocabulary),
+            "min_training_occurrences": min_feature_count,
+        },
         "winner": winner,
         "winner_selection": selection_basis,
         "cv_pr_auc_in_train": {name: cv_scores[name] for name in zoo},
@@ -494,6 +523,7 @@ def main() -> int:
         "calibration": calibration,
         "anomaly": anomaly_summary,
         "attribution_method": explainer.method,
+        "global_importance_method": global_rows[0].method if global_rows else "none",
         "global_importance_top20": [
             {"feature": row.feature, "weight": row.weight} for row in global_rows
         ],
@@ -502,6 +532,7 @@ def main() -> int:
         ],
         "pilot": pilot,
         "runtime_seconds": round(time.monotonic() - started, 1),
+        "seconds_per_model": timings,
     }
 
     bundle.save(
@@ -793,10 +824,11 @@ def _write_results(
 
     lines.append("## 7. What the model leans on (T2.6)\n")
     lines.append(
-        f"Global importance measured by permutation on the test split "
-        f"(n={time_rows[0].n}): each column is shuffled and the drop in PR-AUC recorded. "
-        "Model-agnostic and measured, rather than read off internal weights.\n"
+        f"Global importance measured by permutation on the test split (n={time_rows[0].n}): "
+        "each column is shuffled and the drop in PR-AUC recorded. Model-agnostic and "
+        "measured, rather than read off internal weights.\n"
     )
+    lines.append(f"Method as run: `{metrics.get('global_importance_method', 'none')}`.\n")
     lines.append("| feature | mean drop in PR-AUC when shuffled |")
     lines.append("|---|---:|")
     for row in metrics["global_importance_top20"][:15]:
