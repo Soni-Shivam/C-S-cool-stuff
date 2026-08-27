@@ -152,3 +152,28 @@ def test_the_default_client_is_remote() -> None:
     from drishti.m3_dynamic.detonator import RemoteDetonatorClient
 
     assert isinstance(LiveSandboxSource().client, RemoteDetonatorClient)
+
+
+def test_the_refusal_names_only_the_conditions_that_actually_failed(tmp_path: Path) -> None:
+    """The message must not assert a failure that did not happen.
+
+    MEASURED 2026-08-26 on `m3-detonator`: an ARM64-only APK produced
+    `outcome=failed` with a *clean* snapshot lifecycle — before_restore passed,
+    after_restore passed, package absent afterwards — and the refusal still read
+    "snapshot lifecycle incomplete". An operator reading that would go looking for a
+    dirty AVD, and the one thing that actually failed (the install) is not mentioned.
+    """
+    artifact = _an_artifact_with_observations()
+    failed_install = artifact.model_copy(update={"outcome": "failed"})
+    assert failed_install.snapshot.after_restore == "passed", "fixture must have a clean snapshot"
+
+    source = LiveSandboxSource(client=FakeDetonator(failed_install))
+    with pytest.raises(TraceSourceUnavailableError) as excinfo:
+        source.run(tmp_path / "sample.apk", _plan(), sha256=artifact.sha256)
+
+    message = str(excinfo.value)
+    assert "outcome=failed" in message
+    assert "snapshot" not in message, (
+        "the snapshot lifecycle was clean; naming it sends the reader after a "
+        f"failure that did not occur: {message}"
+    )

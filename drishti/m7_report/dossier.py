@@ -23,11 +23,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from drishti.contracts.dynamic_trace import DynamicTrace
+from drishti.contracts.dynamic_trace import DynamicTrace, TraceSourceKind
 from drishti.contracts.evidence import ChainVerification
 from drishti.contracts.genai_verdict import GenAIVerdict
 from drishti.contracts.score import CompositeScore, SeverityBand
 from drishti.contracts.static_report import FileMeta, StaticReport
+from drishti.m3_dynamic.ingest import bare_host, indicator_kind
 
 #: The national portal and helpline. Both are public, stable entry points; neither is
 #: an API. The deep link is the portal root on purpose — inventing a form-prefill URL
@@ -134,21 +135,27 @@ def build(
             f"{chain.node_count} nodes, integrity {'VERIFIED' if chain.ok else 'FAILED'}"
         )
 
-    # Only observed infrastructure. A URL string sitting in a DEX is a string; listing
-    # it to law enforcement as contacted infrastructure would be an assertion we have
-    # not earned, and `synthesised` flows were served by our own harness.
-    indicators = [
-        f"{flow.host}  (observed {flow.method} {flow.url[:120]})"
-        for flow in (dynamic.network_flows if dynamic else ())
-        if not flow.synthesised
-    ]
+    # Only infrastructure the SAMPLE chose. A URL string sitting in a DEX is a string;
+    # listing it to law enforcement as contacted infrastructure would be an assertion we
+    # have not earned. The exclusion is NOT keyed on `synthesised` — that says only that
+    # we authored the reply, and the detonator's proxy stamps it on everything it serves,
+    # so keying on it would empty this list for every real run. `injected_destination`
+    # says the destination is ours, and the host is re-checked here too, because the hook
+    # path hardcodes `synthesised=False` and would otherwise hand a police investigator
+    # our own sinkhole address as an offender's server.
+    indicators: list[str] = []
+    withheld = 0
     seen: set[str] = set()
-    deduped: list[str] = []
-    for indicator in indicators:
-        if indicator not in seen:
-            seen.add(indicator)
-            deduped.append(indicator)
-    indicators = deduped
+    for flow in dynamic.network_flows if dynamic else ():
+        host = bare_host(flow.host)
+        if flow.injected_destination or indicator_kind(host) is None:
+            withheld += 1
+            continue
+        answered = "  [reply synthesised by DRISHTI]" if flow.synthesised else ""
+        line = f"{host}  (observed {flow.method} {flow.url[:120]}){answered}"
+        if line not in seen:
+            seen.add(line)
+            indicators.append(line)
 
     techniques = [
         f"{t.technique_id}  {t.name}  ({t.tactic}, observed: {t.layer})"
@@ -158,8 +165,29 @@ def build(
     caveats = list(score.limitations)
     if dynamic is None:
         caveats.append("No dynamic analysis was performed; capability only, not behaviour.")
+    elif dynamic.synthetic and dynamic.source == TraceSourceKind.UNAVAILABLE:
+        # Same distinction the HTML report draws: "no sandbox ran" is not "a fixture was
+        # replayed", and a reader told the latter will ask to see the fixture.
+        caveats.append(
+            "No sandbox was available; this sample was never executed and nothing here "
+            "was observed at runtime."
+        )
     elif dynamic.synthetic:
         caveats.append("The dynamic trace is a hand-authored fixture, not a measurement.")
+    if withheld:
+        # Derived from the flags, never hardcoded: what was withheld is disclosed, so a
+        # short indicator list cannot be mistaken for a quiet sample.
+        caveats.append(
+            f"{withheld} network destination(s) were DRISHTI lab infrastructure, or could "
+            "not be classified as an indicator, and are excluded from the list above."
+        )
+    if dynamic is not None and any(f.synthesised for f in dynamic.network_flows):
+        answered = sum(1 for f in dynamic.network_flows if f.synthesised)
+        caveats.append(
+            f"{answered} of the responses above were synthesised and served by DRISHTI "
+            "because the destination did not answer. They are our content, not the "
+            "offender's, and say nothing about what that server would have replied."
+        )
     if genai is not None and genai.rejected_claims:
         caveats.append(
             f"{len(genai.rejected_claims)} model-generated claim(s) failed verification "

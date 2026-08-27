@@ -66,7 +66,7 @@ export function AiTab({
                 subtitle="Every claim cites the ledger nodes it rests on — click a chip to open the node"
               >
                 {verdict.claims.length === 0 ? (
-                  <Empty>No claims were emitted.</Empty>
+                  <Empty>The model produced no evidence-bearing claims for this sample.</Empty>
                 ) : (
                   <ul className="space-y-2.5">
                     {verdict.claims.map((claim, i) => (
@@ -101,7 +101,10 @@ export function AiTab({
               <div className="grid gap-4 xl:grid-cols-2">
                 <Panel title={`MITRE ATT&CK for Mobile (${verdict.techniques.length})`}>
                   {verdict.techniques.length === 0 ? (
-                    <Empty>No technique mapped.</Empty>
+                    <Empty>
+                      No ATT&amp;CK technique was mapped. Nothing found here matched one closely
+                      enough to name it.
+                    </Empty>
                   ) : (
                     <div className="grid gap-2 sm:grid-cols-2">
                       {verdict.techniques.map((technique) => (
@@ -143,7 +146,10 @@ export function AiTab({
                       ))}
                     </dl>
                   ) : (
-                    <Empty>No victim profile — the Social-Engineering Analyst agent lands in T3.8.</Empty>
+                    <Empty>
+                      No victim profile was produced for this sample. Who it targets — the language,
+                      the lure and the customer segment — is left unstated rather than guessed.
+                    </Empty>
                   )}
 
                   <div className="mt-3 border-t border-line-soft pt-3">
@@ -163,7 +169,10 @@ export function AiTab({
                         </div>
                       </div>
                     ) : (
-                      <Empty>No vision impersonation check — the VLM sub-agent lands in T3.9.</Empty>
+                      <Empty>
+                        No brand-impersonation check was recorded for this sample, so nothing is
+                        claimed either way about whether it imitates a known brand.
+                      </Empty>
                     )}
                   </div>
                 </Panel>
@@ -175,7 +184,7 @@ export function AiTab({
 
       <Panel
         title="ML prediction"
-        subtitle="P_cal feeds F_AI. An uncalibrated probability would break the noisy-OR fusion."
+        subtitle="The calibrated probability is what feeds the fused AI signal. An uncalibrated one would distort the fusion."
       >
         <ArtefactGate artefact={ml}>
           {(prediction) => (
@@ -229,7 +238,10 @@ export function AiTab({
                   </ul>
                 </div>
               ) : (
-                <Empty>No SHAP attributions — explanations land in T2.6.</Empty>
+                <Empty>
+                  The model returned no per-feature attributions for this sample, so there is
+                  nothing to show for which inputs moved the probability.
+                </Empty>
               )}
 
               <EvidenceChips refs={prediction.ledger_refs} label="ledger:" />

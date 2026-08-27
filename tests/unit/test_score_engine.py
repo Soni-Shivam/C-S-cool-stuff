@@ -147,6 +147,21 @@ def test_static_drift_contributes_without_dynamic_data() -> None:
     assert drift.S > clean.S
 
 
+def test_evidence_refs_count_distinct_nodes_not_citations() -> None:
+    """`ev_static` backs several terms. It is still one piece of evidence.
+
+    The verdict card renders a chip per entry and its "+N more" count from the length
+    of this tuple, so concatenating the factors' ref lists made an 18-node case read as
+    a 44-node one and drew visibly identical chips beside each other.
+    """
+    result = score(static=_static(drift=True), ml=_ml(), genai=None, dynamic=None, intel=None)
+
+    assert len(result.ledger_refs) == len(set(result.ledger_refs))
+    assert "ev_static" in result.ledger_refs
+    for factor in result.factors:
+        assert len(factor.evidence_refs) == len(set(factor.evidence_refs))
+
+
 def test_limitations_follow_dynamic_provenance_flags() -> None:
     """A non-None placeholder trace must not make the final score claim live analysis."""
     unavailable = DynamicTrace(
@@ -158,8 +173,16 @@ def test_limitations_follow_dynamic_provenance_flags() -> None:
     )
     result = score(static=_static(), ml=_ml(), genai=None, dynamic=unavailable, intel=None)
     assert "dynamic analysis unavailable" in result.limitations
-    assert "dynamic trace is synthetic" in result.limitations
-    assert "containment was not verified for the dynamic trace" in result.limitations
+
+    # …and says only that. The synthetic and containment lines describe a trace, so
+    # emitting them for a placeholder tells a reader that something WAS executed and
+    # then went wrong — "containment was not verified for the dynamic trace" reads as a
+    # failed containment check on a real run, not as the absence of any run at all.
+    # Nothing was executed here, so "unavailable" is the whole story.
+    assert "dynamic trace is synthetic" not in result.limitations
+    assert "containment was not verified for the dynamic trace" not in result.limitations
+    # The property this test is named for: no claim of live or replayed analysis.
+    assert not any("live" in item or "replayed" in item for item in result.limitations)
 
 
 def test_replayed_trace_is_disclosed_even_when_captured_and_complete() -> None:
@@ -332,9 +355,7 @@ def test_critical_still_requires_more_than_a_manifest() -> None:
 
 def test_the_scorer_stays_pure_with_g_wired() -> None:
     """Same inputs, same output, 50 times. G must not introduce state."""
-    report = _static().model_copy(
-        update={"permission_combos": (_combo("X", Severity.HIGH),)}
-    )
+    report = _static().model_copy(update={"permission_combos": (_combo("X", Severity.HIGH),)})
     calls = [
         score(
             static=report,

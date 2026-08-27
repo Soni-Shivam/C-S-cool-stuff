@@ -151,9 +151,19 @@ export function ProvenanceBadge({ trace, detailed = false }: { trace: DynamicTra
     <div className="rounded-[var(--radius-tile)] border border-line bg-ground-2/60 p-3">
       <div className="flex flex-wrap items-center gap-2">
         <Tag tone={copy.tone}>{copy.label}</Tag>
-        <Tag tone={trace.containment_verified ? 'good' : 'bad'}>
-          {trace.containment_verified ? 'containment verified' : 'containment NOT verified'}
-        </Tag>
+        {/* A red "containment NOT verified" against a run that never happened reads as
+            a containment failure — as though the sample ran and escaped. Neither a
+            missing trace nor a hand-authored fixture involved a running sample, so
+            there was nothing to contain either way, and the chip says that instead. */}
+        {kind === 'none' || kind === 'synthetic' ? (
+          <Tag tone="neutral" title="Containment is checked before a detonation. None was attempted here.">
+            nothing ran — no containment to verify
+          </Tag>
+        ) : (
+          <Tag tone={trace.containment_verified ? 'good' : 'bad'}>
+            {trace.containment_verified ? 'containment verified' : 'containment NOT verified'}
+          </Tag>
+        )}
       </div>
       <p className="mt-2 text-xs text-muted">{copy.blurb}</p>
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">

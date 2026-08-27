@@ -9,26 +9,17 @@
     "captured_from_image": "m3-detonator-manual-20260826"
   },
   "pre_morph": {
-    "errors": [],
-    "partial": false,
+    "errors": [
+      "2 overlay observation(s) were not carried forward \u2014 this trace was captured with m3-hooks-2.0.0, whose hook could not distinguish a system overlay from an ordinary app window."
+    ],
+    "partial": true,
     "duration_ms": 0,
     "run_id": "run_268fd8ea1de4",
     "source": "live",
     "detonated": true,
-    "detonation_reason": "13 instrumented observations across 3 distinct MITRE techniques",
+    "detonation_reason": "13 instrumented observations across 2 distinct MITRE techniques",
     "outcome": "completed",
     "api_events": [
-      {
-        "t_ms": 1522,
-        "api": "WindowManager.addView",
-        "args": [
-          "added a window over other apps"
-        ],
-        "retval": null,
-        "thread": "main",
-        "stack": [],
-        "count": 2
-      },
       {
         "t_ms": 0,
         "api": "ContentResolver.query",

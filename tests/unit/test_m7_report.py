@@ -101,6 +101,44 @@ def test_a_sample_that_did_nothing_is_inconclusive_never_benign(job, meta, score
     assert "INCONCLUSIVE, not benign" in body
 
 
+def test_a_synthesised_reply_is_disclosed_as_ours_not_as_c2_behaviour(job, meta, score) -> None:
+    """We answered a dead C2. The report may never let that read as the C2 answering."""
+    trace = _trace(
+        detonated=True,
+        outcome="completed",
+        network_flows=(
+            NetworkFlow(
+                t_ms=10,
+                method="POST",
+                url="http://gate.evil.tk/api",
+                host="gate.evil.tk",
+                synthesised=True,
+            ),
+        ),
+    )
+    body = html.render(job=job, meta=meta, score=score, trace=trace)
+    assert "1 network response(s) were synthesised by DRISHTI" in body
+
+
+def test_destinations_withheld_from_the_ioc_export_are_disclosed(job, meta, score) -> None:
+    """A caveat derived from a flag, not a sentence someone remembered to paste in."""
+    trace = _trace(
+        detonated=True,
+        outcome="completed",
+        network_flows=(
+            NetworkFlow(
+                t_ms=10,
+                method="GET",
+                url="http://127.0.0.1:9/inert",
+                host="127.0.0.1",
+                injected_destination=True,
+            ),
+        ),
+    )
+    body = html.render(job=job, meta=meta, score=score, trace=trace)
+    assert "1 network destination(s) were DRISHTI lab infrastructure" in body
+
+
 def test_unverified_containment_is_disclosed(job, meta, score) -> None:
     trace = _trace(detonated=True, outcome="completed", containment_verified=False)
     body = html.render(job=job, meta=meta, score=score, trace=trace)
@@ -138,8 +176,14 @@ def test_mock_provider_is_disclosed(job, meta, score) -> None:
 
 
 # ── STIX must not launder our own output into intelligence ──────────────────
-def test_stix_excludes_synthesised_flows(meta, score) -> None:
-    """A response our Generative C2 served is not attacker infrastructure."""
+def test_stix_excludes_destinations_we_injected(meta, score) -> None:
+    """A destination WE put in front of the sample is not attacker infrastructure.
+
+    The exclusion keys on the provenance of the destination, not on who answered:
+    `synthesised` says only that we authored the response body, and the on-VM proxy
+    stamps that on every response it serves — sinkhole included. Keying on it would
+    empty the bundle the moment a real detonation ran.
+    """
     trace = _trace(
         detonated=True,
         outcome="completed",
@@ -151,6 +195,7 @@ def test_stix_excludes_synthesised_flows(meta, score) -> None:
                 url="http://ours.test/y",
                 host="ours.test",
                 synthesised=True,
+                injected_destination=True,
             ),
         ),
     )
@@ -199,6 +244,28 @@ def test_stix_carries_its_own_limitations(meta) -> None:
     bundle = stix.build_bundle(meta=meta, score=score)
     indicator = next(o for o in bundle["objects"] if o["type"] == "indicator")
     assert indicator["x_drishti_limitations"] == ["ML model unavailable"]
+
+
+def test_stix_never_exports_a_sample_as_benign(meta) -> None:
+    """A low score is a withheld judgement, and must not leave as a clearance.
+
+    The rest of the system says "safety could not be confirmed either way" and
+    recommends REVIEW for a LOW band. A partner reading `indicator_types: [benign]`
+    out of the bundle would read that as DRISHTI having cleared the sample, which is
+    the one conclusion it is never allowed to reach.
+    """
+    for band in SeverityBand:
+        bundle = stix.build_bundle(
+            meta=meta, score=CompositeScore(S=10, band=band, C=0.2, gamma=0.5)
+        )
+        for obj in bundle["objects"]:
+            assert "benign" not in obj.get("indicator_types", [])
+
+    low = stix.build_bundle(
+        meta=meta, score=CompositeScore(S=10, band=SeverityBand.LOW, C=0.2, gamma=0.5)
+    )
+    indicator = next(o for o in low["objects"] if o["type"] == "indicator")
+    assert indicator["indicator_types"] == ["unknown"]
 
 
 # ── YARA must be honest about its own quality ───────────────────────────────
@@ -267,7 +334,7 @@ def test_dossier_gates_reporting_on_the_band(meta) -> None:
     assert "below the reporting threshold" in low.reason
 
 
-def test_dossier_lists_only_observed_infrastructure(meta, score) -> None:
+def test_dossier_lists_only_infrastructure_the_sample_chose(meta, score) -> None:
     trace = _trace(
         detonated=True,
         outcome="completed",
@@ -279,6 +346,7 @@ def test_dossier_lists_only_observed_infrastructure(meta, score) -> None:
                 url="http://ours.test/b",
                 host="ours.test",
                 synthesised=True,
+                injected_destination=True,
             ),
         ),
     )
@@ -286,6 +354,25 @@ def test_dossier_lists_only_observed_infrastructure(meta, score) -> None:
     joined = " ".join(pack.indicators)
     assert "real.test" in joined
     assert "ours.test" not in joined, "our own harness is not attacker infrastructure"
+
+
+def test_dossier_discloses_what_it_withheld_from_the_indicator_list(meta, score) -> None:
+    """Failing toward not-publishing is only honest if the reader is told it happened."""
+    trace = _trace(
+        detonated=True,
+        outcome="completed",
+        network_flows=(
+            NetworkFlow(
+                t_ms=1,
+                method="GET",
+                url="http://127.0.0.1:9/inert",
+                host="127.0.0.1",
+                injected_destination=True,
+            ),
+        ),
+    )
+    pack = dossier.build(meta=meta, score=score, dynamic=trace)
+    assert any("DRISHTI" in c and "infrastructure" in c for c in pack.caveats)
 
 
 def test_dossier_carries_its_caveats_into_the_text(meta) -> None:
@@ -310,3 +397,26 @@ def test_dossier_does_not_embed_the_sample(meta, score, static) -> None:
     # sample itself or a route to it.
     for forbidden in ("base64,", "attachment", "download", "http://", "gs://"):
         assert forbidden not in blob.lower()
+
+
+def test_yara_strings_are_refanged_so_the_rule_can_actually_match() -> None:
+    """A YARA literal is matched against the file; the file contains `http`, not `hxxp`.
+
+    M2 defangs extracted URLs so a report can never become a live link. That is right
+    for a document and wrong for a matcher: emitting the defanged form produced rules
+    that were syntactically valid, shipped with a confidence score, and could never
+    fire on the sample they were generated from.
+    """
+    from drishti.m7_report.yara import _refang
+
+    assert (
+        _refang("hxxp://192.0.2.87:8443/rto/v3/collect") == "http://192.0.2.87:8443/rto/v3/collect"
+    )
+    assert (
+        _refang("hxxps://challan-verify.invalid/api/sync")
+        == "https://challan-verify.invalid/api/sync"
+    )
+    # Already-fanged input is left alone, so the function is safe to apply twice.
+    assert _refang("http://example.test/a") == "http://example.test/a"
+    # Only the scheme, and only at the start: `hxxp` mid-path is a real literal.
+    assert _refang("http://example.test/hxxp://nested") == "http://example.test/hxxp://nested"

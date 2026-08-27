@@ -180,7 +180,9 @@ def score(
         actions_proposed=_actions(band),
         explanation=f"Score {value} ({band.value}); fused AI signal contributes {fused:.2f}.",
         limitations=limitations,
-        ledger_refs=tuple(ref for factor in factors for ref in factor.evidence_refs),
+        # Union across the factors, not concatenation: a node cited by two terms is
+        # still one piece of evidence, and this tuple is what the verdict card counts.
+        ledger_refs=tuple(dict.fromkeys(ref for factor in factors for ref in factor.evidence_refs)),
     )
 
 
@@ -276,13 +278,17 @@ def _limitations(
         items.append("behavioural analysis is partial")
 
     if dynamic is None or dynamic.source is TraceSourceKind.UNAVAILABLE:
+        # "unavailable" is the whole story, and the only honest one. The synthetic and
+        # containment lines below describe a trace; when no sandbox ran there is no
+        # trace for them to describe, and a reader shown "the dynamic trace is
+        # synthetic" and "containment was not verified for the dynamic trace" will
+        # reasonably infer that something was executed and then went wrong.
         items.append("dynamic analysis unavailable")
     else:
         if dynamic.source is TraceSourceKind.REPLAY:
             items.append("dynamic trace was replayed, not live")
         if dynamic.partial:
             items.append("dynamic analysis is partial")
-    if dynamic is not None:
         if dynamic.synthetic:
             items.append("dynamic trace is synthetic")
         if not dynamic.containment_verified:
@@ -318,8 +324,19 @@ def _factor(
 
 
 def _refs(*items: object | None) -> tuple[str, ...]:
+    """The ledger nodes behind a factor: each one once, in the order first seen.
+
+    Several analysers cite the same node — the static report is evidence for both the
+    permission term and the drift term — and concatenating their ref lists repeated it.
+    A repeated ref is not more evidence, but everything downstream counts this tuple:
+    the verdict card renders "+36 more" from its length and draws a chip per entry, so
+    a sample backed by 18 nodes was presented as one backed by 44, twice over. Same
+    `dict.fromkeys` idiom as `_limitations`, for the same reason.
+    """
     return tuple(
-        ref for item in items if item is not None for ref in getattr(item, "ledger_refs", ())
+        dict.fromkeys(
+            ref for item in items if item is not None for ref in getattr(item, "ledger_refs", ())
+        )
     )
 
 

@@ -7,7 +7,13 @@ Protocol: `docs/00_GUIDING_MAP.md` §13.
 - **Started:** 2026-08-13 · **Last reconciled:** 2026-08-26
 - **Integration branch:** `main` · **v1 record:** branch `v1` + tag `v1-final`
 - **Phase:** Finale build · the frontier loop closes, 115 live detonations, all seven modules built. Remaining gaps are recorded under *Measured negative results* and *Still unproven*, not hidden.
-- **Tests:** **1,232 contract+unit + 15 e2e, all passing** (measured 2026-08-26 at `20a76cf`)
+- **Tests:** **1,812 contract+unit + 16 e2e, all passing** (measured 2026-08-27 at `47b9d14`,
+  `pytest tests/contract tests/unit -q` → exit 0; `pytest tests/e2e -q` → exit 0; `make lint` clean).
+  **Correction, not a refresh:** the previous line here claimed "15 e2e, all passing" at `20a76cf`.
+  That was false — two e2e tests were already failing at this branch's base commit `a4f013e`, and
+  two more were latent, all four resting on a fabricated evasion observation in `_stub_trace`.
+  They are fixed at `47b9d14`; the number above is the first e2e claim in this file that has been
+  verified by running it.
 - **Build design:** `docs/superpowers/specs/2026-08-17-drishti-v2-build-design.md`
 - **Narrative log:** see `PROGRESS.md`
 
@@ -484,6 +490,60 @@ rather than deleted — a superseded model is provenance, not garbage.
 
 ---
 
+### Live canary detonation — the first live trace WITH observations — 2026-08-27
+
+**DONE.** Full account: `.superpowers/sdd/2026-08-26-frontier-c2-closure/live-canary-report.md`.
+
+`ef7bd4e` proved the detonation path end to end but its sample was ARM64-only, so
+"a live trace WITH observations" stayed unproven. It is proven now. `canary/dist/canary.apk`
+(sha256 `9854900c…`, `in.drishti.canary`) detonated live on `m3-detonator`
+(instance `7382052279419138339`, image marker `m3-detonator-manual-20260826`):
+`outcome=completed`, `simulated=false`, **4 observations**, `mitre_observed =
+[T1412, T1417, T1418, T1437]`, snapshot restored clean before and after, containment
+manifest `fb9cfa49…` signed minutes before the run. Artifact at
+`data/fixtures/observations/9854900c….json`, replayable fixture at
+`data/fixtures/traces/9854900c….json` with `provenance.kind = captured` and an empty
+`post_morph`. `GET /api/jobs/{id}/dynamic` renders it as `source=replay`,
+`synthetic=False`, `detonated=True` — the Sandbox view is no longer empty for the canary.
+
+Four things it measured that were not known before:
+
+1. **T1417 "overlay" is a FALSE POSITIVE for any app with a UI.** `hooks.js` hooks
+   `WindowManagerImpl.addView` and emits T1417 unconditionally, without checking
+   `LayoutParams.type`. Every Activity adds its content view through that path. The
+   canary — which CLAUDE.md forbids from drawing an overlay — fired it. This very likely
+   inflates T1417 across all 117 artifacts in `data/fixtures/observations/`. Not fixed
+   here: changing the hook without re-detonating would leave artifacts and hook version
+   disagreeing, and editing a real capture would be tampering.
+2. **`-http-proxy` makes the containment probe report a false REACHABLE.** With the host
+   lockdown fully applied the probe still read `169.254.169.254:80 REACHABLE` and aborted
+   every batch. The emulator's proxy shim terminates guest port-80 TCP before mitmproxy
+   sees it, so `connect()` succeeds regardless; `connection_strategy=eager` never gets a
+   say. Containment held — an in-guest GET for the instance id returned zero bytes and the
+   same request from the host timed out against the DROP rule — only the *measurement*
+   broke. `emulator_control.sh` gained `DRISHTI_EMULATOR_PROXY=none`. Deliberately NOT
+   fixed by loosening `is_reachable` to "bytes came back": that would make an
+   exfiltration sink read as contained.
+3. **`drishti_proxy.py` died silently under mitmdump.** mitmproxy's loader does not
+   register the script in `sys.modules`, so `@dataclass` + `from __future__ import
+   annotations` raised `AttributeError: 'NoneType' object has no attribute '__dict__'`.
+   nohup'd, the only symptom is an empty `flows.jsonl` — indistinguishable from a sample
+   that never beaconed. The unit tests could not see it because they registered the module
+   first, on a comment that asserted mitmproxy does too. Fixed, with a regression test that
+   loads it the way mitmdump actually does.
+4. **The canary's own beacon was not captured** (`captured_flows: []`). The proxy log shows
+   `GET http://10.0.2.2:8080/canary` arriving and the client disconnecting before a
+   response. Cause not established — the `eager`-connects-upstream-to-a-blackholed-10.0.2.2
+   theory is untested speculation. Two unrelated flows (Android's connectivity check) *were*
+   sinkholed and logged, so the addon chain works.
+
+mitmproxy 11.0.2 is now installed on the VM **without ever opening the seal** — resolved
+for linux/cp311 on the laptop and shipped over IAP to `/opt/drishti/mitmpkgs`. The missing
+`snapshot` provision stamp was also written, so `detonator_provision.sh all` can no longer
+re-cut the `clean` snapshot.
+
+Tests: **1,821 contract+unit passing**. VM stopped (`make lab-down`).
+
 ### Measured negative results — 2026-08-26
 
 Recorded prominently because a negative result nobody can find is a claim waiting to be
@@ -875,6 +935,75 @@ is still never populated by M2 — that half of `D` is untouched and still a rea
 `auto` resolves to replay. The code is exercised against a fake detonator, not a real
 one — `tests/lab/` is where a live-marked test belongs and none has been written yet.
 Until that runs, T4.9 is "wired and unit-tested", not "proven live".
+
+### T4.9 is now PROVEN LIVE — 2026-08-26, `m3-detonator`, instance 7382052279419138339
+
+The paragraph above is superseded. `stage → detonate → collect → gate` ran end to end
+from the pipeline against the real sealed VM, both passes, and **the frontier loop
+closed live for the first time**: pass 2 was detonated with `morphs=install_packages`,
+chosen by the adversarial elicitor from pass 1's observation, not by a fixture.
+
+Run provenance, from the artifacts rather than from a config flag:
+
+| | pass 1 | pass 2 |
+|---|---|---|
+| `outcome` | failed | failed |
+| `containment_verified` | true | true |
+| snapshot before / after / package absent | passed / passed / true | passed / passed / true |
+| `diagnostics` | `pass=1; morphs=none` | `pass=2; morphs=install_packages` |
+
+Sample was `fea05c73…` (Adobe Lightroom MOD, `com.adobe.lrmobile`). It cannot produce
+observations here and never will: it ships `lib/arm64-v8a/` only, so the x86_64 emulator
+answers `INSTALL_FAILED_NO_MATCHING_ABIS … res=-113`. That is runbook finding #1 hit for
+real, from the pipeline. **A live trace with observations is still unproven** — the 50
+corpus artifacts that did produce observations were driven by hand, not through
+`LiveSandboxSource`.
+
+**Four defects were found by running it, all fixed, all with a regression test:**
+
+1. **`collect()` could never read its own artifact.** `dynamic_analyze.py` runs under
+   `as_root`, so the artifact lands `root:root 0600`; `collect()` used a plain `cat` and
+   got `PermissionError`. `detonator_collect.sh` chowns the directory before its batch
+   read, which is why the hand-driven path never saw this.
+2. **rc 2 was read as an unreachable detonator.** `dynamic_analyze.py:125` returns 2 when
+   a run completed but is not `safe_for_ingestion`. `_run` treated any non-zero as
+   transport failure, so `detonate()` raised *before* `collect()`, `run()`'s specific gate
+   was unreachable, and the pipeline substituted a synthetic stub asserting
+   `containment_verified=False` **over a signed manifest that said the opposite**. This is
+   the honesty failure the project exists to prevent and it sat on the happy path for any
+   sample that fails to install. `_run` now takes `ok_returncodes`; rc 3 still raises.
+3. **`_run` truncated stderr from the head** (`[:400]`). Every IAP call opens stderr with
+   a ~200-char "consider installing NumPy" banner, so the boilerplate survived and the
+   reason was discarded — two consecutive failures logged only
+   `DetonatorUnreachableError: WARNING:`. Now takes the tail.
+4. **The refusal named a failure that had not happened.** `safe_for_ingestion` failed
+   only on `outcome`, and the message still read "snapshot lifecycle incomplete" while
+   the snapshot had restored cleanly both times. `_unsafe_reasons()` now enumerates only
+   the predicates that actually failed.
+
+**Two deployment defects, also fixed:** `emulator_control.sh` never exported
+`ANDROID_AVD_HOME`, so on the hand-provisioned layout (`/opt/drishti/avd`) the emulator
+died with `Unknown AVD name [drishti]`; and `detonator_deploy.sh` does not ship
+`runtime_prepare.sh`, which in turn calls a `/opt/drishti/runtime_lockdown.sh` that does
+not exist on this VM (only `detonator_lockdown.sh` does). The second is **not fixed** —
+see *Still open* below.
+
+**Still open after this session:**
+
+- **The stub still contradicts the manifest.** With all four fixes in, an
+  install-failure is refused for the right reason and logged accurately — but
+  `pipeline._sandbox` still falls back to `_stub_trace`, whose
+  `containment_verified=False` and `synthetic=True` produce the three UI limitation
+  lines. For a sample the emulator physically cannot run, the honest disclosure is
+  "the sample could not be installed on this emulator (ABI mismatch)", not "containment
+  was not verified". Changing that touches `_limitations` and the report, so it was left
+  as a decision rather than taken unilaterally.
+- **mitmproxy is not installed on the detonator and cannot be**, so the branch's
+  flow-capture / C2-bundle work is untestable there. The runtime VPC has no NAT, and
+  `uv pip install mitmproxy` times out against PyPI. It belongs in the Packer build.
+  The `-http-proxy 127.0.0.1:8080` launch flag currently points at nothing.
+- `runtime_prepare.sh` is not deployed and references a script that does not exist.
+- No `tests/lab/` GCP-marked test was written; the proof above is a manual run.
 
 ## P5 — FRONTIER (H44→H58)
 
@@ -1500,3 +1629,57 @@ live answer and asserts the stored key equals the catalogue key. `make test` gre
 the current design — the method bodies ship in the first user turn and tools exist only
 for drill-down, so a run where the model had no ambiguity to resolve legitimately makes
 zero tool calls. The tile reads as an indictment but is the honest number.
+
+---
+
+### Deviations — 2026-08-27 (sandbox line merged into `main`)
+
+`claude/sandbox-progress-plan-94f41e` (30 commits: live detonation, Generative-C2 flow
+capture, the C2 bundle, the honesty fixes and the Agents view) merged into `main` at the
+common ancestor `e440daf` — 13 commits on main's side, 30 on the branch's. Five files
+conflicted. Four were textual; the fifth was not, and is recorded here because the
+auto-merge was **silently wrong** and would have shipped.
+
+**`code_interpreter.py` — two implementations of `resolve_signature`.** Both lines
+independently solved the same measured failure (a model naming a real method in a
+dialect the exact-match lookup rejected, so every interpretation was dropped and the
+dashboard reported `0 methods interpreted` while the model had done the work). Main got
+`canonical_signature` + `signature_arity`; the sandbox line got `normalise_signature`.
+Git merged both **without a conflict marker**, leaving two `def resolve_signature` in one
+module with the second silently shadowing the first. Resolved by keeping main's
+(the later line, three commits of refinement, handles four dialects and real overloads)
+and deleting the sandbox's — then porting across the two things the sandbox version did
+better, both now covered by tests:
+
+* **A fifth dialect.** `in.drishti.canary.MainActivity.onCreate` — no arrow at all —
+  resolved to nothing under main's version. It now resolves.
+* **Ambiguity refuses.** Main's returned `matches[0][1]` when arity could not break a
+  tie: a guess between two real overloads, presented as a finding. It now returns `None`.
+  No test on main asserted the guess; every multi-match case main tests is
+  arity-resolved, so this tightens behaviour without contradicting either suite.
+* **An `L`-prefix bug on main.** The descriptor prefix was stripped unconditionally, so a
+  class genuinely named `Llama` became `lama` and matched nothing. Stripping is now
+  decided by descriptor shape (`L…;` — both halves), which is what androguard writes.
+
+**One inherited test assertion was corrected, not merged.**
+`test_normalisation_keeps_a_class_whose_name_begins_with_l` asserted that `Llama;->go`
+keeps its `L`. That is wrong about smali: `Llama;` is a well-formed descriptor and does
+denote the class `lama`. The property it was really guarding — a model's Java spelling of
+an L-initial class surviving — is now asserted on `Llama->go` / `Llama.go`, the spelling a
+model actually produces. The reasoning is in the test's docstring.
+
+Other resolutions, all "keep the later line": `controller.py` takes the sandbox's
+`interpreter_notes` (a reason observed inside the pass) over main's static sentence,
+carrying main's comment explaining why the reason must be specific; `StaticTab.tsx` keeps
+main's `FilterableList`/`Copyable` URL panel over the sandbox's plain list;
+`test_llm_client.py` keeps main's `llm_model` pin; `01_DATA_CONTRACTS.md` keeps both
+sides' addenda — A17-A19 (C2 capture) from the branch, A20 (case-file archive) from main.
+A20 was numbered to leave that gap precisely so this merge would not collide.
+
+**Measured on the merge commit:** 1,871 contract+unit (`pytest tests/contract tests/unit -q`
+→ exit 0) and 16 e2e (`pytest tests/e2e -q` → exit 0); `ruff format --check` clean;
+`npm run build` and `npm test` (34) green; the case-file archive regenerated through the
+HTTP surface after the merge — 6 entries, chain verified, nothing omitted. `ruff check`
+reports one N806 in `tests/unit/test_behavioural_risk_context.py:98`, which was already
+red on `main` before this merge and is untouched here. The five `ruff format` failures
+that were red on `main` are gone — the branch had already fixed them.

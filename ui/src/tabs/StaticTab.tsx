@@ -229,7 +229,9 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                 subtitle="A combination is the signal — a single permission is weak"
               >
                 {value.permission_combos.length === 0 ? (
-                  <Empty>No high-risk combination matched.</Empty>
+                  <Empty>
+                    None of the high-risk permission combinations matched this package.
+                  </Empty>
                 ) : (
                   <ul className="space-y-2.5">
                     {value.permission_combos.map((combo) => (
@@ -331,7 +333,7 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                   <div>
                     <h4 className="eyebrow mb-2">Declared, not used</h4>
                     {value.declared_not_used.length === 0 ? (
-                      <Empty>none</Empty>
+                      <Empty>Every permission it asks for is used somewhere in the code.</Empty>
                     ) : (
                       <ul className="space-y-0.5 font-mono text-[11px] text-warn">
                         {value.declared_not_used.map((permission) => (
@@ -343,7 +345,7 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                   <div>
                     <h4 className="eyebrow mb-2">Used, not declared</h4>
                     {value.used_not_declared.length === 0 ? (
-                      <Empty>none</Empty>
+                      <Empty>It reaches for nothing it did not ask permission for.</Empty>
                     ) : (
                       <ul className="space-y-0.5 font-mono text-[11px] text-bad">
                         {value.used_not_declared.map((permission) => (
@@ -358,10 +360,13 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
 
             <Panel
               title="Call paths to dangerous sinks"
-              subtitle={`${value.call_paths.length} paths · ${value.sink_hits.length} distinct sinks hit`}
+              subtitle={`${count(value.call_paths.length, 'path')} · ${count(value.sink_hits.length, 'distinct sink')} hit`}
             >
               {value.call_paths.length === 0 ? (
-                <Empty>No source-to-sink path was recovered.</Empty>
+                <Empty>
+                  No call path was recovered from an entrypoint to a dangerous API, so nothing
+                  here shows how the app would reach one.
+                </Empty>
               ) : (
                 <ul>
                   {value.call_paths.map((path, i) => (
@@ -419,7 +424,10 @@ export function StaticTab({ report }: { report: Artefact<StaticReport> | null })
                 subtitle="The static → dynamic bridge: what the sandbox is told to watch"
               >
                 {value.hypotheses.length === 0 ? (
-                  <Empty>none derived</Empty>
+                  <Empty>
+                    No hypothesis was derived. The static stage found nothing specific enough to
+                    tell the sandbox what to watch for, so it hands over no watchlist.
+                  </Empty>
                 ) : (
                   <ul className="max-h-56 space-y-2 overflow-auto">
                     {value.hypotheses.map((hypothesis) => (

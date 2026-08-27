@@ -29,12 +29,16 @@ import pytest
 from drishti.m4_genai.client import MAX_RETRY_AFTER_S, retry_delay_from
 
 
-def _response(status: int, *, body: str = "", headers: dict[str, str] | None = None) -> httpx.Response:
+def _response(
+    status: int, *, body: str = "", headers: dict[str, str] | None = None
+) -> httpx.Response:
     request = httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
     return httpx.Response(status, request=request, text=body, headers=headers or {})
 
 
-def _error(status: int, *, body: str = "", headers: dict[str, str] | None = None) -> httpx.HTTPStatusError:
+def _error(
+    status: int, *, body: str = "", headers: dict[str, str] | None = None
+) -> httpx.HTTPStatusError:
     response = _response(status, body=body, headers=headers)
     return httpx.HTTPStatusError("rate limited", request=response.request, response=response)
 
@@ -88,7 +92,7 @@ def test_a_negative_or_zero_delay_is_ignored() -> None:
 
 
 def test_an_oversized_request_is_not_retried() -> None:
-    """"Reduce your message size" cannot be waited out — one request exceeds the ceiling.
+    """ "Reduce your message size" cannot be waited out — one request exceeds the ceiling.
 
     Measured in round 1 of a real tool loop: Limit 8000, Requested 8528. Retrying that
     spent 38 seconds to reach the identical failure, and the model's completed tool calls

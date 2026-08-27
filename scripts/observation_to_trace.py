@@ -84,6 +84,16 @@ def main() -> int:
             written["skipped"] += 1
             continue
         fixture = build_fixture(artifact)
+        # The same guard as above, applied AFTER conversion. An artifact whose only
+        # observations were dropped as untrustworthy (see `_overlay_claim_is_trustworthy`)
+        # converts to a trace with nothing in it, and a fixture with nothing in it
+        # replays as a sample that did nothing — which is a different statement from
+        # "we could not observe it", and the more dangerous one.
+        if not (fixture.pre_morph.get("api_events") or []):
+            if not args.quiet:
+                print(f"skip {artifact.sha256[:12]}: no trustworthy observations survived")
+            written["skipped"] += 1
+            continue
         target = args.out / f"{artifact.sha256}.json"
         target.write_text(
             json.dumps(fixture.model_dump(mode="json"), indent=2) + "\n", encoding="utf-8"

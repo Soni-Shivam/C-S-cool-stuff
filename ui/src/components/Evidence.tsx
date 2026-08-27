@@ -11,10 +11,11 @@
  * thing `ledger.append()` exists to reject, and hiding it here would undo that.
  */
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { getEvidenceNode } from '../api/client'
 import type { Artefact } from '../api/client'
 import type { EvidenceNode } from '../api/types'
+import { stageLabel } from './primitives'
 
 export interface EvidenceNav {
   /** Jump to the Ledger tab, select `nodeId`, expand it. */
@@ -76,7 +77,13 @@ export function EvidenceChips({
 }) {
   const [expanded, setExpanded] = useState(false)
 
-  if (refs.length === 0) {
+  // One chip per distinct node. A node cited twice is still one piece of evidence, and
+  // two chips reading `ev_402b7878…` side by side look like the list rendered twice.
+  // The producers are expected to send a unique list; this makes the display true
+  // regardless of which one slips.
+  const unique = useMemo(() => [...new Set(refs)], [refs])
+
+  if (unique.length === 0) {
     return (
       <span className="text-[11px] text-muted italic" title="No evidence node cited">
         ungrounded
@@ -84,14 +91,14 @@ export function EvidenceChips({
     )
   }
 
-  const shown = expanded ? refs : refs.slice(0, max)
-  const hidden = refs.length - shown.length
+  const shown = expanded ? unique : unique.slice(0, max)
+  const hidden = unique.length - shown.length
 
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       {label && <span className="text-[11px] text-muted">{label}</span>}
-      {shown.map((ref, i) => (
-        <EvidenceChip key={`${ref}-${i}`} nodeId={ref} />
+      {shown.map((ref) => (
+        <EvidenceChip key={ref} nodeId={ref} />
       ))}
       {hidden > 0 && (
         <button
@@ -102,7 +109,7 @@ export function EvidenceChips({
           +{hidden} more
         </button>
       )}
-      {expanded && refs.length > max && (
+      {expanded && unique.length > max && (
         <button
           type="button"
           onClick={() => setExpanded(false)}
@@ -151,8 +158,8 @@ export function EvidenceResolution({ nodeId }: { nodeId: string }) {
       state.state === 'error'
         ? state.message
         : state.state === 'pending'
-          ? `the pipeline is at ${state.stage}`
-          : `${state.what} lands in ${state.task}`
+          ? `the pipeline is still at ${stageLabel(state.stage)}`
+          : `${state.what} is not part of this build`
     return (
       <div className="rounded border border-bad/40 bg-bad/5 px-3 py-2.5 text-sm">
         <span className="text-bad">

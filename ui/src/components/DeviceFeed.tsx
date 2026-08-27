@@ -21,9 +21,25 @@
 import { useEffect, useRef, useState } from 'react'
 import { Smartphone, Radio } from 'lucide-react'
 import { listJobs } from '../api/client'
+import { STAGE_LABELS } from '../api/types'
 import type { Job } from '../api/types'
 
 const POLL_MS = 1000
+
+/**
+ * The time of day a submission arrived, in the viewer's own zone.
+ *
+ * Two uploads of the same file are two real jobs, and the strip previously drew
+ * them as two chips carrying the same filename, the same stage and no other
+ * visible difference — which reads as the feed having rendered one job twice
+ * rather than as the phone having sent the file twice. The submission clock is
+ * the smallest true thing that separates them.
+ */
+function submittedAt(iso: string): string {
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return ''
+  return at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
 
 export function DeviceFeed({
   currentJobId,
@@ -121,7 +137,7 @@ export function DeviceFeed({
                 setFollow(false)
                 onSelectJob(job.id)
               }}
-              title={`${job.filename} · ${job.sha256.slice(0, 16)}… · ${job.stage}`}
+              title={`${job.filename} · ${job.sha256.slice(0, 16)}… · ${job.stage}\nsubmitted ${job.created_at} · ${job.id}`}
               className={`flex shrink-0 items-center gap-2 rounded border px-2 py-1 transition-colors ${
                 selected
                   ? 'border-accent/40 bg-accent-soft text-accent'
@@ -129,7 +145,14 @@ export function DeviceFeed({
               }`}
             >
               <span className="max-w-36 truncate font-medium">{job.filename}</span>
-              <span className="font-mono text-dim">{job.stage}</span>
+              {/* Clock plus job id. The clock is what a presenter reads out loud; the id
+                  is what stays unique when two uploads land inside the same second, which
+                  is exactly when the strip used to look like it had drawn one job twice. */}
+              <span className="font-mono text-dim tabular-nums">
+                {submittedAt(job.created_at)}
+                <span className="ml-1 opacity-60">·{job.id.slice(-4)}</span>
+              </span>
+              <span className="text-dim">{STAGE_LABELS[job.stage] ?? job.stage}</span>
               {score && (
                 <span
                   className={

@@ -85,7 +85,10 @@ def labelled_hashes() -> dict[str, int]:
 def families() -> dict[str, str]:
     """sha256 -> MalwareBazaar family, if a sourcing run left a candidates CSV behind."""
     out: dict[str, str] = {}
-    for path in (Path("/tmp/deto_candidates.csv"), Path.home() / "CyberShield" / "deto_candidates.csv"):
+    for path in (
+        Path("/tmp/deto_candidates.csv"),
+        Path.home() / "CyberShield" / "deto_candidates.csv",
+    ):
         if not path.exists():
             continue
         with path.open(newline="") as fh:
@@ -237,11 +240,15 @@ def main() -> int:
     ben_scores = [r["trojan_score"] for r in ben]
     print("\n── trojan_score ──")
     if mal_scores:
-        print(f"  malware mean {sum(mal_scores) / len(mal_scores):.3f}  n={len(mal_scores)}  "
-              f"min {min(mal_scores):.3f}  max {max(mal_scores):.3f}")
+        print(
+            f"  malware mean {sum(mal_scores) / len(mal_scores):.3f}  n={len(mal_scores)}  "
+            f"min {min(mal_scores):.3f}  max {max(mal_scores):.3f}"
+        )
     if ben_scores:
-        print(f"  benign  mean {sum(ben_scores) / len(ben_scores):.3f}  n={len(ben_scores)}  "
-              f"min {min(ben_scores):.3f}  max {max(ben_scores):.3f}")
+        print(
+            f"  benign  mean {sum(ben_scores) / len(ben_scores):.3f}  n={len(ben_scores)}  "
+            f"min {min(ben_scores):.3f}  max {max(ben_scores):.3f}"
+        )
     print(f"  rank-AUC {auc(mal_scores, ben_scores):.3f}   (0.5 = no discrimination)")
     print(f"  threshold in force: {TROJAN_SHAPE_THRESHOLD}")
 
@@ -254,22 +261,32 @@ def main() -> int:
     tp = [r for r in mal if r["verdict"] == "trojan_shape"]
     print(f"\n── malware caught as TROJAN_SHAPE: {len(tp)}/{len(mal)} ──")
     for r in tp[:15]:
-        print(f"  {r['sha256'][:16]}  {r['family'] or '-':<12} score={r['trojan_score']:.3f} "
-              f"targets={','.join(r['targets'][:3]) or '-'}")
+        print(
+            f"  {r['sha256'][:16]}  {r['family'] or '-':<12} score={r['trojan_score']:.3f} "
+            f"targets={','.join(r['targets'][:3]) or '-'}"
+        )
 
     print("\n── by family (malware only) ──")
     fam: Counter[str] = Counter(r["family"] or "untagged" for r in mal)
     for name, count in fam.most_common():
         scores = [r["trojan_score"] for r in mal if (r["family"] or "untagged") == name]
-        hits = sum(1 for r in mal if (r["family"] or "untagged") == name and r["verdict"] == "trojan_shape")
-        print(f"  {name:<14} n={count:<4} mean={sum(scores) / len(scores):.3f}  trojan_shape={hits}")
+        hits = sum(
+            1 for r in mal if (r["family"] or "untagged") == name and r["verdict"] == "trojan_shape"
+        )
+        print(
+            f"  {name:<14} n={count:<4} mean={sum(scores) / len(scores):.3f}  trojan_shape={hits}"
+        )
 
     # A signal that searches decompiled bodies cannot fire when there are none. Report
     # the haystack size so a 0% firing rate can be told apart from a broken input.
     parsed = sum(1 for r in rows if r["cert_not_before"] not in ("unknown", "", None))
     print(f"\ncertificate not_before parsed on {parsed}/{len(rows)} samples")
-    print(f"package_strings non-empty on {sum(1 for r in rows if r['package_strings'] > 0)}/{len(rows)}")
-    print(f"decompiled_methods non-empty on {sum(1 for r in rows if r['decompiled_methods'] > 0)}/{len(rows)}")
+    print(
+        f"package_strings non-empty on {sum(1 for r in rows if r['package_strings'] > 0)}/{len(rows)}"
+    )
+    print(
+        f"decompiled_methods non-empty on {sum(1 for r in rows if r['decompiled_methods'] > 0)}/{len(rows)}"
+    )
     for label, group in ((1, mal), (0, ben)):
         if group:
             print(

@@ -17,6 +17,21 @@ deterministic evaluator has to reproduce.
 the method's own evidence id to every claim the model returned and watch the citation
 rate hit 100%. That number would mean nothing. The verifier's rejections are the
 product (CLAUDE.md rule 5), so the model cites or it is marked as having failed to.
+
+**A signature is matched on identity, not on spelling.** The interpretations were
+looked up by exact string equality against our canonical `Lpkg/Cls;->method` form, and
+that form deliberately carries no parameter descriptor (`m2_static.engine
+.canonical_signature`). Handed a body whose parameters are right there in the source,
+the model reasonably writes them back — `Lin/drishti/canary/MainActivity;->onCreate(
+Landroid/os/Bundle;)V`, or the Java spelling `in.drishti.canary.MainActivity;->
+onCreate(android.os.Bundle)`. Measured over five live calls on the canary, zero
+matched exactly and all five were dropped, so the view showed code with no reading
+beside it and the run reported a provider outage that had not happened.
+`resolve_signature` reduces both sides to `canonical_signature`'s dialect-independent
+key and, where that leaves real overloads tied, breaks the tie on arity. The grounding
+rule is unchanged: an interpretation still cannot name a method we did not recover, and
+what gets stored is the *catalogue's* spelling, not the model's, because every consumer
+downstream joins on that exact string. Only the model's spelling is forgiven.
 """
 
 from __future__ import annotations
@@ -129,20 +144,39 @@ def canonical_signature(signature: str) -> str:
     exists to compare them when both sides genuinely state one.
     """
     text = signature.strip()
-    if not text or "->" not in text:
+    if not text:
         return ""
-    owner, _, rest = text.partition("->")
-    owner = owner.strip()
+
+    owner, arrow, rest = text.partition("->")
+    if arrow:
+        name = rest.strip().partition("(")[0].strip()
+    else:
+        # A fifth dialect, with no arrow at all: `in.drishti.canary.MainActivity.onCreate`,
+        # the way a human writes a method in prose. The last dotted segment is the method
+        # name. Without this the spelling resolves to nothing and the interpretation is
+        # dropped as ungrounded — the exact failure this function exists to prevent.
+        owner, dot, name = text.partition("(")[0].strip().rpartition(".")
+        if not dot:
+            return ""
+
     # Strip the JVM wrapper's two halves INDEPENDENTLY. Requiring both together missed a
     # fourth dialect seen live — `com.b.a.c.a;->a(...)`, dotted like Java but keeping the
     # descriptor's trailing semicolon — and left the owner as `com.b.a.c.a;`, which
     # matches nothing. Models mix these conventions freely; the normaliser has to be the
     # forgiving end of that.
-    if owner.startswith("L"):
+    owner = owner.strip()
+    # A well-formed JVM descriptor is `L…;` — both halves. That is what androguard emits
+    # into the catalogue, so there the `L` is always a wrapper: `La;` is class `a`.
+    wrapped = owner.startswith("L") and owner.endswith(";")
+    owner = owner.rstrip(";").replace("/", ".").strip(".")
+    # Absent the closing `;`, the model is writing Java prose, and a leading `L` is only a
+    # wrapper if a package separator follows it — `Llama` is a class called Llama, and
+    # stripping unconditionally turns it into `lama`, which matches nothing. That is a
+    # silent drop indistinguishable from the model naming a method we never recovered.
+    if owner.startswith("L") and (wrapped or "." in owner):
         owner = owner[1:]
-    owner = owner.rstrip(";")
-    owner = owner.replace("/", ".").strip(".")
-    name = rest.strip().partition("(")[0].strip()
+
+    name = name.strip()
     if not owner or not name:
         return ""
     return f"{owner}->{name}"
@@ -194,6 +228,12 @@ def resolve_signature(signature: str, table: dict[str, Any]) -> Any | None:
     Arity is used only to break a tie between real overloads, and only when BOTH the
     catalogue entry and the model's answer state one. Absent that, class and name are the
     whole of the identity — which is all the catalogue actually records.
+
+    **An ambiguity that arity cannot settle returns None.** Two catalogue entries
+    collapsing to one key means we cannot say which method was read, and attaching the
+    reading to whichever happened to be first is a guess presented as a finding — the
+    ungrounded claim this system exists to refuse (CLAUDE.md rule 5). Absence and
+    ambiguity are both "not ours"; only the model's *spelling* is ever forgiven.
     """
     if signature in table:
         return table[signature]
@@ -204,11 +244,13 @@ def resolve_signature(signature: str, table: dict[str, Any]) -> Any | None:
     matches = [(c, v) for c, v in table.items() if canonical_signature(c) == key]
     if not matches:
         return None
-    if len(matches) > 1 and wanted is not None:
+    if len(matches) == 1:
+        return matches[0][1]
+    if wanted is not None:
         for candidate, value in matches:
             if signature_arity(candidate) == wanted:
                 return value
-    return matches[0][1]
+    return None
 
 
 def _output_budget(client: LLMClient) -> int:
@@ -232,11 +274,18 @@ def interpret_methods(
     client: LLMClient,
     *,
     pack: RetrievalPack | None = None,
+    diagnostics: list[str] | None = None,
 ) -> tuple[tuple[CodeInterpretation, ...], tuple[ToolCallRecord, ...], tuple[VerifiedString, ...]]:
     """Interpret the sink-reachable methods retrieval selected.
 
     Degrades to empty tuples rather than raising: losing M2's work because a provider
     timed out would be absurd (CLAUDE.md rule 2).
+
+    `diagnostics` is the caller's error sink, in the same shape `controller._guarded`
+    uses. When this pass produces nothing it appends the reason it actually observed —
+    the request failed, the reply did not parse, the model returned an empty list, or
+    every interpretation named a method outside this analysis. Those call for opposite
+    responses from an operator, and the dashboard used to print one guess for all four.
     """
     workspace = pack if pack is not None else select(static)
     if not workspace.chains:
@@ -258,7 +307,10 @@ def interpret_methods(
         max_output_tokens=_output_budget(client),
     )
     if response is None:
-        log.warning("code_interpreter_unavailable", chains=len(workspace.chains))
+        reason = client.last_failure or "no usable response from the model"
+        log.warning("code_interpreter_unavailable", chains=len(workspace.chains), reason=reason)
+        if diagnostics is not None:
+            diagnostics.append(f"code_interpreter produced nothing: {reason}")
         return (), tuple(toolbox.records), tuple(toolbox.verified_strings)
 
     known = {slice_.signature: slice_ for chain in workspace.chains for slice_ in chain.methods}
@@ -267,7 +319,11 @@ def interpret_methods(
     fallback = {m.signature: m for m in static.decompiled_methods}
 
     interpretations: list[CodeInterpretation] = []
+    unresolved: list[str] = []
     for item in response.interpretations[:MAX_METHODS_INTERPRETED]:
+        # Identity, not spelling: the model's dialect is resolved against the catalogue
+        # and the catalogue's spelling is what gets stored, so the UI can line the
+        # reading up against the source panel, which joins the two on this exact string.
         slice_ = resolve_signature(item.method_signature, known)
         method = resolve_signature(item.method_signature, fallback)
         if slice_ is None and method is None:
@@ -275,6 +331,7 @@ def interpret_methods(
             # same discipline as rejecting a bad citation: we do not report on code we
             # did not recover.
             log.warning("interpretation_for_unknown_method", signature=item.method_signature[:120])
+            unresolved.append(item.method_signature[:120])
             continue
         line_start = slice_.line_start if slice_ else (method.line_start if method else 1)
         line_end = slice_.line_end if slice_ else (method.line_end if method else 1)
@@ -318,14 +375,36 @@ def interpret_methods(
             )
         )
 
+    if not interpretations and diagnostics is not None:
+        diagnostics.append(_empty_pass_reason(unresolved, len(response.interpretations)))
+
     _record_injection_attempts(interpretations, workspace, ledger)
     log.info(
         "code_interpreter_done",
         interpretations=len(interpretations),
+        unresolved=len(unresolved),
         tool_calls=len(toolbox.records),
         chains=len(workspace.chains),
     )
     return tuple(interpretations), tuple(toolbox.records), tuple(toolbox.verified_strings)
+
+
+def _empty_pass_reason(unresolved: list[str], returned: int) -> str:
+    """Say why a completed interpretation pass kept nothing, in an analyst's terms.
+
+    The model answered in both branches, so neither may be reported as a provider
+    problem — the distinction is the whole point of writing this sentence at all.
+    """
+    if unresolved:
+        return (
+            f"code_interpreter kept none of the {returned} interpretation(s) the model "
+            f"returned: each named a method this analysis did not recover "
+            f"(first: {unresolved[0]}), so all were dropped as ungrounded"
+        )
+    return (
+        "code_interpreter produced nothing: the model returned a valid response "
+        "containing no interpretations"
+    )
 
 
 def _record_injection_attempts(

@@ -18,6 +18,29 @@ import httpx
 import pytest
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _settings_ignore_dotenv() -> object:
+    """Make the suite hermetic from the developer's `.env`.
+
+    `Settings.model_config` sets `env_file=".env"`, so on a machine actually configured
+    to run DRISHTI the developer's provider, model and budget decide what the unit tests
+    exercise. That is backwards: `make test` then passes only where the app cannot run,
+    and fails on every machine where it can. Three tests failed exactly this way — two
+    budget tests reading an ambient `llm_max_calls_per_job`, and one asserting a Groq URL
+    while `.env` selected Gemini.
+
+    Tests that need a value set it explicitly; nothing here should inherit one.
+    """
+    from drishti.config import Settings
+
+    previous = Settings.model_config.get("env_file")
+    Settings.model_config["env_file"] = None
+    try:
+        yield
+    finally:
+        Settings.model_config["env_file"] = previous
+
+
 @pytest.fixture(autouse=True)
 def intercept_groq_http(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> None:
     """Keep non-lab tests hermetic at the LLM HTTP boundary."""

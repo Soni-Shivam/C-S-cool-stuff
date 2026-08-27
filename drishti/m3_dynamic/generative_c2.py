@@ -410,18 +410,29 @@ def synthesise_response(
     *,
     client: Any | None = None,
     ledger: Any | None = None,
+    fill: dict[str, Any] | None = None,
 ) -> SyntheticC2Response:
     """Synthesise a provably-inert response for one dead-C2 request.
 
     Degrades all the way down: if the model is unavailable or its output cannot be made
     inert, it serves the canned `connectivity_ok` body, which is inert by construction.
     A `GENERATIVE_C2` ledger node is appended when a ledger is supplied.
+
+    `fill` supplies the scalar field values directly and short-circuits the model call.
+    It exists so a bundle computed on the orchestrator can be re-served on the sealed
+    detonator, which has no LLM egress, without a second code path: pre-supplied values
+    go through the identical `_template` -> `assert_inert` gate a model answer does, so
+    replaying a bundle can never be less safe than producing it.
     """
     kind = _pick_kind(hint)
     reasoning = ""
     proposed: dict[str, Any] = {}
 
-    if client is not None:
+    if fill is not None:
+        # Pre-supplied values win over a client: one code path, and a caller holding a
+        # cached answer never pays for a call it already made.
+        proposed, reasoning = fill, str(fill.get("reasoning", ""))
+    elif client is not None:
         proposed, reasoning = _ask_model(request, hint, kind, client)
 
     template = _template(kind, proposed)
@@ -641,7 +652,12 @@ def derive_hints(static: Any) -> dict[str, C2SchemaHint]:
         s.lower() for s in (*static.urls, *static.crypto_constants, *static.package_strings)
     )
     url_keys = tuple(sorted(k for k in _URL_KEY_HINTS if k in strings_lower))
-    command_key = next((k for k in _COMMAND_KEY_HINTS if k in strings_lower), None)
+    # `sorted` is load-bearing, not tidiness: iterating the frozenset directly picks a
+    # different key per process (string hashing is seeded per interpreter), so a sample
+    # whose strings mention several command keys produced a different hint — and a
+    # different GENERATIVE_C2 ledger node — on every run. Two builds of one sample must
+    # stage the same bundle and cite the same evidence.
+    command_key = next((k for k in sorted(_COMMAND_KEY_HINTS) if k in strings_lower), None)
 
     if url_keys:
         kind = C2ResponseKind.INERT_PAYLOAD_STUB

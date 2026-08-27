@@ -89,6 +89,26 @@ def _identifier(value: str) -> str:
     return cleaned if cleaned[0].isalpha() else f"r_{cleaned}"
 
 
+def _refang(value: str) -> str:
+    """Undo M2's `hxxp` defanging so the literal matches the bytes in the file.
+
+    M2 stores extracted URLs defanged, so a report or a ledger node can never be
+    turned into a live link by a reader's terminal. A YARA string is the opposite
+    kind of object: it is matched byte-for-byte against the sample, and the sample
+    contains `http`. Emitting the defanged form produced rules that were syntactically
+    valid, shipped with confidence, and could never fire — the decoy's own rule listed
+    two endpoints and matched neither, leaving one crypto constant against a
+    `2 of ($s*)` condition.
+
+    Only the scheme is rewritten, and only at the start of the value: `hxxp` inside a
+    path is a literal the sample really does contain.
+    """
+    for defanged, real in (("hxxps://", "https://"), ("hxxp://", "http://")):
+        if value.startswith(defanged):
+            return real + value[len(defanged) :]
+    return value
+
+
 def _escape(value: str) -> str:
     r"""Escape for a YARA double-quoted string literal.
 
@@ -126,7 +146,8 @@ def _candidate_strings(static: StaticReport | None) -> list[tuple[str, str]]:
     # literal that merely contains a link is not an endpoint.
     for url in static.urls:
         if _URL_SHAPE.match(url):
-            _add("hardcoded endpoint", url)
+            # Refanged: this literal is matched against the file, not shown to a reader.
+            _add("hardcoded endpoint", _refang(url))
     for constant in static.crypto_constants:
         _add("embedded crypto constant", constant)
     for lib in static.native_libs:

@@ -33,6 +33,10 @@ Do not spend calls re-reading source you were already given. If the evidence in 
 you answers the question, answer it.
 
 RULES
+- `method_signature` must be copied VERBATIM from the "source for ..." line above the
+  method you are interpreting. Do not translate it to Java spelling and do not append a
+  parameter list — the signature is a key we match against, not a description. If it
+  reads `Lcom/foo/Bar;->baz`, write exactly `Lcom/foo/Bar;->baz`.
 - Explain capability and data flow. Do NOT classify the app, do NOT rate it, do NOT emit
   a score, probability or severity. Another component computes those from your booleans.
 - Every claim must cite at least one evidence id, copied VERBATIM from the ids shown

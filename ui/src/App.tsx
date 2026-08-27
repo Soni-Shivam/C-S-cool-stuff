@@ -41,6 +41,7 @@ import { ScoreRail } from './components/ScoreRail'
 import { StageStrip } from './components/StageStrip'
 import { useArtefact } from './hooks/useArtefact'
 import { useJob } from './hooks/useJob'
+import { AgentsTab } from './tabs/AgentsTab'
 import { CodeGraphTab } from './tabs/CodeGraphTab'
 import { FrontierTab } from './tabs/FrontierTab'
 import { LedgerTab } from './tabs/LedgerTab'
@@ -58,6 +59,7 @@ const TABS = [
   { name: 'Static', slug: 'static' },
   { name: 'Sandbox', slug: 'sandbox' },
   { name: 'Frontier', slug: 'frontier' },
+  { name: 'Agents', slug: 'agents' },
   { name: 'Ledger', slug: 'ledger' },
   { name: 'Report', slug: 'report' },
   { name: 'Runs', slug: 'runs' },
@@ -350,6 +352,7 @@ export default function App() {
                   {tab === 'Reverse Engineering' && (
                     <ReverseEngineeringTab report={staticReport} genai={genai} ml={ml} />
                   )}
+                  {tab === 'Agents' && <AgentsTab genai={genai} ledger={nodes} />}
                   {tab === 'Static' && <StaticTab report={staticReport} />}
                   {tab === 'Sandbox' && <SandboxTab dynamic={dynamic} verdict={verdict} />}
                   {tab === 'Frontier' && (
@@ -413,9 +416,10 @@ function Welcome() {
           open an investigation.
         </h1>
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-muted">
-          The preliminary verdict lands at <span className="font-mono text-v300">SCORE_PRELIM</span>;
-          everything after it — sandbox passes, frontier probes, the full model reading — continues
-          asynchronously while you already have a score to act on. Every number on every screen is
+          The preliminary verdict lands as soon as the file has been read, classified and reasoned
+          over; everything after it — sandbox passes, frontier probes, the full model reading —
+          continues asynchronously while you already have a score to act on. Every number on every
+          screen is
           traceable to a node in an append-only evidence ledger, and anything that could not be
           grounded is shown as ungrounded rather than quietly dropped.
         </p>

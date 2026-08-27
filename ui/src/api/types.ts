@@ -419,8 +419,13 @@ export interface NetworkFlow {
   req_body_sha256: string | null
   status: number | null
   resp_body_preview: string | null
+  /** True when DRISHTI authored the RESPONSE BODY — not a statement about the destination. */
   synthesised: boolean
   tls_intercepted: boolean
+  /** True when the DESTINATION is DRISHTI's own (sinkhole, proxy, a host we named). Never an IOC. */
+  injected_destination: boolean
+  /** Requests to this (host, path, method) folded into this row. */
+  occurrences: number
 }
 
 export interface DecryptedBlob {

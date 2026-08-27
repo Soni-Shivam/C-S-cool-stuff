@@ -50,6 +50,10 @@ RETRY_BACKOFF_S = 5
 #: Where `detonator_deploy.sh` puts the VM-side tree. Mirrored from the runbook.
 DETONATOR_ROOT = "/opt/drishti"
 
+#: `dynamic_analyze.py` exits 2 when the run completed but its artifact is not
+#: `safe_for_ingestion`. The detonation happened; the artifact is the verdict on it.
+RC_UNSAFE_ARTIFACT = 2
+
 #: The emulator serial inside the VM. One AVD, one serial (`detonator_run.sh`).
 EMULATOR_SERIAL = "emulator-5554"
 
@@ -96,8 +100,16 @@ class DetonatorTarget:
         )
 
 
-def _run(args: list[str], *, timeout: int) -> subprocess.CompletedProcess[str]:
-    """One bounded `gcloud` call, retried only on transport-shaped failures."""
+def _run(
+    args: list[str], *, timeout: int, ok_returncodes: frozenset[int] = frozenset({0})
+) -> subprocess.CompletedProcess[str]:
+    """One bounded `gcloud` call, retried only on transport-shaped failures.
+
+    `ok_returncodes` exists because `gcloud compute ssh` propagates the *remote*
+    command's exit status, so a non-zero code can mean "the remote work happened and
+    reported something" rather than "the call did not get there". Conflating the two
+    turns a completed detonation into an unreachable detonator — see `detonate`.
+    """
     last: Exception | None = None
     for attempt in range(1, MAX_GCLOUD_ATTEMPTS + 1):
         try:
@@ -108,9 +120,14 @@ def _run(args: list[str], *, timeout: int) -> subprocess.CompletedProcess[str]:
         except subprocess.TimeoutExpired as exc:
             last = exc
         else:
-            if result.returncode == 0:
+            if result.returncode in ok_returncodes:
                 return result
-            last = DetonatorUnreachableError(result.stderr.strip()[:400] or "gcloud failed")
+            # The TAIL, not the head. Every IAP call opens stderr with a ~200-character
+            # "consider installing NumPy" banner, so `[:400]` reliably kept the
+            # boilerplate and threw the reason away — two failed detonations in a row
+            # both logged `DetonatorUnreachableError: WARNING:` while the real message
+            # ("another detonation is already running") never surfaced.
+            last = DetonatorUnreachableError(result.stderr.strip()[-400:] or "gcloud failed")
             # A non-zero exit that is not transport-shaped will not fix itself.
             if "SSL" not in result.stderr and "timed out" not in result.stderr.lower():
                 raise last
@@ -134,7 +151,13 @@ class RemoteDetonatorClient:
             )
         return self.target
 
-    def _ssh(self, command: str, *, timeout: int = 300) -> str:
+    def _ssh(
+        self,
+        command: str,
+        *,
+        timeout: int = 300,
+        ok_returncodes: frozenset[int] = frozenset({0}),
+    ) -> str:
         target = self._require_target()
         return _run(
             [
@@ -148,6 +171,7 @@ class RemoteDetonatorClient:
                 f"--command={command}",
             ],
             timeout=timeout,
+            ok_returncodes=ok_returncodes,
         ).stdout
 
     def instance_state(self) -> str:
@@ -216,7 +240,15 @@ class RemoteDetonatorClient:
                 f"{base} morph {shlex.quote(sha256)} "
                 f"{shlex.quote(','.join(kinds))} {int(duration_s)}"
             )
-        self._ssh(command, timeout=duration_s + 600)
+        # rc 2 is `dynamic_analyze.py` saying "the run happened and the artifact is not
+        # safe to ingest" — not "the detonator is unreachable". Raising here would skip
+        # `collect()` entirely, so `LiveSandboxSource.run`'s gate could never name the
+        # real reason (`outcome=failed`, a dirty snapshot, unverified containment) and
+        # the pipeline would fall back to a synthetic stub that contradicts a signed
+        # containment manifest. Let it return; only the artifact can judge the run.
+        self._ssh(
+            command, timeout=duration_s + 600, ok_returncodes=frozenset({0, RC_UNSAFE_ARTIFACT})
+        )
         log.info("detonation_finished", sha256=sha256[:12], morphs=len(morphs))
 
     @staticmethod
@@ -250,7 +282,11 @@ class RemoteDetonatorClient:
         than opening egress for one `gsutil cp`.
         """
         name = f"{sha256}.morph.json" if morphed else f"{sha256}.json"
-        raw = self._ssh(f"cat {DETONATOR_ROOT}/results/{shlex.quote(name)}", timeout=120)
+        # `sudo`, because `detonator_run.sh` runs the harness under `as_root` and the
+        # artifact lands root:root 0600. `detonator_collect.sh` chowns the whole results
+        # directory before its batch read; this path reads one file and must elevate for
+        # itself, or a detonation that fully succeeded is lost at the last step.
+        raw = self._ssh(f"sudo cat {DETONATOR_ROOT}/results/{shlex.quote(name)}", timeout=120)
         if not raw.strip():
             raise DetonatorUnreachableError(f"no artifact was produced for {sha256[:12]}")
         # Strict validation on purpose: a malformed artifact off the VM fails loudly

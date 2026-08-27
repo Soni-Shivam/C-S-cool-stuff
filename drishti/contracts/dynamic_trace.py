@@ -14,7 +14,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import ConfigDict, Field, StringConstraints, field_validator
+from pydantic import ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 from drishti.contracts.base import AnalyserResult, DrishtiModel
 
@@ -48,11 +48,29 @@ class ApiEvent(DrishtiModel):
 
 
 class NetworkFlow(DrishtiModel):
-    """A request/response pair from mitmproxy.
+    """A request/response pair, from mitmproxy or from a `URL.open*` hook.
 
-    `synthesised=True` means *we* served this response from the Generative C2, not
-    real attacker infrastructure. The distinction has to survive into the report:
-    a dead C2 stays dead, and claiming otherwise would be a lie about provenance.
+    Two different provenance questions live on this model and conflating them breaks
+    the report in opposite directions:
+
+    * `synthesised=True` means **we authored the response body** — the Generative C2 or
+      its sinkhole answered, not real attacker infrastructure. A dead C2 stays dead, and
+      presenting our own reply as observed attacker behaviour would be a lie.
+    * `injected_destination=True` means **the destination itself is ours** — the
+      `http://127.0.0.1:9/inert` sinkhole `assert_inert` rewrites URLs to, the emulator's
+      `10.0.2.2` alias for the analysis host, any loopback/RFC1918/link-local address, or
+      a host that appears only inside a body we wrote.
+
+    IOC publication keys on the second, never on the first. Keying it on `synthesised`
+    empties the STIX bundle and the dossier the moment the proxy runs (it stamps every
+    response it serves); ignoring `injected_destination` exports our own injected string
+    to a SOC as adversary infrastructure. The sample *chose* to beacon at a host;
+    answering it does not make the host ours.
+
+    `occurrences` exists for the same reason `DecryptedBlob.occurrences` does — CLAUDE.md
+    rule 11. A beaconing sample emits thousands of identical requests in a 120s
+    detonation; they are grouped by `(host, path, method)` so the rate stays visible to a
+    human without putting a row per request into the ledger or the prompt budget.
     """
 
     t_ms: int
@@ -66,6 +84,10 @@ class NetworkFlow(DrishtiModel):
     resp_body_preview: str | None = None
     synthesised: bool = False
     tls_intercepted: bool = False
+    #: True when the DESTINATION is DRISHTI's own, whoever answered. Never published.
+    injected_destination: bool = False
+    #: How many requests to this `(host, path, method)` were folded into this row.
+    occurrences: int = 1
 
 
 class DecryptedBlob(DrishtiModel):
@@ -255,6 +277,52 @@ class ObservationEvent(StrictWireModel):
         return value
 
 
+class CapturedFlow(StrictWireModel):
+    """One HTTP flow the detonator's proxy observed, redacted before it left the guest.
+
+    Distinct from `NetworkFlow`, which the *pipeline* builds after normalisation: this is
+    the raw capture written on the VM, so it crosses the same trust boundary as
+    `ObservationEvent` and is validated as strictly — both body previews REFUSE TO
+    CONSTRUCT if unredacted sensitive text survived the proxy.
+
+    `synthesised` and `served_kind` are set only for a flow the Generative C2 answered.
+    That is our own content injected into the analysis, and the distinction has to
+    survive into the report: a dead C2 stays dead. The pairing is enforced, not merely
+    documented — `served_kind` REFUSES TO CONSTRUCT without `synthesised`, because a
+    provenance label on a flow we did not answer would credit our own content to
+    attacker infrastructure. `tls_intercepted` is deliberately absent — the detonator
+    captures cleartext HTTP and never claims TLS interception.
+    """
+
+    t_ms_epoch: int
+    method: Annotated[str, StringConstraints(min_length=1, max_length=16)]
+    scheme: Annotated[str, StringConstraints(min_length=1, max_length=8)]
+    host: Annotated[str, StringConstraints(max_length=253)]
+    path: Annotated[str, StringConstraints(max_length=512)] = "/"
+    status: int | None = None
+    req_body_preview: Annotated[str, StringConstraints(max_length=512)] = ""
+    resp_body_preview: Annotated[str, StringConstraints(max_length=512)] = ""
+    synthesised: bool = False
+    #: Bounded like every other string here: it is rendered as a provenance label.
+    served_kind: Annotated[str, StringConstraints(max_length=32)] | None = None
+
+    @field_validator("req_body_preview", "resp_body_preview")
+    @classmethod
+    def _reject_unredacted(cls, value: str) -> str:
+        from drishti.m3_dynamic.redaction import contains_sensitive_text
+
+        if contains_sensitive_text(value):
+            raise ValueError("captured flow body contains unredacted sensitive text")
+        return value
+
+    @model_validator(mode="after")
+    def _kind_requires_synthesised(self) -> CapturedFlow:
+        """Refuse a provenance label on a flow the Generative C2 did not answer."""
+        if self.served_kind is not None and not self.synthesised:
+            raise ValueError("served_kind is only valid on a synthesised flow")
+        return self
+
+
 #: Why a detonation produced no observations. Named rather than inlined so the harness
 #: that RAISES these and the wire contract that RECORDS them cannot drift apart — the
 #: same one-source-of-truth rule the evidence catalogue and verifier follow.
@@ -350,6 +418,9 @@ class ObservationArtifact(StrictWireModel):
     #: Distinct MITRE technique ids seen in this run — a summary of `observations`,
     #: emitted by the harness so a batch report does not have to re-derive it.
     mitre_observed: tuple[str, ...] = Field(default=(), strict=False)
+    #: HTTP flows the on-VM proxy captured, redacted at the guest boundary. Empty for a
+    #: run with no proxy or no traffic.
+    captured_flows: tuple[CapturedFlow, ...] = Field(default=(), strict=False)
 
     @property
     def safe_for_ingestion(self) -> bool:

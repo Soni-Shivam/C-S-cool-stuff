@@ -321,13 +321,15 @@ class ApiEvent(DrishtiModel):
     stack: tuple[str, ...] = ()   # top 5 frames
 
 class NetworkFlow(DrishtiModel):
-    t_ms: int
+    t_ms: int                     # offset from the run's start, NEVER an epoch (A19)
     method: str; url: str; host: str
     req_headers: dict; req_body_preview: str; req_body_sha256: str
     status: int | None
     resp_body_preview: str | None
-    synthesised: bool = False     # True when we served a Generative C2 response
+    synthesised: bool = False     # we authored the RESPONSE BODY
     tls_intercepted: bool = False
+    injected_destination: bool = False   # the DESTINATION is ours — see A19
+    occurrences: int = 1          # requests folded into this row (rule 11)
 
 class EvasionObservation(DrishtiModel):
     probe_kind: str
@@ -1053,6 +1055,188 @@ from `drishti/contracts/verdict.py` without a red test.
 
 The dashboard consumes this route; it never produces a `Verdict`. No scoring, banding,
 or provenance logic exists in `ui/`.
+
+---
+
+### A17. `CapturedFlow` and `ObservationArtifact.captured_flows` (Generative C2 capture)
+
+`NetworkFlow` (§3) is what the *pipeline* builds after normalisation. It does not
+describe what the detonator's own proxy wrote down while the sample was running, and
+that is a different artefact with a different trust story: it crosses out of the VM,
+so it belongs to the wire contract and inherits its strictness.
+
+`ObservationArtifact` therefore gains one additive field:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `captured_flows` | `tuple[CapturedFlow, ...]` | HTTP flows the on-VM proxy observed during the run, redacted at the guest boundary. Empty for a run with no proxy or no traffic. `Field(strict=False)` for the `list -> tuple` reason in A2. |
+
+`CapturedFlow` is a `StrictWireModel`:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `t_ms_epoch` | `int` | Wall-clock milliseconds since the epoch at which the proxy saw the request. Epoch-based rather than run-relative so a flow can be lined up against the run manifest and the ledger. |
+| `method` | `str` | HTTP method as sent by the sample. |
+| `scheme` | `str` | URL scheme the sample used, recorded rather than assumed. |
+| `host` | `str` | Request host. This is the C2 candidate a reader cares about. |
+| `path` | `str` | Request path, default `"/"`. |
+| `status` | `int \| None` | Response status, or `None` when nothing answered — a dead C2 is a finding, not a gap. |
+| `req_body_preview` | `str` | Truncated request body, redacted. |
+| `resp_body_preview` | `str` | Truncated response body, redacted. |
+| `synthesised` | `bool` | `True` only when the Generative C2 answered this flow instead of real attacker infrastructure. |
+| `served_kind` | `str \| None` | The response shape we chose (`connectivity_ok`, `command_poll`, `registration_ack`, `config`, `inert_payload_stub` — `C2ResponseKind`), max 32 chars, valid **only** when `synthesised` is `True`. `None` for an observed flow. |
+
+Four properties are load-bearing:
+
+* **Both body previews refuse to construct on unredacted sensitive text**, using the
+  same `contains_sensitive_text` gate as `ObservationEvent.detail` (A2 point 2). A
+  proxy bug must not become a data leak, and a validator that only warns is a
+  validator nobody notices failing. **Known coverage gap:** that gate's rules are
+  currently OTP, credential, token and JWT only — there is no card-number, phone-number
+  or UPI-VPA rule, and a captured C2 request body is the likeliest place in the system
+  for one to appear. The gate is real and fails closed on what it knows; it does not
+  yet know everything a banking trojan exfiltrates.
+* **`synthesised` / `served_kind` are the provenance line.** A flow we answered is
+  our own content injected into the analysis; the distinction has to survive into the
+  report, because a dead C2 stays dead and listing our own response as attacker
+  infrastructure would be a lie.
+* **The pairing is an enforced invariant, not a convention.** A `model_validator`
+  REFUSES TO CONSTRUCT a flow with a non-`None` `served_kind` and `synthesised=False`:
+  a provenance label on a flow we did not answer would attribute our own content to
+  the attacker. The converse is allowed — `synthesised=True` with `served_kind=None`
+  says we answered without recording which shape, which is incomplete but not a false
+  claim. `served_kind` is bounded at 32 chars like every other string on the model,
+  because it is set from a response header (`X-DRISHTI-Kind`) written on the wire and
+  is rendered into the report.
+* **There is no `tls_intercepted` field.** The detonator captures cleartext HTTP and
+  does not claim TLS interception (the system-CA step is deliberately deferred —
+  `CLAUDE.md` verified lab fact 7). A field that could only ever read `False` would
+  invite someone to set it.
+
+---
+
+### A18. `C2Bundle` and `C2BundleEntry` (staged Generative C2 responses)
+
+A17 covers what the proxy *saw*. This section covers what the proxy is *allowed to
+say back*, and it exists because of one hard constraint: the response has to be
+synthesised somewhere the detonator cannot go.
+
+`SyntheticC2Response` (§3) is the record of one response after it was served — the
+receipt. It is not usable as an instruction to serve, because the on-VM proxy sits on
+`drishti-runtime`, which has no NAT and no route to an LLM (`CLAUDE.md`, GCP layout).
+Anything the proxy answers with must therefore already be on disk when the sample
+starts running. `C2Bundle` is that pre-computed answer set: built on the orchestrator,
+staged across to the detonator as one file, and read — never generated — at run time.
+
+`C2BundleEntry` is a `DrishtiModel` (staged artefact, not a wire message):
+
+| Field | Type | Meaning |
+|---|---|---|
+| `host` | `str` | Host this entry answers for. Matched exactly — a bundle built for one C2 must not silently answer for another. |
+| `path_prefix` | `str` | Path prefix this entry answers for, default `"/"`. A prefix rather than an exact path because a beacon's path usually carries a per-run id we cannot predict off-VM. **Byte prefix, not path-segment prefix** — see below. |
+| `response_kind` | `str` | The response shape (`connectivity_ok`, `command_poll`, `registration_ack`, `config`, `inert_payload_stub`), carried through to `CapturedFlow.served_kind` so the provenance line in A17 survives. |
+| `served_status` | `int` | HTTP status to answer with, default `200`. |
+| `served_content_type` | `str` | Content type to answer with, default `application/json`. |
+| `served_body` | `str` | The body to serve. Already passed the inertness gate before it reached the bundle. |
+| `is_payload_url` | `bool` | `True` when this entry's **`served_body` names** a second-stage download URL — **not** when `path_prefix` *is* that download. `path_prefix` remains the sample's observed beacon path and `served_body` remains JSON, so a responder must serve the JSON here and reserve `inert_payload_bytes()` for the URL the body actually points at. Flagged because that stub is the one thing a reader must not mistake for real attacker content. |
+| `derived_from` | `tuple[str, ...]` | Evidence node ids justifying this response — the pass-1 flows and strings it was inferred from. |
+
+`C2Bundle` is a `DrishtiModel`:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `sha256` | `Sha256` | The sample the bundle was built for. A bundle is sample-specific; serving one sample's answers to another would fabricate behaviour. |
+| `entries` | `tuple[C2BundleEntry, ...]` | The staged responses, in build order. |
+| `built_at` | `str` | When the bundle was synthesised, so a stale bundle is visible rather than assumed fresh. |
+| `synthesis_client` | `str` | Which model/provider produced it, recorded for the report's provenance. Empty when unknown. |
+
+Four properties are load-bearing:
+
+* **`path_prefix` is a byte prefix, not a path-segment prefix.** `matches()` is a plain
+  `path.startswith(entry.path_prefix)`, so an entry with `path_prefix="/api"` also
+  answers `/apiary/x` and `/api-v3` — paths the builder never reasoned about. This is
+  deliberate and it fails safe: every `served_body` has already been through the
+  inertness gate, so the worst case is an inert body answered to an endpoint we did not
+  anticipate, recorded in `CapturedFlow` as ours (A17) rather than attributed to the
+  attacker. It is stated here because "path prefix" reads as segment semantics to most
+  people, and the consequence of the difference is *served content*. A builder that
+  wants segment semantics gets them by writing the trailing slash itself (`"/api/"`).
+  `test_prefix_is_a_byte_prefix_not_a_path_segment` pins the behaviour, so changing it
+  is a deliberate act rather than a silent one.
+* **An entry with empty `derived_from` is never emitted by the builder.** Grounding is
+  the product (`CLAUDE.md` rule 5): a response we cannot trace to observed evidence is
+  a guess we would then attribute to the attacker's infrastructure. The *contract*
+  does not forbid the empty tuple — the builder must be able to construct a candidate
+  and then reject it, and a validator here would turn that rejection into a crash.
+* **`matches(host, path)` is deterministic, and the tie-break is specified.** Longest
+  `path_prefix` wins. Where two matching entries have prefixes of *equal* length, the
+  earlier entry in `entries` wins — declaration order, not dict or set iteration
+  order. Detonations must be reproducible; a match that depended on ordering accident
+  would make two runs of the same bundle diverge and there would be nothing in the
+  trace to explain why.
+* **The bundle is data, never code.** It carries status, content type and body — no
+  URL to fetch, no expression to evaluate. The proxy reads it and answers; it has no
+  path that would let a bundle field reach a command surface.
+
+---
+
+### A19. `NetworkFlow.injected_destination` and `.occurrences` (ingest of captured flows)
+
+A17 covers what the proxy wrote down; this covers what happens when
+`m3_dynamic.ingest.artifact_to_trace` lifts those `CapturedFlow`s into the trace, next
+to the flows the `URL.open*` hooks produced. Three additive changes, each fixing
+something the lift would otherwise break.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `injected_destination` | `bool` | `True` when the **destination** is DRISHTI's own, whoever answered it. Default `False`. |
+| `occurrences` | `int` | How many requests to this `(host, path, method)` were folded into this row. Default `1`. |
+
+**1. `synthesised` is not a statement about the destination.** The on-VM proxy stamps
+`synthesised` on every response it serves — the sinkhole answers unhinted hosts too, so
+after a real detonation *every* captured flow carries it. Keying the IOC exclusion on
+that flag empties the STIX bundle (§stix `domain-name`/indicator SDOs) and the
+law-enforcement dossier's observed-infrastructure list. The sample chose the
+destination; we only chose the reply. So `synthesised` keeps its meaning — *we authored
+the response body* — and `injected_destination` carries the separate fact that the
+destination is ours. Publication keys on the second, never on the first.
+
+`injected_destination` is derived at ingest, never asserted, and is `True` when:
+
+* the host is loopback, RFC1918, link-local (including the `169.254.169.254` metadata
+  address), or otherwise not a routable public destination — `10.0.2.2` is the emulator's
+  alias for the analysis host and `127.0.0.1:9` is where `assert_inert` rewrites every
+  URL-shaped value it sanitises; **or**
+* the host appears inside a body we authored — the `resp_body_preview` of a synthesised
+  flow. If the sample went there, it went because of something we told it.
+
+A host that appears in a body the *attacker* sent is not ours, and stays publishable.
+
+**2. The hook path needs the same guard.** `ingest._structured` builds hook-derived
+flows with `synthesised=False` hardcoded, so a sample that follows the sinkhole bait
+produces `NetworkFlow(host="127.0.0.1", synthesised=False)` — our own injected string,
+which a naive exporter would publish as adversary infrastructure *and* as a
+`domain-name` SDO holding an IP, which is also a type error. The exporters therefore
+re-derive host provenance themselves rather than trusting the flag, publish a routable
+IP as `ipv4-addr`/`ipv6-addr` rather than `domain-name`, and **fail toward not
+publishing** anything they cannot classify (a single-label host, an unparseable one).
+What was withheld is disclosed in the report's Limitations and the dossier's caveats,
+generated from the flags — never hardcoded.
+
+**3. Flows are aggregated and capped (CLAUDE.md rule 11).** A beaconing sample in a 120s
+detonation emits thousands of flows; the same rule that turned 1,925 `Cipher.doFinal`
+events into one group applies here. Flows are grouped by `(host, path, method)` with an
+occurrence count, capped at `ingest.MAX_CAPTURED_FLOWS`, which mirrors
+`normaliser.MAX_OBSERVATION_GROUPS`. A drop is recorded in `DynamicTrace.errors` and
+sets `partial`, exactly as a dropped observation group does.
+
+**`t_ms` is run-relative on both paths.** `CapturedFlow.t_ms_epoch` is wall-clock;
+`NetworkFlow.t_ms` is an offset from the run's start, and the lift converts. Without the
+conversion the two sources can never share a dedupe key, and one beacon renders twice —
+once "observed" at 4.2s and once "synthesised" in 2026. Where the proxy and the hook saw
+the same `(host, path)`, the proxy's row wins (it has the real verb, the status and the
+body) and the counts are merged with `max`, not summed: two views of one request are
+still one request.
 
 ---
 

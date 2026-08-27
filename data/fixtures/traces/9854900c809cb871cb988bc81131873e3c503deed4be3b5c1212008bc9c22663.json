@@ -1,0 +1,110 @@
+{
+  "fixture_version": "1.0",
+  "sha256": "9854900c809cb871cb988bc81131873e3c503deed4be3b5c1212008bc9c22663",
+  "provenance": {
+    "kind": "captured",
+    "note": "Live detonation of in.drishti.canary on the sealed GCE detonator, containment manifest fb9cfa49e1bea3cc4788479e5362271d369eca287106de53948dcab06f70e9c4.",
+    "authored_at": "2026-08-26T23:11:58.438183+00:00",
+    "source_sha256": "9854900c809cb871cb988bc81131873e3c503deed4be3b5c1212008bc9c22663",
+    "captured_from_image": "m3-detonator-manual-20260826"
+  },
+  "pre_morph": {
+    "errors": [
+      "1 overlay observation(s) were not carried forward \u2014 this trace was captured with m3-hooks-2.0.0, whose hook could not distinguish a system overlay from an ordinary app window."
+    ],
+    "partial": true,
+    "duration_ms": 0,
+    "run_id": "run_9854900c809c",
+    "source": "live",
+    "detonated": true,
+    "detonation_reason": "4 instrumented observations across 3 distinct MITRE techniques",
+    "outcome": "completed",
+    "api_events": [
+      {
+        "t_ms": 5,
+        "api": "ContentResolver.query",
+        "args": [
+          "queried provider content://sms/inbox"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      },
+      {
+        "t_ms": 76,
+        "api": "URL.openConnection",
+        "args": [
+          "opened connection to=http://##.#.#.#:####/canary"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      },
+      {
+        "t_ms": 0,
+        "api": "PackageManager.getPackageInfo",
+        "args": [
+          "queried package=in.drishti.canary.absent.target"
+        ],
+        "retval": null,
+        "thread": "main",
+        "stack": [],
+        "count": 1
+      }
+    ],
+    "network_flows": [
+      {
+        "t_ms": 76,
+        "method": "GET",
+        "url": "http://##.#.#.#:####/canary",
+        "host": "##.#.#.#:####",
+        "req_headers": {},
+        "req_body_preview": "",
+        "req_body_sha256": null,
+        "status": null,
+        "resp_body_preview": null,
+        "synthesised": false,
+        "tls_intercepted": false,
+        "injected_destination": false,
+        "occurrences": 1
+      }
+    ],
+    "decrypted_blobs": [],
+    "dex_loads": [],
+    "file_writes": [],
+    "evasion_observations": [
+      {
+        "probe_kind": "ContentResolver.query",
+        "queried": "queried provider content://sms/inbox",
+        "result": "MISS",
+        "t_ms": 5,
+        "followed_by_stall": true,
+        "stall_duration_ms": null,
+        "inferred_requirement": "sms_history",
+        "stack": []
+      },
+      {
+        "probe_kind": "PackageManager.getPackageInfo",
+        "queried": "queried package=in.drishti.canary.absent.target",
+        "result": "MISS",
+        "t_ms": 0,
+        "followed_by_stall": true,
+        "stall_duration_ms": null,
+        "inferred_requirement": "install_packages",
+        "stack": []
+      }
+    ],
+    "screenshots": [],
+    "morphs_applied": [],
+    "ledger_refs": [],
+    "emulator_image": "m3-detonator-manual-20260826",
+    "vm_instance_id": "7382052279419138339",
+    "harness_version": "m3-harness-2.0.0",
+    "containment_verified": true,
+    "captured_at": "2026-08-26T23:11:58.438183+00:00",
+    "synthetic": false
+  },
+  "post_morph": {}
+}

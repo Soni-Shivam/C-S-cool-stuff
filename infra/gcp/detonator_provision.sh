@@ -126,6 +126,44 @@ step_python() {
   stamp python
 }
 
+step_proxy() {
+  stamped proxy && { log "proxy already done"; return; }
+  # mitmproxy goes into the SAME uv-managed 3.11 venv as the harness, not into the
+  # system python: drishti_proxy.py imports drishti.contracts.*, which needs 3.11
+  # (StrEnum, datetime.UTC). Ubuntu 22.04's 3.10 raises on the import and mitmdump
+  # dies — silently, because runtime_prepare.sh nohups it.
+  export PATH="${HOME}/.local/bin:${PATH}"
+  VIRTUAL_ENV="${DRISHTI_ROOT}/venv" uv pip install "mitmproxy>=11,<12"
+  "${DRISHTI_ROOT}/venv/bin/mitmdump" --version | head -2
+  # Generate the CA into the confdir runtime_prepare.sh passes, now, while this host
+  # can still write it. Nothing on the runtime network reaches a mirror or a CA, and
+  # the emulator is pointed at this proxy at launch (see emulator_control.sh), so a
+  # first-request CA generation would race the first sample.
+  mkdir -p "${DRISHTI_ROOT}/mitmproxy"
+  timeout 25 "${DRISHTI_ROOT}/venv/bin/mitmdump" --listen-host 127.0.0.1 --listen-port 8081 \
+    --set confdir="${DRISHTI_ROOT}/mitmproxy" >/tmp/mitm-genca.log 2>&1 || true
+  test -f "${DRISHTI_ROOT}/mitmproxy/mitmproxy-ca-cert.pem"
+  # The addon itself is shipped by detonator_deploy.sh (code, from the repo, over IAP)
+  # to /opt/drishti/drishti_proxy.py. Import it through the same PYTHONPATH mitmdump
+  # will use, so a missing dependency fails HERE and not inside a nohup'd proxy.
+  # No stamp unless that import succeeds: an unstamped step re-runs, and `uv pip
+  # install` is a no-op the second time, so the cost of retrying is a few seconds.
+  if [[ ! -f "${DRISHTI_ROOT}/drishti_proxy.py" ]]; then
+    log "drishti_proxy.py absent — run detonator_deploy.sh, then re-run: $0 proxy"
+    return 1
+  fi
+  DRISHTI_FLOW_LOG="${DRISHTI_ROOT}/results/flows.jsonl" \
+  PYTHONPATH="${DRISHTI_ROOT}/lib" "${DRISHTI_ROOT}/venv/bin/python" - <<PY
+import importlib.util as u, sys
+spec = u.spec_from_file_location("drishti_proxy", "${DRISHTI_ROOT}/drishti_proxy.py")
+module = u.module_from_spec(spec)
+sys.modules["drishti_proxy"] = module   # @dataclass resolves through sys.modules
+spec.loader.exec_module(module)
+print("proxy addons OK:", [type(a).__name__ for a in module.addons])
+PY
+  stamp proxy
+}
+
 step_marker() {
   # Runtime admission markers. require_sealed_runtime() refuses to run without all
   # three: the env var, this marker file, and /dev/kvm.
@@ -146,8 +184,19 @@ step_boot() {
   adb start-server
   # No -writable-system: with it, `adb remount` claims success while /system stays
   # read-only and `adb reboot` can wedge the guest `offline` until the AVD is purged.
+  # -http-proxy at LAUNCH, never `settings put global http_proxy` in the guest: a
+  # snapshot restore reverts guest state, so the guest-side setting would vanish before
+  # the second sample and every later run would capture nothing. On an already-provisioned
+  # VM do NOT re-run this step to pick the flag up (it -wipe-data's the AVD) — restart via
+  # emulator_control.sh instead.
+  # The address is the HOST loopback. This flag is read by the emulator process, which
+  # runs host-side and connects in the host's namespace; 10.0.2.2 is the GUEST-side
+  # alias for it and works only for `settings put global http_proxy`. Host-side, 10.0.2.2
+  # is a plain RFC1918 address the lockdown's `-A OUTPUT -j DROP` blackholes, producing a
+  # healthy boot and an empty flows.jsonl that looks like a silent sample.
   nohup emulator -avd "${AVD_NAME}" -no-window -no-audio -no-boot-anim \
     -gpu swiftshader_indirect -no-snapshot-load -wipe-data \
+    -http-proxy "${DRISHTI_EMULATOR_PROXY:-127.0.0.1:8080}" \
     -netdelay none -netspeed full \
     > "${DRISHTI_ROOT}/emulator.log" 2>&1 &
   log "waiting for device"
@@ -189,16 +238,32 @@ PY
 }
 
 step_snapshot() {
+  # Stamped like every other step, but for a stronger reason than saving time: `clean`
+  # is LIVE STATE. Every detonation restores from it, so re-cutting it replaces a
+  # known-good baseline that a long run of successful detonations depends on with
+  # whatever the guest happens to look like right now. `detonator_provision.sh all` is
+  # expected to be re-run to pick up a newly added step (step_proxy was), and without
+  # this guard that re-run silently destroys the baseline.
+  # DRISHTI_FORCE_SNAPSHOT=1 is the deliberate re-cut, e.g. after a frida-server bump.
+  if stamped snapshot && [[ "${DRISHTI_FORCE_SNAPSHOT:-0}" != "1" ]]; then
+    log "snapshot already cut — DRISHTI_FORCE_SNAPSHOT=1 to deliberately re-cut it"
+    return
+  fi
   # Cut the clean snapshot only once the guest is fully booted AND frida-server is
   # in place, so a restore lands on a guest that is ready to instrument.
   adb -s "${SERIAL}" emu avd snapshot save clean
   adb -s "${SERIAL}" emu avd snapshot list || true
+  stamp snapshot
 }
 
 case "${1:-all}" in
   all)
     step_dirs; step_disk; step_kvm; step_apt; step_sdk; step_avd; step_python
     step_marker; step_boot; step_frida; step_snapshot
+    # Last, and allowed to defer: the proxy verifies the addon it will actually load,
+    # and that file arrives from the laptop via detonator_deploy.sh, which runs after
+    # this script on a first provision. The step stays unstamped so the retry works.
+    step_proxy || log "proxy step DEFERRED — run detonator_deploy.sh, then: $0 proxy"
     ;;
   *) "step_$1" ;;
 esac

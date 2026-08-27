@@ -30,7 +30,7 @@ from drishti.m3_dynamic.admission import (
 from drishti.m3_dynamic.redaction import redact_text
 
 HARNESS_VERSION = "m3-harness-2.0.0"
-HOOK_VERSION = "m3-hooks-2.0.0"
+HOOK_VERSION = "m3-hooks-2.1.0"
 DEFAULT_HOOKS = Path("/opt/drishti/harness/frida_hooks.js")
 Command = Callable[..., subprocess.CompletedProcess[str]]
 Collector = Callable[[str, int, Path, str], tuple[list[dict[str, Any]], list[str]]]

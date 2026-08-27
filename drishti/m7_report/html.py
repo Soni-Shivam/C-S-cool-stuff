@@ -21,7 +21,7 @@ from __future__ import annotations
 from html import escape
 from typing import Any
 
-from drishti.contracts.dynamic_trace import DynamicTrace, TraceSourceKind
+from drishti.contracts.dynamic_trace import DynamicTrace, NetworkFlow, TraceSourceKind
 from drishti.contracts.evidence import ChainVerification
 from drishti.contracts.genai_verdict import GenAIVerdict
 from drishti.contracts.job import Job
@@ -113,7 +113,15 @@ def _limitations(
             "is capable of, not what it was observed doing."
         )
     else:
-        if trace.synthetic:
+        if trace.synthetic and trace.source == TraceSourceKind.UNAVAILABLE:
+            # `synthetic` covers two different situations and they must not read alike.
+            # A reader told "hand-authored fixture" will ask which fixture — and when no
+            # sandbox was reachable there is no fixture to show them.
+            items.append(
+                "No sandbox was available, so this sample was never executed. Nothing "
+                "in this report was observed at runtime."
+            )
+        elif trace.synthetic:
             items.append(
                 "The dynamic trace is a hand-authored fixture. It illustrates the "
                 "pipeline and must not be read as evidence about this sample."
@@ -123,7 +131,11 @@ def _limitations(
                 "The dynamic trace is a replay of a previously captured run, not a "
                 "live detonation performed for this report."
             )
-        if not trace.containment_verified:
+        if not trace.containment_verified and trace.source != TraceSourceKind.UNAVAILABLE:
+            # Only meaningful when something ran. "Containment was not verified for this
+            # run" implies there was a run whose isolation is in doubt; with no sandbox
+            # at all it invents a failed safety check on top of an analysis that never
+            # happened. The line above already says nothing was executed.
             items.append(
                 "Sandbox containment was not verified for this run, so the network "
                 "observations carry no isolation guarantee."
@@ -139,6 +151,22 @@ def _limitations(
             items.append(
                 f"{len(trace.evasion_observations)} sandbox-detection check(s) were "
                 "observed, so the runtime behaviour is likely suppressed."
+            )
+        # Our own content, disclosed from the flags on the flows themselves. The two
+        # counts answer different questions and neither is derivable from the other.
+        answered = sum(1 for flow in trace.network_flows if flow.synthesised)
+        if answered:
+            items.append(
+                f"{answered} network response(s) were synthesised by DRISHTI and served "
+                "to the sample because the destination did not answer. They are our "
+                "content; nothing about them describes what that server would have sent."
+            )
+        withheld = sum(1 for flow in trace.network_flows if flow.injected_destination)
+        if withheld:
+            items.append(
+                f"{withheld} network destination(s) were DRISHTI lab infrastructure — "
+                "our sinkhole, our proxy, or a host named only in a response we wrote — "
+                "and are excluded from the exported indicators."
             )
 
     if genai is not None:
@@ -314,6 +342,18 @@ def _section_static(static: StaticReport | None) -> str:
     )
 
 
+def _flow_origin(flow: NetworkFlow) -> str:
+    """How this row came to exist, in the two facts a reader has to keep apart.
+
+    Whose destination it was, and who wrote the reply. Collapsing them into one
+    "synthesised" label either credits us with the sample's C2 or credits the adversary
+    with our sinkhole, depending on which way you collapse it.
+    """
+    if flow.injected_destination:
+        return "lab infrastructure"
+    return "we answered" if flow.synthesised else "observed"
+
+
 def _section_dynamic(trace: DynamicTrace | None) -> str:
     if trace is None:
         return (
@@ -324,15 +364,19 @@ def _section_dynamic(trace: DynamicTrace | None) -> str:
     flows = "".join(
         f"<tr><td class='mono'>{_e(f.method)}</td><td class='mono'>{_e(f.host)}</td>"
         f"<td class='mono'>{_e(f.url)[:90]}</td><td>{_e(f.status if f.status else '—')}</td>"
-        f"<td>{'synthesised' if f.synthesised else 'observed'}</td></tr>"
+        f"<td>{f.occurrences}</td><td>{_flow_origin(f)}</td></tr>"
         for f in trace.network_flows[:30]
     )
     flow_block = (
         "<h3>Network activity</h3>"
-        "<p class='sub'><em>synthesised</em> responses were served by our own "
-        "emulated C2, not by attacker infrastructure.</p>"
+        # Two different provenance facts, kept apart on purpose. A destination the
+        # sample chose stays a finding even when we are the ones who answered it.
+        "<p class='sub'><em>we answered</em> means the response body came from our own "
+        "emulated C2 because the destination did not reply — the destination is still "
+        "the sample's. <em>lab infrastructure</em> means the destination itself is ours "
+        "(our sinkhole or our proxy) and is never exported as an indicator.</p>"
         "<table><thead><tr><th>Method</th><th>Host</th><th>URL</th><th>Status</th>"
-        f"<th>Origin</th></tr></thead><tbody>{flows}</tbody></table>"
+        f"<th>Times</th><th>Origin</th></tr></thead><tbody>{flows}</tbody></table>"
         if flows
         else ""
     )

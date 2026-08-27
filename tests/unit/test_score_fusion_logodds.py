@@ -48,7 +48,7 @@ def test_positive_evidence_raises_it() -> None:
 
 
 def test_zero_evidence_leaves_the_classifier_exactly_alone() -> None:
-    """"The model found nothing to say" must not move the number in either direction."""
+    """ "The model found nothing to say" must not move the number in either direction."""
     for p in (0.01, 0.2, 0.5, 0.8, 0.99):
         assert _fuse(p, evidence=0.0) == pytest.approx(p, abs=1e-9)
 

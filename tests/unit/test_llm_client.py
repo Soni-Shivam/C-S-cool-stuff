@@ -32,11 +32,12 @@ class Verdict(BaseModel):
 
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
+    # `llm_provider` is pinned, not inherited. `Settings` reads `env_file=".env"`, so on a
+    # machine actually configured to run DRISHTI the developer's provider would decide
+    # which endpoint these tests exercise — and the ones that assert a Groq URL would fail
+    # for a reason that says nothing about the code. A fixture that supplies a Groq key
+    # must declare Groq.
     return Settings(
-        # Pinned, not inherited. This file asserts Groq's endpoint and header shape, so
-        # it must not depend on which provider the ambient .env happens to select —
-        # flipping DRISHTI_LLM_PROVIDER to gemini otherwise turns these into failures
-        # about a setting they are not testing.
         llm_provider="groq",
         llm_model="qwen/qwen3.8-27b",
         groq_api_key="gsk-test",
@@ -220,3 +221,81 @@ def test_groq_tool_loop_executes_and_returns_validated_output(
     assert result is not None and result.summary == "grounded"
     assert calls == [("read_method", '{"signature":"Lx;->a"}')]
     assert client.calls_made == 2
+
+
+# ── why the tool loop returned None ──────────────────────────────────────────
+# `complete_with_tools_as` collapses a transport error, an unparseable reply and an
+# exhausted round budget into one `None`. Callers reported all three as "provider
+# unavailable", which was a claim about a subsystem nobody had checked — and was
+# false in the common case, where the provider answered and the answer was discarded.
+def test_a_reply_that_does_not_parse_is_not_reported_as_a_provider_outage(
+    settings: Settings,
+) -> None:
+    client = LLMClient(settings, use_cache=False)
+    client._groq_exchange = MethodType(  # type: ignore[method-assign]
+        lambda self, **kwargs: {"content": "Sure! Here is the analysis you asked for."},
+        client,
+    )
+    result = client.complete_with_tools_as(
+        system="s", user="u", tools=[], execute=lambda n, a: {}, schema=Verdict
+    )
+    assert result is None
+    assert client.last_failure is not None
+    assert "Verdict" in client.last_failure
+    assert "provider" not in client.last_failure
+    assert "unavailable" not in client.last_failure
+
+
+def test_a_transport_failure_says_so_in_its_own_words(settings: Settings) -> None:
+    client = LLMClient(settings, use_cache=False)
+
+    def boom(self, **kwargs):
+        raise httpx.ConnectError("connection refused")
+
+    client._groq_exchange = MethodType(boom, client)  # type: ignore[method-assign]
+    result = client.complete_with_tools_as(
+        system="s", user="u", tools=[], execute=lambda n, a: {}, schema=Verdict
+    )
+    assert result is None
+    assert client.last_failure is not None
+    assert "failed" in client.last_failure
+
+
+def test_a_loop_that_never_stops_calling_tools_says_that_and_not_something_else(
+    settings: Settings,
+) -> None:
+    """The round cap is our limit, not the provider's fault. Name it correctly."""
+    client = LLMClient(settings, use_cache=False)
+    tool_call = {
+        "content": "",
+        "tool_calls": [{"id": "c", "function": {"name": "read_method", "arguments": "{}"}}],
+    }
+    client._groq_exchange = MethodType(  # type: ignore[method-assign]
+        lambda self, **kwargs: dict(tool_call), client
+    )
+    result = client.complete_with_tools_as(
+        system="s",
+        user="u",
+        tools=[{"type": "function", "function": {"name": "read_method", "parameters": {}}}],
+        execute=lambda n, a: {"body": ""},
+        schema=Verdict,
+        max_rounds=1,
+    )
+    assert result is None
+    assert client.last_failure is not None
+    assert "tools" in client.last_failure
+    assert "unavailable" not in client.last_failure
+
+
+def test_a_success_clears_a_failure_left_by_an_earlier_call(settings: Settings) -> None:
+    """A stale diagnosis reported against a healthy call is the same defect inverted."""
+    client = LLMClient(settings, use_cache=False)
+    client.last_failure = "something from a previous request"
+    client._groq_exchange = MethodType(  # type: ignore[method-assign]
+        lambda self, **kwargs: {"content": '{"summary":"ok","behaviours":{}}'}, client
+    )
+    result = client.complete_with_tools_as(
+        system="s", user="u", tools=[], execute=lambda n, a: {}, schema=Verdict
+    )
+    assert result is not None
+    assert client.last_failure is None

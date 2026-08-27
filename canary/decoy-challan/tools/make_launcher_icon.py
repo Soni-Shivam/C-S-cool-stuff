@@ -100,7 +100,9 @@ def _rupee_font(size: int) -> ImageFont.FreeTypeFont | None:
     nothing can draw it, so the caller falls back to primitives and the icon is never
     silently missing its motif.
     """
-    candidates = list(PREFERRED_FONTS) + sorted(glob.glob("/usr/share/fonts/**/*.ttf", recursive=True))
+    candidates = list(PREFERRED_FONTS) + sorted(
+        glob.glob("/usr/share/fonts/**/*.ttf", recursive=True)
+    )
     for path in candidates:
         # Text faces only. The maths and symbol fonts (cmsy10, msam10, wasy10) map that
         # codepoint to something that is not a rupee at all.
@@ -132,7 +134,13 @@ def _draw_rupee_primitive(draw: ImageDraw.ImageDraw, cx: int, cy: int, height: i
     draw.rectangle([left, bar2, right, bar2 + stroke], fill=WHITE)
 
     bowl_bottom = top + int(height * 0.58)
-    draw.arc([left, top, left + 2 * (right - left) // 2, bowl_bottom], start=-80, end=90, fill=WHITE, width=stroke)
+    draw.arc(
+        [left, top, left + 2 * (right - left) // 2, bowl_bottom],
+        start=-80,
+        end=90,
+        fill=WHITE,
+        width=stroke,
+    )
     draw.line([(left, top), (left, bowl_bottom)], fill=WHITE, width=stroke)
     draw.line(
         [(left + int(height * 0.10), bowl_bottom - stroke), (right, cy + height // 2)],
@@ -158,7 +166,9 @@ def build() -> Path:
 
     # A squircle-ish rounded square is what reads as "modern launcher icon".
     mask = Image.new("L", (side, side), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([0, 0, side - 1, side - 1], radius=int(side * 0.22), fill=255)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        [0, 0, side - 1, side - 1], radius=int(side * 0.22), fill=255
+    )
     canvas.paste(gradient, (0, 0), mask)
 
     draw = ImageDraw.Draw(canvas)
@@ -174,7 +184,9 @@ def build() -> Path:
         [int(side * 0.52), 0, side, int(side * 0.48)],
         fill=(*ACCENT_RED, 255),
     )
-    canvas.paste(block, (0, 0), Image.composite(block.split()[3], Image.new("L", (side, side), 0), mask))
+    canvas.paste(
+        block, (0, 0), Image.composite(block.split()[3], Image.new("L", (side, side), 0), mask)
+    )
 
     glyph_height = int(side * 0.46)
     font = _rupee_font(glyph_height)

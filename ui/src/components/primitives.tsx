@@ -17,8 +17,21 @@
 
 import type { CSSProperties, ReactNode } from 'react'
 import type { Artefact } from '../api/client'
-import type { AnalyserResult, SeverityBand } from '../api/types'
+import { STAGE_LABELS } from '../api/types'
+import type { AnalyserResult, JobStage, SeverityBand } from '../api/types'
 import { LogoSpinner } from './Logo'
+
+/**
+ * A pipeline stage as a reader's name for it, never its wire value.
+ *
+ * The API reports the stage as the enum member (`genai_static`, `sandbox_pass1`),
+ * which is correct on the wire and reads as a developer string on a projector.
+ * `STAGE_LABELS` is the same table the stage strip draws from, so the pending
+ * notice and the strip above it cannot name the same stage two different ways.
+ */
+export function stageLabel(stage: string): string {
+  return STAGE_LABELS[stage as JobStage] ?? stage
+}
 
 /* ─── card tiers ─────────────────────────────────────────────────────────── */
 
@@ -262,8 +275,8 @@ export function ArtefactGate<T>({
       <div className="flex items-center gap-3 rounded-[var(--radius-tile)] border border-line bg-ground-2/70 px-4 py-3.5 text-sm text-muted">
         <LogoSpinner size="sm" />
         <span>
-          Not produced yet — the pipeline is at{' '}
-          <span className="font-mono text-v300">{artefact.stage}</span>.
+          Not produced yet — the pipeline is still at{' '}
+          <span className="text-v300">{stageLabel(artefact.stage)}</span>.
         </span>
       </div>
     )
@@ -272,8 +285,11 @@ export function ArtefactGate<T>({
     return (
       <div className="rounded-[var(--radius-tile)] border border-warn/30 bg-warn/[0.07] px-4 py-3.5 text-sm">
         <span className="font-medium text-warn">Not available in this build.</span>{' '}
-        <span className="text-muted">
-          {artefact.what} lands in <span className="font-mono text-fg">{artefact.task}</span>.
+        {/* The API's task id identifies the work item internally. It is a build-tracker
+            reference, not something a reader of this screen can act on, so it stays in
+            the tooltip and the sentence says what is missing in plain words. */}
+        <span className="text-muted" title={`build reference ${artefact.task}`}>
+          {artefact.what} is not part of this build, so nothing is shown for it here.
         </span>
       </div>
     )
@@ -296,10 +312,20 @@ export function ArtefactGate<T>({
  */
 export function DegradedNotice({ result }: { result: AnalyserResult }) {
   if (!result.partial && result.errors.length === 0) return null
+  // `partial` is the degradation flag. When it is false the analyser ran to completion,
+  // so whatever is in `errors` is a disclosure rather than a failure — "no dynamic
+  // evidence available" on a static-only run is a fact about the run, not something
+  // that went wrong. Labelling it "Completed with errors" in warning amber made a
+  // correct result look broken, which is the opposite of what this notice is for.
+  const degraded = result.partial
   return (
-    <div className="mb-3 rounded-[var(--radius-tile)] border border-warn/30 bg-warn/[0.07] px-4 py-3 text-xs">
-      <span className="font-semibold text-warn">
-        {result.partial ? 'Partial result' : 'Completed with errors'}
+    <div
+      className={`mb-3 rounded-[var(--radius-tile)] px-4 py-3 text-xs ${
+        degraded ? 'border border-warn/30 bg-warn/[0.07]' : 'border border-line bg-ground-2'
+      }`}
+    >
+      <span className={`font-semibold ${degraded ? 'text-warn' : 'text-muted'}`}>
+        {degraded ? 'Partial result' : 'Notes on this result'}
       </span>
       <ul className="mt-1.5 space-y-1 text-muted">
         {result.errors.map((error, i) => (

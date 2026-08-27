@@ -29,7 +29,7 @@ from pydantic import Field
 
 from drishti.config import Settings, get_settings
 from drishti.contracts.base import DrishtiModel
-from drishti.contracts.dynamic_trace import DynamicTrace, TraceSourceKind
+from drishti.contracts.dynamic_trace import DynamicTrace, ObservationArtifact, TraceSourceKind
 from drishti.contracts.frontier import SandboxPlan
 from drishti.logging import get_logger
 from drishti.m3_dynamic.detonator import (
@@ -93,6 +93,38 @@ class TraceSource(ABC):
     @property
     @abstractmethod
     def kind(self) -> TraceSourceKind: ...
+
+
+def _unsafe_reasons(artifact: ObservationArtifact) -> list[str]:
+    """Name exactly the `safe_for_ingestion` predicates this artifact fails.
+
+    One message per failed condition rather than one sentence listing every condition
+    the gate checks: an ARM64-only APK fails only on `outcome`, and a refusal that also
+    announced "snapshot lifecycle incomplete" sent the reader hunting for a dirty AVD
+    that was in fact restored cleanly both times.
+    """
+    reasons: list[str] = []
+    if artifact.outcome not in {"completed", "inconclusive"}:
+        reasons.append(f"outcome={artifact.outcome}")
+    if not artifact.package:
+        reasons.append("no package name was recorded")
+    if not artifact.metadata.containment_verified:
+        reasons.append("containment not verified")
+    if not artifact.metadata.containment_manifest_sha256:
+        reasons.append("no signed containment manifest")
+    snapshot = artifact.snapshot
+    if snapshot is None:
+        reasons.append("no snapshot lifecycle was recorded")
+    else:
+        if snapshot.before_restore != "passed":
+            reasons.append(f"snapshot before_restore={snapshot.before_restore}")
+        if snapshot.after_restore != "passed":
+            reasons.append(f"snapshot after_restore={snapshot.after_restore}")
+        if not snapshot.package_absent_after:
+            reasons.append("the package was still present after restore")
+    # Never return an empty list: the caller only calls this when the gate failed, and
+    # "not safe to ingest: " with nothing after it is worse than an imprecise reason.
+    return reasons or ["safe_for_ingestion is false for an unenumerated reason"]
 
 
 class LiveSandboxSource(TraceSource):
@@ -203,8 +235,8 @@ class LiveSandboxSource(TraceSource):
             )
         if not artifact.safe_for_ingestion:
             raise TraceSourceUnavailableError(
-                f"artifact for {digest[:12]} is not safe to ingest "
-                f"(outcome={artifact.outcome}, snapshot lifecycle incomplete)"
+                f"artifact for {digest[:12]} is not safe to ingest: "
+                f"{', '.join(_unsafe_reasons(artifact))}"
             )
 
         trace = artifact_to_trace(
