@@ -45,6 +45,8 @@ FROZEN_ROUTES: set[tuple[str, str]] = {
     ("GET", "/api/jobs/{job_id}/artifacts/bundle.zip"),
     ("POST", "/api/jobs/{job_id}/actions/{action}/confirm"),
     ("GET", "/api/logs/stream"),
+    ("GET", "/api/samples"),
+    ("POST", "/api/samples/{sample_id}/analyse"),
 }
 
 # A real zip: M1's guards reject a corrupt archive since T0.10.

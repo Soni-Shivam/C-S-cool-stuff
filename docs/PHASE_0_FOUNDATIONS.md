@@ -295,6 +295,8 @@ GET    /api/jobs/{id}/report.html                      → rendered report
 GET    /api/jobs/{id}/artifacts/yara                   → text/plain
 GET    /api/jobs/{id}/artifacts/stix                   → application/json
 GET    /api/jobs/{id}/artifacts/bundle.zip             → application/zip (the case file)
+GET    /api/samples                                    → [SampleEntry] (metadata only)
+POST   /api/samples/{id}/analyse                       → {job_id} (staged sample, A21)
 POST   /api/jobs/{id}/actions/{action}/confirm         → ProposedAction (human gate)
 GET    /api/logs/stream           SSE                  → the live log for the demo
 ```

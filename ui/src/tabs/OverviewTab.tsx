@@ -15,10 +15,11 @@
  * break by looking like a Block button.
  */
 
-import { useState } from 'react'
-import { confirmAction } from '../api/client'
+import { useEffect, useState } from 'react'
+import { confirmAction, listSamples } from '../api/client'
 import type { Artefact } from '../api/client'
 import { EvidenceChips } from '../components/Evidence'
+import { GroundTruthCard } from '../components/GroundTruthCard'
 import { VerdictHeadline } from '../components/VerdictHeadline'
 import {
   ArtefactGate,
@@ -34,6 +35,7 @@ import type {
   FileMeta,
   GenAIVerdict,
   ProposedAction,
+  SampleEntry,
   StaticReport,
 } from '../api/types'
 import type { Verdict } from '../api/verdict.gen'
@@ -85,6 +87,25 @@ function ActionRow({ jobId, action }: { jobId: string; action: ProposedAction })
   )
 }
 
+/**
+ * When the analysed file is one of the staged samples (contract A21), its catalogue
+ * entry is found by sha256 — the hash the pipeline computed from the bytes it read,
+ * against the hash the catalogue computed from the bytes on disk. Matching on the
+ * hash rather than threading a sample id through the job is deliberate: it means
+ * there is no field anywhere on the job by which the ground-truth label could have
+ * reached the analysis.
+ */
+function useStagedSample(sha256: string | null): SampleEntry | null {
+  const [samples, setSamples] = useState<SampleEntry[]>([])
+  useEffect(() => {
+    void listSamples()
+      .then(setSamples)
+      .catch(() => setSamples([]))
+  }, [])
+  if (!sha256) return null
+  return samples.find((entry) => entry.sha256 === sha256) ?? null
+}
+
 export function OverviewTab({
   jobId,
   verdict,
@@ -105,6 +126,9 @@ export function OverviewTab({
   // an app for reading SMS" before they get there.
   const lookalike =
     staticReport?.state === 'ready' ? staticReport.value.lookalike : null
+  const staged = useStagedSample(
+    ingest?.state === 'ready' ? ingest.value.sha256 : null,
+  )
 
   return (
     <div className="space-y-5">
@@ -115,6 +139,12 @@ export function OverviewTab({
       />
 
       <ArtefactGate artefact={verdict}>{(value) => <VerdictHeadline verdict={value} />}</ArtefactGate>
+
+      {/* Only for a staged sample, and only once there is a score to compare. For an
+          uploaded file there is no truth to check against and nothing is drawn. */}
+      {staged && score?.state === 'ready' && (
+        <GroundTruthCard sample={staged} band={score.value.band} score={score.value.S} />
+      )}
 
       {/* Directly under the verdict, before any table. Several of the rules behind
           a permission finding fire on apps nobody would call malicious, and a

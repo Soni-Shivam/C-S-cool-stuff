@@ -1295,3 +1295,63 @@ is the guard.
 
 Entry mtimes are pinned to the zip epoch so identical inputs produce identical bytes;
 only the framing is pinned, since `report.html` carries its own render time.
+
+---
+
+### A21. `SampleEntry` and the staged-sample routes (additive)
+
+Uploading whatever file is to hand makes a demonstration only as good as that file.
+A21 adds a catalogue of samples staged on the analysis VM whose nature is already
+known, so a verdict can be shown next to the truth.
+
+```
+GET  /api/samples                     → [SampleEntry]
+POST /api/samples/{sample_id}/analyse → {job_id}, 202
+```
+
+`SampleEntry` (`drishti/contracts/sample.py`):
+
+| Field | Type | Meaning |
+|---|---|---|
+| `id` | `str` | The catalogue key. Matched exactly; never joined into a path. |
+| `package` | `str` | Android package name, from the manifest row. |
+| `filename` | `str` | Basename inside `settings.samples_dir`. |
+| `sha256` | `str` | Digest of the bytes **on disk**, not a value the manifest declared. |
+| `size_bytes` | `int` | From `stat()`, same reason. |
+| `label` | `0 \| 1 \| None` | Corpus ground truth: 1 malicious, 0 benign, None unlabelled. |
+| `vt_detection` | `int \| None` | VirusTotal detections behind that label. |
+| `note` | `str \| None` | Provenance, e.g. `corpus sample, dex 2021-07-15`. |
+
+`settings.samples_dir` is **unset by default**. Unset means `GET /api/samples` returns
+`[]` and the dashboard hides the picker — the correct state on a laptop or in CI, and
+not an error. A row whose file is absent is dropped rather than listed, so the
+catalogue never offers a button that cannot work.
+
+Three properties are load-bearing, and each is a test rather than a convention:
+
+**No route serves the sample bytes.** CLAUDE.md's hard boundary is that a real sample
+does not leave the analysis project, and a picker in a dashboard is not an exception.
+The browser sends an id; the VM opens the file. `SampleEntry` has no content or path
+field, and `test_no_route_serves_sample_bytes` fails if a download route is ever
+added.
+
+**The ground-truth label never reaches the analysis.** `label` and `vt_detection` are
+VT-derived. `POST /api/samples/{id}/analyse` calls `runner.submit(path, filename)` —
+the same two arguments the upload route passes, with the label deliberately not among
+them. Were either to enter the pipeline, every composite score over this corpus would
+be circular, which is precisely what `m5_ml/reputation.py` refuses a label-derived
+feed (`allow_label_derived=False`) to prevent. The parity test asserts that a run
+started from a labelled sample and a run started from an upload of the same bytes
+produce the same `S`, `band` and `C`.
+
+**The staged file survives its own analysis.** The upload route hands the runner a
+file in a temp directory it created, so nothing there cares whether the runner
+unlinks it. This route hands it a file from the corpus. The runner does not delete
+its input today, and `test_analysing_a_sample_does_not_consume_it` is what notices if
+that changes — the failure mode otherwise is deleting the staged samples on the VM the
+first time anyone presses Run.
+
+The comparison the dashboard draws — predicted band beside known label — is therefore
+honest: the run that produced the score had no more information than an upload would
+have had. It is displayed per-run and carries the sentence that eight hand-picked
+samples are not a benchmark, because a measured metric must trace to `STATUS.md`.

@@ -23,7 +23,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from drishti import __version__
 from drishti.api.deps import JobDep, RunnerDep, SettingsDep, get_runner, set_runner
-from drishti.api.routes import analysis, artifacts, ledger, logs
+from drishti.api.routes import analysis, artifacts, ledger, logs, samples
 from drishti.contracts.job import Job
 
 __all__ = ["app", "get_runner", "set_runner"]
@@ -113,3 +113,5 @@ app.include_router(analysis.router)
 app.include_router(ledger.router)
 app.include_router(artifacts.router)
 app.include_router(logs.router)
+# /api/samples is its own prefix; the picker never mounts under /api/jobs.
+app.include_router(samples.router)

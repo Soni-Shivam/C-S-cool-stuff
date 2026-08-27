@@ -13,6 +13,7 @@ import { useCallback, useRef, useState } from 'react'
 import { submitApk } from '../api/client'
 import type { Job } from '../api/types'
 import { LogoLockup, LogoSpinner } from './Logo'
+import { SamplePicker } from './SamplePicker'
 
 export function Header({
   job,
@@ -81,6 +82,10 @@ export function Header({
           onChange={(e) => void upload(e.target.files?.[0])}
         />
       </div>
+
+      {/* Beside the drop target, not inside it: an upload and a staged sample are two
+          ways to start the same run, and the picker hides itself where none exist. */}
+      <SamplePicker onJobCreated={onJobCreated} />
 
       {error && <span className="max-w-64 truncate text-xs text-bad">{error}</span>}
 

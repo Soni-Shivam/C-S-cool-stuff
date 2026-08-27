@@ -610,3 +610,25 @@ export interface GenAIVerdict extends AnalyserResult {
   provider: string
   ledger_refs: string[]
 }
+
+// ─── A21 staged samples ──────────────────────────────────────────────────────
+
+/**
+ * A sample staged on the analysis VM, mirroring `contracts/sample.py`.
+ *
+ * There is no field here holding the file, and there is no route that serves one:
+ * the sample stays in the analysis project and the browser only ever sends the id
+ * back. `label` and `vt_detection` are ground truth for DISPLAY — they are shown
+ * beside the verdict so a reader can see whether it was right, and they never reach
+ * the analysis that produced it.
+ */
+export interface SampleEntry {
+  id: string
+  package: string
+  filename: string
+  sha256: string
+  size_bytes: number
+  label: 0 | 1 | null
+  vt_detection: number | null
+  note: string | null
+}

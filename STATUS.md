@@ -1071,6 +1071,24 @@ see *Still open* below.
         on a static-only run that is R and G.
       * Fixed: `artefact()` parsed text/html and text/plain as JSON, so the report
         and the YARA rule rendered as empty and as the word "null".
+- [x] T6.12 Staged-sample picker (A21)             DONE  2026-08-27 · `GET /api/samples` +
+      `POST /api/samples/{id}/analyse`, `drishti/m1_ingest/catalogue.py`, `contracts/sample.py`.
+      Runs a sample of KNOWN nature instead of whatever file is to hand, and puts the verdict next
+      to the truth. 8 staged on the VM at `~/drishti-samples` (4 malicious VT 43-47, 3 benign VT 0,
+      the canary). Three properties are tests, not conventions: **no route serves the APK bytes**
+      (`test_no_route_serves_sample_bytes`) — the browser sends an id and the VM opens the file, so
+      CLAUDE.md's boundary holds; **the ground-truth label never reaches the analysis** — the route
+      calls `runner.submit(path, filename)`, the same two arguments the upload route passes, and
+      the parity test asserts a sample run and an upload of the same bytes give the same `S`/`band`/`C`,
+      which is what stops composite scores over this corpus going circular; **the staged file survives
+      its own analysis** — the runner does not delete its input today and a test notices if that
+      changes, the failure otherwise being deletion of the corpus on first use. `samples_dir` is unset
+      by default, so a laptop reports an empty catalogue and hides the picker rather than erroring.
+      The UI comparison is per-run and carries the sentence that 8 hand-picked samples are not a
+      benchmark; MEDIUM is reported as *inconclusive* rather than forced onto a side.
+      Measured: **1,888 contract+unit** (1,871 before) + 16 e2e, `pytest` exit 0; `npm test` 39
+      (34 before); `npm run build` clean. `ruff check` still reports the one pre-existing N806 in
+      `tests/unit/test_behavioural_risk_context.py:98`, red on `main` before this change.
 - [ ] T6.5 Code freeze @ H68                       TODO
 - [x] T6.6 Demo script                             DONE  2026-08-26 · `docs/DEMO_SCRIPT.md`, beat-by-beat with measured timings
 - [~] T6.7 Backup plan                             WIP   2026-08-26 · fallbacks per beat in DEMO_SCRIPT §5; no backup video yet

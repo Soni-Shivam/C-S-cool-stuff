@@ -25,6 +25,7 @@ import type {
   Job,
   MLPrediction,
   ProposedAction,
+  SampleEntry,
   StaticReport,
 } from './types'
 import type { Verdict } from './verdict.gen'
@@ -196,6 +197,23 @@ export const exportUrls = (jobId: string) => ({
    */
   bundle: `/api/jobs/${jobId}/artifacts/bundle.zip`,
 })
+
+/**
+ * The staged-sample catalogue (contract A21).
+ *
+ * An empty list is the normal answer on a deployment with no samples staged, not an
+ * error — the picker hides itself rather than offering a button that cannot work.
+ */
+export const listSamples = () => request<SampleEntry[]>('/api/samples')
+
+/** Queue a staged sample. Same pipeline an upload runs; the label is not sent. */
+export const analyseSample = async (sampleId: string): Promise<string> => {
+  const body = await request<{ job_id: string }>(
+    `/api/samples/${encodeURIComponent(sampleId)}/analyse`,
+    { method: 'POST' },
+  )
+  return body.job_id
+}
 
 export const confirmAction = (jobId: string, action: string, confirmedBy: string) =>
   request<ProposedAction>(`/api/jobs/${jobId}/actions/${action}/confirm`, {

@@ -196,6 +196,19 @@ FACTORIES: dict[str, Any] = {
         vt_detection=37,
         apk_size=4_812_003,
     ),
+    # ── staged samples (A21) ──
+    # The label is present because ground truth is what the model is FOR. It is a
+    # display fact that never reaches the analysis — see contracts/sample.py.
+    "SampleEntry": lambda: C.SampleEntry(
+        id="3ed1c0597aea",
+        package="com.allen.mp",
+        filename="3ed1c0597aea.apk",
+        sha256="a" * 64,
+        size_bytes=180_477,
+        label=1,
+        vt_detection=47,
+        note="corpus sample, dex 2021-07-15",
+    ),
     # ── evidence ──
     "EvidenceNode": lambda: C.EvidenceNode(
         id="ev_01932ab8f4c1",

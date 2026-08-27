@@ -96,6 +96,17 @@ class Settings(BaseSettings):
     db_path: Path = Path("data/drishti.db")
     ledger_key_path: Path = Path("data/ledger_ed25519.key")
 
+    #: Directory of staged samples with known ground truth, holding the APKs and a
+    #: `manifest.json` describing them (contract A21).
+    #:
+    #: **Unset by default, and that is the safe default.** The samples are real
+    #: malware, so they live on the analysis VM and are never committed, never copied
+    #: to a laptop, and never served over the API — the catalogue routes offer
+    #: metadata and an id to analyse, never the bytes. A checkout with this unset
+    #: reports an empty catalogue and the dashboard hides the picker, which is the
+    #: correct behaviour on a machine that has no samples rather than an error.
+    samples_dir: Path | None = None
+
     # ── static ───────────────────────────────────────────────────────────────
     static_timeout_s: int = 90
     mobsf_enabled: bool = False

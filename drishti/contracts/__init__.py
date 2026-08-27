@@ -56,6 +56,7 @@ from drishti.contracts.genai_verdict import (
     VisionMatch,
 )
 from drishti.contracts.job import PIPELINE_ORDER, Job, JobStage, StageEvent
+from drishti.contracts.sample import SampleEntry
 from drishti.contracts.score import (
     BAND_FLOOR,
     BAND_ORDER,
@@ -151,6 +152,7 @@ __all__ = [
     "ProposedAction",
     "Provenance",
     "RecommendedAction",
+    "SampleEntry",
     "SandboxPlan",
     "ScoreFactor",
     "Severity",
