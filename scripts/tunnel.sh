@@ -36,12 +36,13 @@ supervise() {
     gcloud compute ssh "$VM" --zone="$ZONE" --project="$PROJECT" --tunnel-through-iap -- \
       -L "$lui:127.0.0.1:$rui" -L "$lapi:127.0.0.1:$rapi" -N \
       -o ExitOnForwardFailure=yes \
-      -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
+      -o ServerAliveInterval=5 -o ServerAliveCountMax=2 \
+      -o ConnectTimeout=10 -o TCPKeepAlive=yes \
       -o StrictHostKeyChecking=accept-new \
       >>"$log" 2>&1
     # A clean exit still means the forward is gone, so it is treated the same as a crash.
-    echo "[$(date +%T)] '$name' dropped (rc=$?), relaunching in 3s" >>"$log"
-    sleep 3
+    echo "[$(date +%T)] '$name' dropped (rc=$?), relaunching in 1s" >>"$log"
+    sleep 1
   done
 }
 
@@ -79,10 +80,16 @@ case "${1:-status}" in
       IFS=: read -r name lui _ lapi _ <<<"$f"
       ui=$(curl -s -m 5 -o /dev/null -w '%{http_code}' "http://localhost:$lui/" 2>/dev/null)
       api=$(curl -s -m 5 "http://localhost:$lapi/api/health" 2>/dev/null)
+      held=$(ss -ltn 2>/dev/null | grep -c "127.0.0.1:$lui")
       if [[ "$ui" == "200" && "$api" == *'"ok"'* ]]; then
-        printf '  %-7s UP    ui http://localhost:%s   api http://localhost:%s\n' "$name" "$lui" "$lapi"
+        printf '  %-7s UP        ui http://localhost:%s   api http://localhost:%s\n' "$name" "$lui" "$lapi"
+      elif [[ "$held" == "0" ]]; then
+        printf '  %-7s TUNNEL    reconnecting (supervisor relaunches in ~1s) -- just wait\n' "$name"
       else
-        printf '  %-7s DOWN  (ui=%s api=%s)  -- run: %s start\n' "$name" "${ui:-none}" "${api:-none}" "$0"
+        # The forward is bound, so the laptop side is fine; the VM service is not
+        # answering. Restarting the tunnel here would fix nothing.
+        printf '  %-7s VM-SVC    forward up but service down (ui=%s api=%s) -- restart it ON THE VM\n' \
+          "$name" "${ui:-none}" "${api:-none}"
       fi
     done
     ;;

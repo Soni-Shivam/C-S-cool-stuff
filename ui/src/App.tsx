@@ -41,6 +41,7 @@ import { ScoreRail } from './components/ScoreRail'
 import { StageStrip } from './components/StageStrip'
 import { useArtefact } from './hooks/useArtefact'
 import { useJob } from './hooks/useJob'
+import { AgentsTab } from './tabs/AgentsTab'
 import { CodeGraphTab } from './tabs/CodeGraphTab'
 import { FrontierTab } from './tabs/FrontierTab'
 import { LedgerTab } from './tabs/LedgerTab'
@@ -57,6 +58,7 @@ const TABS = [
   { name: 'Static', slug: 'static' },
   { name: 'Sandbox', slug: 'sandbox' },
   { name: 'Frontier', slug: 'frontier' },
+  { name: 'Agents', slug: 'agents' },
   { name: 'Ledger', slug: 'ledger' },
   { name: 'Report', slug: 'report' },
 ] as const
@@ -304,6 +306,7 @@ export default function App() {
                   {tab === 'Reverse Engineering' && (
                     <ReverseEngineeringTab report={staticReport} genai={genai} ml={ml} />
                   )}
+                  {tab === 'Agents' && <AgentsTab genai={genai} ledger={nodes} />}
                   {tab === 'Static' && <StaticTab report={staticReport} />}
                   {tab === 'Sandbox' && <SandboxTab dynamic={dynamic} verdict={verdict} />}
                   {tab === 'Frontier' && (
