@@ -1053,3 +1053,61 @@ from `drishti/contracts/verdict.py` without a red test.
 
 The dashboard consumes this route; it never produces a `Verdict`. No scoring, banding,
 or provenance logic exists in `ui/`.
+
+---
+
+### A20. `GET /api/jobs/{id}/artifacts/bundle.zip` — the case-file archive (additive route)
+
+An additive route on the frozen T0.6 surface. No pydantic model changes; the archive is
+an assembly of bytes the existing routes already serve, so nothing here can introduce a
+second definition of an export.
+
+```
+GET /api/jobs/{id}/artifacts/bundle.zip → application/zip
+Content-Disposition: attachment; filename="{job_id}-case-file.zip"
+```
+
+| Entry | Identical to |
+|---|---|
+| `MANIFEST.json` | — (defined below) |
+| `report.html` | `GET /api/jobs/{id}/report.html` |
+| `complaint-package.json` | `GET /api/jobs/{id}/artifacts/dossier` |
+| `yara.yar` | `GET /api/jobs/{id}/artifacts/yara` |
+| `stix.json` | `GET /api/jobs/{id}/artifacts/stix` |
+| `ledger.json` | `GET /api/jobs/{id}/ledger/export` |
+| `verdict.json` | `GET /api/jobs/{id}/verdict` (the A15 projection) |
+
+Pending semantics are unchanged: the route 404s with `{"reason": "not_produced_yet",
+"stage": ...}` until `ingest` and `score` exist, like every other export. An empty
+archive would read as a finished one.
+
+**The manifest is the contract.** An archive outlives the system that made it, so it has
+to answer *is this complete, and was the evidence intact when it was taken* on its own:
+
+| Field | Meaning |
+|---|---|
+| `job_id`, `sample_sha256`, `sample_filename`, `sample_size_bytes`, `package` | what was analysed |
+| `drishti_version`, `generated_at` | what produced it, and when |
+| `contents[]` | `{name, bytes, sha256}` for every archived entry |
+| `evidence_chain` | `{verified, node_count, first_bad_seq, reason}` as read at build time; `verified: null` when the chain was not checked |
+| `omitted` | `{entry: reason}` for any export that raised |
+| `notes[]` | the standing disclosures — nothing was filed, the sample is absent, and how to re-verify the chain |
+
+Three properties, each load-bearing:
+
+**Omissions are stated, not implied.** Each entry is built independently and a failure
+degrades to an `omitted` line rather than a 500 — a failed STIX build must not cost an
+analyst the report and the ledger. Silence would make a short archive and a complete one
+indistinguishable from the outside.
+
+**A broken chain travels with the archive.** `evidence_chain.verified: false` is recorded
+and the files are still served. Withholding the evidence because the chain failed would
+destroy the only record of the failure.
+
+**The sample is never included.** CLAUDE.md's hard boundary — a real APK does not leave
+the analysis project, and a download control is not an exception. The archive is hashes
+and derived facts. `tests/unit/test_case_file.py::test_bundle_never_carries_the_sample`
+is the guard.
+
+Entry mtimes are pinned to the zip epoch so identical inputs produce identical bytes;
+only the framing is pinned, since `report.html` carries its own render time.

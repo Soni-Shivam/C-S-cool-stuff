@@ -1,6 +1,11 @@
 /**
  * Report: the HTML report, the machine-readable exports, and the complaint package.
  *
+ * Everything on this view can also be taken in one archive — `bundle.zip`, assembled
+ * server-side from the same bytes these panels render, with a manifest that hashes each
+ * entry and records whether the evidence chain verified when it was built. The sample is
+ * never in it.
+ *
  * All four routes are implemented — report.html (T6.3), YARA (T6.1), STIX (T6.2) and
  * the dossier (contract A12). This tab previously stated they were unbuilt and offered
  * dead buttons labelled with their task ids, which was true when it was written and had
@@ -55,6 +60,39 @@ function Download({ href, name, children }: { href: string; name: string; childr
     >
       {children}
     </a>
+  )
+}
+
+/**
+ * The whole case in one archive.
+ *
+ * Separate links are fine while a job is on screen and useless six weeks later, when
+ * the question is "is this everything, and was the evidence intact when it was taken".
+ * The archive answers that from its `MANIFEST.json`: a SHA-256 per entry, the chain
+ * verification as read at build time, and any export that failed named with its reason.
+ *
+ * The sample is not in it, and the button says so — an APK never leaves the analysis
+ * project, and a download control is not an exception to that.
+ */
+function CaseFileDownload({ jobId, href }: { jobId: string; href: string }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-tile)] border border-accent/40 bg-accent-soft px-4 py-3">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold text-fg">Keep the whole case file</div>
+        <p className="mt-0.5 text-xs leading-relaxed text-muted">
+          Report, complaint package, YARA, STIX, the evidence ledger and the verdict, plus a
+          manifest hashing every entry and recording whether the chain verified. The analysed
+          APK is not included.
+        </p>
+      </div>
+      <a
+        href={href}
+        download={`${jobId}-case-file.zip`}
+        className="shrink-0 rounded bg-accent px-4 py-2 text-sm font-semibold text-ground hover:bg-accent/85"
+      >
+        Download case file (ZIP)
+      </a>
+    </div>
   )
 }
 
@@ -177,7 +215,7 @@ export function ReportTab({
       <SectionHead
         eyebrow="Deliverables"
         title="Report and exports"
-        lede="Report, YARA, STIX and the complaint dossier are all implemented and download today. The complaint package is generated, never filed — India's cyber-crime portal has no submission API, so nothing on this screen tells a user their complaint has been lodged."
+        lede="Report, YARA, STIX and the complaint dossier are all implemented and download today, individually or as one case-file archive with a manifest. The complaint package is generated, never filed — India's cyber-crime portal has no submission API, so nothing on this screen tells a user their complaint has been lodged."
       />
 
       <Panel
@@ -201,6 +239,13 @@ export function ReportTab({
       <Panel
         title="Investigation report"
         subtitle="GET /api/jobs/{job}/report.html — self-contained, no external assets"
+        right={
+          report?.state === 'ready' ? (
+            <Download href={urls.report} name={`${jobId}-report.html`}>
+              Download report
+            </Download>
+          ) : undefined
+        }
       >
         {report?.state === 'ready' ? (
           // Sandboxed: the report embeds sample-derived strings, and this is the one
@@ -234,7 +279,11 @@ export function ReportTab({
       </div>
 
       <Panel title="Downloads" subtitle="Only what this build actually serves is offered — an unbuilt export is not a button">
-        <div className="flex flex-wrap gap-2">
+        <CaseFileDownload jobId={jobId} href={urls.bundle} />
+        <div className="mt-4 text-[10px] tracking-widest text-dim uppercase">
+          or take one file at a time
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
           <Download href={ledgerExportUrl(jobId)} name={`${jobId}-ledger.json`}>
             Evidence ledger (JSON)
           </Download>

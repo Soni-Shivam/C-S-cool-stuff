@@ -87,11 +87,11 @@ def get_verdict(job: JobDep, runner: RunnerDep) -> Verdict:
         score=composite,
         static=runner.artefact(job.id, "static"),
         genai=runner.artefact(job.id, "genai"),
-        trace=_observed_trace(runner.artefact(job.id, "dynamic")),
+        trace=observed_trace(runner.artefact(job.id, "dynamic")),
     )
 
 
-def _observed_trace(trace: DynamicTrace | None) -> DynamicTrace | None:
+def observed_trace(trace: DynamicTrace | None) -> DynamicTrace | None:
     """Drop the declared stub the pipeline records when nothing could observe the sample.
 
     `_sandbox()` records a trace with `source=unavailable`, `synthetic=True` and

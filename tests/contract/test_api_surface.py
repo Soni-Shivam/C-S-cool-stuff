@@ -42,6 +42,7 @@ FROZEN_ROUTES: set[tuple[str, str]] = {
     ("GET", "/api/jobs/{job_id}/artifacts/yara"),
     ("GET", "/api/jobs/{job_id}/artifacts/stix"),
     ("GET", "/api/jobs/{job_id}/artifacts/dossier"),
+    ("GET", "/api/jobs/{job_id}/artifacts/bundle.zip"),
     ("POST", "/api/jobs/{job_id}/actions/{action}/confirm"),
     ("GET", "/api/logs/stream"),
 }

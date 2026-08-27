@@ -1,4 +1,4 @@
-"""Report, YARA, STIX, and the human-confirmation gate.
+"""Report, YARA, STIX, the case-file archive, and the human-confirmation gate.
 
 docs/PHASE_0_FOUNDATIONS.md T0.6.
 
@@ -12,6 +12,10 @@ is derived from provenance flags, the YARA rule declares itself disabled when to
 distinctive strings survived filtering, and the STIX bundle publishes only verified
 claims and observed — never synthesised — network infrastructure.
 
+`bundle.zip` serves all of them at once. It is the same bytes, assembled — an archive
+an analyst can keep, with a manifest that says what is in it and whether the evidence
+chain verified at the moment it was taken.
+
 The confirmation route, by contrast, is fully implemented from P0 — because "nothing
 executes without a human" is a safety property, not a feature, and it should not be
 possible to reach a demo where a consequential action has no gate.
@@ -19,9 +23,10 @@ possible to reach a demo where a consequential action has no gate.
 
 from __future__ import annotations
 
+import json
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Response
 from fastapi.responses import HTMLResponse, PlainTextResponse
 
 from drishti.api.deps import (
@@ -32,12 +37,15 @@ from drishti.api.deps import (
     open_ledger,
 )
 from drishti.api.jobs import JobRunner
-from drishti.contracts.evidence import EvidenceType
+from drishti.api.routes.analysis import observed_trace
+from drishti.config import Settings
+from drishti.contracts.evidence import ChainVerification, EvidenceType
 from drishti.contracts.job import Job
 from drishti.contracts.score import CompositeScore, ProposedAction
 from drishti.contracts.static_report import FileMeta
+from drishti.contracts.verdict import build_verdict
 from drishti.logging import get_logger
-from drishti.m7_report import dossier, html, stix, yara
+from drishti.m7_report import case_file, dossier, html, stix, yara
 from drishti.util import now
 
 log = get_logger(__name__)
@@ -76,19 +84,35 @@ def _bundle_inputs(runner: JobRunner, job: Job) -> tuple[FileMeta, CompositeScor
     )
 
 
+def _verify_chain(settings: Settings, job_id: str) -> ChainVerification:
+    """Walk the job's chain now.
+
+    The chain state is read live rather than cached: a document that asserts its own
+    evidence is intact must prove that at render time, not quote an older check.
+    """
+    store = open_ledger(settings)
+    try:
+        store.open(job_id)
+        return store.verify_chain(job_id)
+    finally:
+        store.close()
+
+
+def _export_ledger(settings: Settings, job_id: str) -> dict[str, Any]:
+    """Everything a third party needs to re-verify the chain themselves."""
+    store = open_ledger(settings)
+    try:
+        store.open(job_id)
+        return store.export(job_id)
+    finally:
+        store.close()
+
+
 @router.get("/{job_id}/report.html", response_class=HTMLResponse)
 def get_report(job: JobDep, runner: RunnerDep, settings: SettingsDep) -> HTMLResponse:
     """The full investigation report as one self-contained HTML document (T6.3)."""
     meta, score, static, genai, dynamic = _bundle_inputs(runner, job)
-
-    # The chain state is read live rather than cached: a report that asserts its own
-    # evidence is intact must prove that at render time, not quote an older check.
-    store = open_ledger(settings)
-    try:
-        store.open(job.id)
-        chain = store.verify_chain(job.id)
-    finally:
-        store.close()
+    chain = _verify_chain(settings, job.id)
 
     document = html.render(
         job=job,
@@ -139,13 +163,7 @@ def get_dossier(job: JobDep, runner: RunnerDep, settings: SettingsDep) -> dict:
     leaves the analysis project — the dossier is hashes and derived facts.
     """
     meta, score, static, genai, dynamic = _bundle_inputs(runner, job)
-
-    store = open_ledger(settings)
-    try:
-        store.open(job.id)
-        chain = store.verify_chain(job.id)
-    finally:
-        store.close()
+    chain = _verify_chain(settings, job.id)
 
     pack = dossier.build(
         meta=meta,
@@ -162,6 +180,11 @@ def get_dossier(job: JobDep, runner: RunnerDep, settings: SettingsDep) -> dict:
         indicators=len(pack.indicators),
         techniques=len(pack.techniques),
     )
+    return _dossier_payload(pack)
+
+
+def _dossier_payload(pack: dossier.Dossier) -> dict[str, Any]:
+    """The wire shape of a dossier. One definition, so the archive cannot drift."""
     return {
         "sha256": pack.sha256,
         "reportable": pack.reportable,
@@ -185,6 +208,95 @@ def get_stix(job: JobDep, runner: RunnerDep) -> dict:
     bundle = stix.build_bundle(meta=meta, score=score, static=static, genai=genai, dynamic=dynamic)
     log.info("stix_exported", job_id=job.id, objects=len(bundle["objects"]))
     return bundle
+
+
+def _json_bytes(payload: Any) -> bytes:
+    """Pretty JSON, key-sorted — the archive is read by people, and diffed by them."""
+    return json.dumps(payload, indent=2, sort_keys=True, default=str).encode()
+
+
+@router.get("/{job_id}/artifacts/bundle.zip")
+def get_bundle(job: JobDep, runner: RunnerDep, settings: SettingsDep) -> Response:
+    """Every deliverable for this job in one archive, for keeping (contract A20).
+
+    The same bytes the single-file routes serve, plus `MANIFEST.json` recording the
+    sample hash, a SHA-256 per entry, the chain verification as read at build time, and
+    anything that could not be produced together with the reason. It 404-pends before
+    `ingest` and `score` exist, like every other export — an empty archive would read
+    as a finished one.
+
+    Each export is assembled independently. One that raises is named in `omitted` and
+    the rest of the archive is still served: a failed STIX build must not cost an
+    analyst the report and the ledger.
+    """
+    meta, score, static, genai, dynamic = _bundle_inputs(runner, job)
+    chain = _verify_chain(settings, job.id)
+
+    def dossier_bytes() -> bytes:
+        pack = dossier.build(
+            meta=meta, score=score, static=static, genai=genai, dynamic=dynamic, chain=chain
+        )
+        return _json_bytes(_dossier_payload(pack))
+
+    builders = {
+        "report.html": lambda: html.render(
+            job=job,
+            meta=meta,
+            score=score,
+            static=static,
+            genai=genai,
+            trace=dynamic,
+            chain=chain,
+        ).encode(),
+        "complaint-package.json": dossier_bytes,
+        "yara.yar": lambda: yara.build_rule(meta=meta, score=score, static=static).text.encode(),
+        "stix.json": lambda: _json_bytes(
+            stix.build_bundle(meta=meta, score=score, static=static, genai=genai, dynamic=dynamic)
+        ),
+        "ledger.json": lambda: _json_bytes(_export_ledger(settings, job.id)),
+        "verdict.json": lambda: _json_bytes(
+            build_verdict(
+                meta=meta,
+                score=score,
+                static=static,
+                genai=genai,
+                trace=observed_trace(dynamic),
+            ).model_dump(mode="json")
+        ),
+    }
+
+    files: dict[str, bytes] = {}
+    omitted: dict[str, str] = {}
+    for name in case_file.CASE_FILE_NAMES:
+        try:
+            files[name] = builders[name]()
+        # Broad by design: one exporter's failure degrades to an omission with a
+        # reason, and never costs the analyst the rest of the archive.
+        except Exception as exc:
+            omitted[name] = f"{type(exc).__name__}: {exc}"
+            log.warning("case_file_entry_failed", job_id=job.id, entry=name, error=str(exc))
+
+    archive = case_file.build(
+        job_id=job.id,
+        meta=meta,
+        files=files,
+        chain=chain,
+        generated_at=now(),
+        omitted=omitted,
+    )
+    log.info(
+        "case_file_built",
+        job_id=job.id,
+        entries=len(files),
+        omitted=sorted(omitted),
+        bytes=len(archive),
+        chain_ok=chain.ok,
+    )
+    return Response(
+        content=archive,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{job.id}-case-file.zip"'},
+    )
 
 
 @router.post("/{job_id}/actions/{action}/confirm")

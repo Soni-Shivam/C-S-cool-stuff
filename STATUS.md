@@ -904,6 +904,25 @@ Until that runs, T4.9 is "wired and unit-tested", not "proven live".
       DERIVED from provenance flags; a sample that produced no runtime behaviour renders INCONCLUSIVE, never benign.
 - [x] T6.10 Reporting dossier (A12)                DONE  2026-08-26 · `submission_is_manual` is always true — NCRP has no
       public submission API and nothing here files anything. `reportable` is gated on band.
+- [x] T6.11 Case-file archive (A20)                DONE  2026-08-27 · `GET /api/jobs/{id}/artifacts/bundle.zip` +
+      `drishti/m7_report/case_file.py`. One download holding report.html, the complaint package, YARA, STIX,
+      the ledger export and the verdict, assembled **server-side from the same bytes the single-file routes
+      serve** — the browser does not re-zip five fetches, so what is kept is what was analysed.
+      `MANIFEST.json` carries a SHA-256 and size per entry, the chain verification as read at build time, and
+      an `omitted` map naming any export that raised together with its reason: a short archive and a complete
+      one are otherwise indistinguishable. Entry mtimes are pinned to the zip epoch, so identical inputs give
+      identical bytes. **The sample is never in the archive** — `test_bundle_never_carries_the_sample` is the
+      guard. Route added to the frozen surface in `docs/PHASE_0_FOUNDATIONS.md` T0.6 and
+      `tests/contract/test_api_surface.py` before the implementation. 9 new tests in
+      `tests/unit/test_case_file.py`; measured on this commit (rebased onto `origin/main` at `4036a34`):
+      suite **1,664 contract+unit** (1,655 before), `pytest tests/contract tests/unit -q` → exit 0;
+      `npm run build` and `npm test` (34) green. Two lint failures are **pre-existing on `origin/main`**
+      and touch no file changed here: `ruff check` reports N806 in
+      `tests/unit/test_behavioural_risk_context.py:98`, and `ruff format --check` wants
+      `canary/decoy-challan/tools/make_launcher_icon.py`, `scripts/validate_lookalike.py`,
+      `tests/unit/test_llm_retry_after.py`, `tests/unit/test_score_engine.py` and
+      `tests/unit/test_score_fusion_logodds.py` reformatted. `make lint` is therefore red on `main`
+      independently of this change.
 - [~] T6.4 Dashboard completion                    WIP   2026-08-26  dea2ee9 · seven views render live; the shared Verdict and the honesty affordances landed
       Every panel is wired to a real endpoint and renders only what the API sent.
       **The three "renders its 501" caveats above this line were stale** — report.html,

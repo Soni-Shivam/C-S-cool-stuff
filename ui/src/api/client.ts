@@ -189,6 +189,12 @@ export const exportUrls = (jobId: string) => ({
   yara: `/api/jobs/${jobId}/artifacts/yara`,
   stix: `/api/jobs/${jobId}/artifacts/stix`,
   dossier: `/api/jobs/${jobId}/artifacts/dossier`,
+  /**
+   * Everything above plus the ledger, the verdict and a manifest, in one archive.
+   * The server assembles it from the same bytes these routes serve — the browser is
+   * not zipping five separate fetches, so what is kept is what was analysed.
+   */
+  bundle: `/api/jobs/${jobId}/artifacts/bundle.zip`,
 })
 
 export const confirmAction = (jobId: string, action: string, confirmedBy: string) =>
